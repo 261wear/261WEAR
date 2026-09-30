@@ -5,7 +5,7 @@ export function FreshBadge({ fresh, className = "" }: { fresh: Freshness; classN
     return <span className={`rounded-md bg-accent px-2 py-0.5 text-[11px] font-black tracking-wider text-ink uppercase shadow-sm ${className}`}>New</span>;
   }
   if (fresh === "mis_a_jour") {
-    return <span className={`rounded-md bg-sky-600 px-2 py-0.5 text-[11px] font-bold text-white shadow-sm ${className}`}>↻ Mis à jour</span>;
+    return <span className={`rounded-md bg-sky-700 px-2 py-0.5 text-[11px] font-bold text-white shadow-sm ${className}`}>↻ Mis à jour</span>;
   }
   return null;
 }

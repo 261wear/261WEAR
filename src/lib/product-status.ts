@@ -22,7 +22,7 @@ export function isProductStatus(id: unknown): id is ProductStatus {
 // Tailwind classes per status, used in the shop and the back-office.
 export const STATUS_BADGE: Record<ProductStatus, string> = {
   sur_commande: "bg-white text-ink ring-1 ring-black/15",
-  en_stock: "bg-emerald-600 text-white",
+  en_stock: "bg-emerald-700 text-white",
   epuise: "bg-black/70 text-white",
   brouillon: "bg-black/5 text-black/60 ring-1 ring-dashed ring-black/20",
 };

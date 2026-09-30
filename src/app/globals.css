@@ -4,7 +4,7 @@
   --color-ink: #0b0b0c;
   --color-paper: #f4f2ee;
   --color-accent: #c6ff3d;
-  --color-muted: #8a8a8f;
+  --color-muted: #66666b; /* 5.1:1 on paper (WCAG AA) */
   --font-sans: var(--font-inter);
   --font-display: var(--font-anton);
 }

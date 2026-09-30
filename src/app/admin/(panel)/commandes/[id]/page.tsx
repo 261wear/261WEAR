@@ -53,7 +53,7 @@ export default async function AdminOrderPage(props: PageProps<"/admin/commandes/
       <div className="mt-2 flex flex-wrap items-center gap-3">
         <h1 className="font-display text-3xl">{number}</h1>
         <StatusBadge status={order.status} />
-        {order.in_stock && <span className="rounded-full bg-emerald-600 px-2.5 py-1 text-xs font-semibold text-white">⚡ Stock Tana</span>}
+        {order.in_stock && <span className="rounded-full bg-emerald-700 px-2.5 py-1 text-xs font-semibold text-white">⚡ Stock Tana</span>}
       </div>
 
       <div className="mt-6 grid gap-6 lg:grid-cols-[1fr_380px]">

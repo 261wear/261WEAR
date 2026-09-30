@@ -50,7 +50,7 @@ export default async function Home() {
         <section className="mx-auto max-w-6xl px-4 pt-16">
           <div className="flex items-end justify-between gap-4">
             <h2 className="font-display text-4xl sm:text-5xl">
-              <span className="text-emerald-600">⚡</span> Dispo de suite
+              <span className="text-emerald-700">⚡</span> Dispo de suite
             </h2>
             <Link href="/recherche?dispo=en_stock" className="text-sm font-semibold underline">Tout voir</Link>
           </div>

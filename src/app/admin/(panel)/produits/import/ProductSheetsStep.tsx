@@ -269,11 +269,11 @@ function PreviewRow({
         {ok ? (
           existing ? (
             <span>
-              <span className="inline-flex items-center gap-1 rounded-md bg-sky-600 px-2 py-0.5 font-bold whitespace-nowrap text-white">↻ Mise à jour</span>
+              <span className="inline-flex items-center gap-1 rounded-md bg-sky-700 px-2 py-0.5 font-bold whitespace-nowrap text-white">↻ Mise à jour</span>
               <span className="mt-1 block text-sky-800">{changes.length ? changes.join(" · ") : "infos inchangées"}</span>
             </span>
           ) : (
-            <span className="inline-flex items-center gap-1 rounded-md bg-emerald-600 px-2 py-0.5 font-bold whitespace-nowrap text-white">✦ Nouveau</span>
+            <span className="inline-flex items-center gap-1 rounded-md bg-emerald-700 px-2 py-0.5 font-bold whitespace-nowrap text-white">✦ Nouveau</span>
           )
         ) : (
           <span className="text-red-700">{resolved.errors.join(" · ")}</span>
