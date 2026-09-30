@@ -17,7 +17,15 @@ function parse(v: string): number | null {
   return v.trim() && Number.isFinite(n) ? n : null;
 }
 
-export function ProductForm({ product, settings }: { product?: Product; settings: PricingSettings }) {
+export function ProductForm({
+  product,
+  settings,
+  suppliers,
+}: {
+  product?: Product;
+  settings: PricingSettings;
+  suppliers: { id: number; name: string }[];
+}) {
   const [state, onSubmit, pending] = useFormAction(saveProduct, undefined);
   const [images, setImages] = useState<string[]>(product?.images ?? []);
   const [imageUrl, setImageUrl] = useState("");
@@ -81,6 +89,20 @@ export function ProductForm({ product, settings }: { product?: Product; settings
           <div>
             <label className="label" htmlFor="description">Description</label>
             <textarea id="description" name="description" rows={4} className="input" defaultValue={product?.description} placeholder="Matières, semelle, points forts…" />
+          </div>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div>
+              <label className="label" htmlFor="supplier_id">Fournisseur</label>
+              <select id="supplier_id" name="supplier_id" className="input" defaultValue={product?.supplier_id ?? ""}>
+                <option value="">— Aucun —</option>
+                {suppliers.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
+              </select>
+              {!suppliers.length && <p className="mt-1 text-xs text-muted">Ajoute tes fournisseurs dans l&apos;onglet « Fournisseurs ».</p>}
+            </div>
+            <div>
+              <label className="label" htmlFor="supplier_ref">Réf. chez le fournisseur</label>
+              <input id="supplier_ref" name="supplier_ref" className="input" defaultValue={product?.supplier_ref} placeholder="Ex. PT-8821" />
+            </div>
           </div>
           <label className="flex items-center gap-2 text-sm font-medium">
             <input type="checkbox" name="active" defaultChecked={product?.active ?? true} className="h-4 w-4" />

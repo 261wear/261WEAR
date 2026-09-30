@@ -53,6 +53,41 @@ référence commence son nom de fichier, dans l'ordre du numéro :
 (`AR261-B-1.jpg` va dans `AR261-B`, pas dans `AR261`). Les photos sans référence connue et les formats non pris en
 charge (HEIC) sont signalés. À la fin, un bouton met en ligne les produits qui viennent de recevoir leurs photos.
 
+## Fournisseurs & logistique
+
+- **Fournisseurs** : nom, WeChat, téléphone, ville, paiement (Alipay…), délai d'expédition habituel, notes.
+  Chaque produit est relié à un fournisseur, avec sa référence chez ce fournisseur (fiche produit ou colonnes
+  `fournisseur` / `ref_fournisseur` de l'import ; un fournisseur inconnu est créé automatiquement).
+- **Logistique** :
+  - *À commander* : les commandes dont l'acompte est reçu, regroupées par fournisseur, avec la même paire et la même
+    pointure fusionnées (« 42 × 2 »), le total en RMB, le poids et le transport estimés. Le bouton
+    **Copier la commande pour WeChat** prépare le message (anglais/chinois, réf. fournisseur, pointures, total, demande
+    de photos QC). **Marquer comme commandées** fait passer toutes ces commandes à « Commandé chez le fournisseur ».
+  - *En cours d'acheminement* : commandes chez le fournisseur ou expédiées, avec le nombre de jours écoulés ; une
+    commande qui dépasse le délai habituel du fournisseur est signalée **en retard**.
+- Le nom du fournisseur n'est jamais montré au client.
+
+## Publication Facebook
+
+Back-office → **Facebook** (ou le lien « Facebook → » d'un produit) : sélectionner des produits et leurs photos
+(10 max). Le texte est généré (nom, prix, pointures, lien de commande, hashtags) et reste modifiable ; un aperçu
+montre le rendu. Publier tout de suite ou **programmer** (entre 10 minutes et 30 jours à l'avance). L'historique
+garde chaque publication (publiée, programmée ou en échec, avec le message d'erreur de Facebook).
+
+Configuration (variables d'environnement Vercel) :
+
+| Variable | Rôle |
+| --- | --- |
+| `FACEBOOK_PAGE_ID` | Identifiant de la Page (Page → À propos → Transparence de la Page, ou Meta Business Suite). |
+| `FACEBOOK_PAGE_ACCESS_TOKEN` | Jeton **de Page** avec `pages_manage_posts` et `pages_read_engagement`. |
+| `FACEBOOK_GRAPH_VERSION` | Optionnel, version de l'API Graph (défaut `v23.0`). |
+
+Obtenir le jeton : créer une app sur developers.facebook.com (type *Business*), ouvrir l'**Explorateur de l'API
+Graph**, générer un jeton utilisateur avec les deux permissions ci-dessus, l'échanger contre un jeton longue durée,
+puis appeler `GET /me/accounts` : le `access_token` de la Page 261 WEAR est le jeton à utiliser (il n'expire pas tant
+que le mot de passe et les droits ne changent pas). Le back-office affiche « Connecté à la Page … » quand tout est bon.
+Sans configuration, l'écran permet de copier le texte et de télécharger les photos pour publier à la main.
+
 ## Statuts de commande
 
 En attente de paiement → Acompte reçu → Commandé chez le fournisseur → Expédié depuis la Chine →

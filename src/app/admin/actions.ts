@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { checkPassword, endSession, requireAdmin, startSession } from "@/lib/auth";
+import { FB_MAX_PHOTOS, facebookConfigured, logPost, publishPhotoPost } from "@/lib/facebook";
 import { createOrder, getOrder, updateOrder } from "@/lib/orders";
 import { ALL_STATUS_IDS, normalizePhone } from "@/lib/orders-shared";
 import { depositFor } from "@/lib/pricing";
@@ -18,6 +19,15 @@ import {
   type ProductInput,
 } from "@/lib/products";
 import { getSettings, saveSettings, type Settings } from "@/lib/settings";
+import {
+  createSupplier,
+  deleteSupplier,
+  findOrCreateSupplier,
+  getSupplier,
+  listSupplierOptions,
+  updateSupplier,
+  type SupplierInput,
+} from "@/lib/suppliers";
 
 export type FormState = { error?: string; ok?: string } | undefined;
 
@@ -69,8 +79,13 @@ export async function saveProduct(_prev: FormState, form: FormData): Promise<For
     if (owner && owner !== id) return { error: `La référence ${ref} est déjà utilisée par un autre produit.` };
   }
 
+  const supplierId = Number(form.get("supplier_id")) || null;
+  if (supplierId && !(await getSupplier(supplierId))) return { error: "Fournisseur introuvable." };
+
   const input: ProductInput = {
     ref: ref || null,
+    supplier_id: supplierId,
+    supplier_ref: str(form, "supplier_ref", 60),
     name: str(form, "name", 120),
     category: str(form, "category", 60),
     description: str(form, "description", 3000),
@@ -114,15 +129,22 @@ export async function removeProduct(form: FormData) {
 
 // ---------- Bulk import ----------
 
-export type ImportResult = { created: number; updated: number; skipped: { line: number; ref: string; errors: string[] }[] };
+export type ImportResult = {
+  created: number;
+  updated: number;
+  suppliersCreated: string[];
+  skipped: { line: number; ref: string; errors: string[] }[];
+};
 
 // Step 1: product sheets. Rows are matched on their reference: an existing
 // reference is updated (photos and online status kept), a new one is created.
 export async function importProducts(rows: ImportRow[], publish: boolean): Promise<ImportResult> {
   await requireAdmin();
-  const result: ImportResult = { created: 0, updated: 0, skipped: [] };
+  const result: ImportResult = { created: 0, updated: 0, suppliersCreated: [], skipped: [] };
   if (!Array.isArray(rows)) return result;
   const seen = new Set<string>();
+  const suppliers = new Map<string, number>();
+  const knownSuppliers = new Set((await listSupplierOptions()).map((o) => o.name.toLowerCase()));
   for (const raw of rows.slice(0, MAX_IMPORT_ROWS)) {
     const row = validateRow(raw);
     if (!row.errors.length && seen.has(row.ref)) row.errors.push("Référence en double");
@@ -131,6 +153,11 @@ export async function importProducts(rows: ImportRow[], publish: boolean): Promi
       continue;
     }
     seen.add(row.ref);
+    const supplierId = row.supplier ? await findOrCreateSupplier(row.supplier, suppliers) : null;
+    if (row.supplier && !knownSuppliers.has(row.supplier.toLowerCase())) {
+      knownSuppliers.add(row.supplier.toLowerCase());
+      result.suppliersCreated.push(row.supplier);
+    }
     const fields = {
       ref: row.ref,
       name: row.name,
@@ -145,10 +172,17 @@ export async function importProducts(rows: ImportRow[], publish: boolean): Promi
     const existingId = await getProductIdByRef(row.ref);
     const existing = existingId ? await getProduct(existingId) : null;
     if (existing) {
-      await updateProduct(existing.id, { ...fields, images: existing.images, active: existing.active || publish });
+      // Empty supplier columns keep what the product already has.
+      await updateProduct(existing.id, {
+        ...fields,
+        supplier_id: supplierId ?? existing.supplier_id,
+        supplier_ref: row.supplier_ref || existing.supplier_ref,
+        images: existing.images,
+        active: existing.active || publish,
+      });
       result.updated++;
     } else {
-      await createProduct({ ...fields, images: [], active: publish });
+      await createProduct({ ...fields, supplier_id: supplierId, supplier_ref: row.supplier_ref, images: [], active: publish });
       result.created++;
     }
   }
@@ -171,6 +205,104 @@ export async function publishProducts(ids: number[]) {
   await requireAdmin();
   await setProductsActive(ids.filter(Number.isInteger), true);
   revalidatePath("/", "layout");
+}
+
+// ---------- Suppliers ----------
+
+export async function saveSupplier(_prev: FormState, form: FormData): Promise<FormState> {
+  await requireAdmin();
+  const id = Number(form.get("id")) || null;
+  const lead = num(form, "lead_days");
+  const input: SupplierInput = {
+    name: str(form, "name", 80),
+    wechat: str(form, "wechat", 80),
+    phone: str(form, "phone", 40),
+    city: str(form, "city", 60),
+    payment: str(form, "payment", 120),
+    lead_days: lead === null ? null : Math.round(lead),
+    notes: str(form, "notes", 2000),
+  };
+  if (!input.name) return { error: "Le nom du fournisseur est obligatoire." };
+  if (lead !== null && (Number.isNaN(lead) || lead < 0 || lead > 120)) return { error: "Délai invalide (0 à 120 jours)." };
+  if (id) await updateSupplier(id, input);
+  else await createSupplier(input);
+  revalidatePath("/admin", "layout");
+  redirect("/admin/fournisseurs");
+}
+
+export async function removeSupplier(form: FormData) {
+  await requireAdmin();
+  await deleteSupplier(Number(form.get("id")));
+  revalidatePath("/admin", "layout");
+  redirect("/admin/fournisseurs");
+}
+
+// Logistics: mark a supplier's paid orders as ordered, in one go.
+export async function markOrdered(form: FormData) {
+  await requireAdmin();
+  const ids = String(form.get("orderIds") ?? "")
+    .split(",")
+    .map(Number)
+    .filter(Number.isInteger);
+  for (const id of ids) {
+    const order = await getOrder(id);
+    if (!order || order.status !== "paiement_recu") continue;
+    // No note: history notes are shown to the customer, supplier names must not be.
+    const history = [...order.history, { status: "commande_fournisseur", at: new Date().toISOString() }];
+    await updateOrder(order.id, { status: "commande_fournisseur", history });
+  }
+  revalidatePath("/admin", "layout");
+}
+
+// ---------- Facebook ----------
+
+export type PublishResult = { ok?: string; url?: string; error?: string };
+
+export async function publishToFacebook(input: {
+  productIds: number[];
+  images: string[];
+  message: string;
+  scheduledAt: string | null; // ISO date, or null to publish now
+}): Promise<PublishResult> {
+  await requireAdmin();
+  if (!facebookConfigured()) return { error: "Page Facebook non connectée (voir la configuration ci-dessous)." };
+  const message = String(input.message ?? "").trim().slice(0, 5000);
+  if (!message) return { error: "Le texte de la publication est vide." };
+
+  // Only photos that belong to the selected products can be sent.
+  const productIds = (Array.isArray(input.productIds) ? input.productIds : []).filter(Number.isInteger).slice(0, 30);
+  const allowed = new Set<string>();
+  for (const id of productIds) (await getProduct(id))?.images.forEach((u) => allowed.add(u));
+  const images = (Array.isArray(input.images) ? input.images : []).filter((u) => allowed.has(u));
+  if (!images.length) return { error: "Sélectionne au moins une photo." };
+  if (images.length > FB_MAX_PHOTOS) return { error: `${FB_MAX_PHOTOS} photos maximum par publication.` };
+
+  let scheduledAt: Date | null = null;
+  if (input.scheduledAt) {
+    scheduledAt = new Date(input.scheduledAt);
+    const min = Date.now() + 10 * 60 * 1000;
+    const max = Date.now() + 30 * 86400 * 1000;
+    if (Number.isNaN(scheduledAt.getTime()) || scheduledAt.getTime() < min || scheduledAt.getTime() > max) {
+      return { error: "La programmation doit être entre 10 minutes et 30 jours à l'avance (règle Facebook)." };
+    }
+  }
+
+  try {
+    const postId = await publishPhotoPost(images, message, scheduledAt);
+    await logPost({ fbPostId: postId, message, productIds, photoCount: images.length, scheduledAt, status: scheduledAt ? "programme" : "publie", error: "" });
+    revalidatePath("/admin/facebook");
+    return {
+      ok: scheduledAt
+        ? `Publication programmée le ${scheduledAt.toLocaleString("fr-FR", { timeZone: "Indian/Antananarivo", dateStyle: "long", timeStyle: "short" })}.`
+        : "Publié sur Facebook ✓",
+      url: `https://www.facebook.com/${postId}`,
+    };
+  } catch (err) {
+    const error = (err as Error).message;
+    await logPost({ fbPostId: null, message, productIds, photoCount: images.length, scheduledAt, status: "erreur", error });
+    revalidatePath("/admin/facebook");
+    return { error };
+  }
 }
 
 // ---------- Orders ----------

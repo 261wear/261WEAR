@@ -7,6 +7,8 @@ import { Img } from "@/components/ui/Img";
 import { WhatsAppIcon } from "@/components/WhatsAppIcon";
 import { setOrderStatus } from "@/app/admin/actions";
 import { getOrder } from "@/lib/orders";
+import { getProduct } from "@/lib/products";
+import { getSupplier } from "@/lib/suppliers";
 import { CANCELLED, STATUSES, displayPhone, orderNumber, statusIndex, waLink } from "@/lib/orders-shared";
 import { formatAr } from "@/lib/pricing";
 import { StatusBadge } from "../../StatusBadge";
@@ -26,6 +28,9 @@ const CUSTOMER_MESSAGES: Record<string, string> = {
 export default async function AdminOrderPage(props: PageProps<"/admin/commandes/[id]">) {
   const order = await getOrder(Number((await props.params).id));
   if (!order) notFound();
+
+  const product = order.product_id ? await getProduct(order.product_id) : null;
+  const supplier = product?.supplier_id ? await getSupplier(product.supplier_id) : null;
 
   const h = await headers();
   const origin = `${h.get("x-forwarded-proto") ?? "https"}://${h.get("host")}`;
@@ -60,6 +65,18 @@ export default async function AdminOrderPage(props: PageProps<"/admin/commandes/
                 {order.product_id ? <Link href={`/admin/produits/${order.product_id}`} className="underline">{order.product_name}</Link> : order.product_name}
               </p>
               {order.size && <p>Pointure <b>{order.size}</b></p>}
+              <p className="mt-1 text-xs text-muted">
+                Fournisseur :{" "}
+                {supplier ? (
+                  <>
+                    <Link href={`/admin/fournisseurs/${supplier.id}`} className="underline">{supplier.name}</Link>
+                    {supplier.wechat && ` · WeChat ${supplier.wechat}`}
+                    {product?.supplier_ref && ` · réf. ${product.supplier_ref}`}
+                  </>
+                ) : (
+                  "non renseigné"
+                )}
+              </p>
               <p className="mt-2">Total {formatAr(order.total)} · Acompte {formatAr(order.deposit)}</p>
               <p>
                 Payé <b className={order.amount_paid >= order.deposit ? "text-green-700" : "text-red-700"}>{formatAr(order.amount_paid)}</b>

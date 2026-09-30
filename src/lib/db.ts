@@ -52,6 +52,30 @@ const SCHEMA = [
   // Supplier / catalogue reference, used by bulk import to match rows and photos.
   `ALTER TABLE products ADD COLUMN IF NOT EXISTS ref TEXT`,
   `CREATE UNIQUE INDEX IF NOT EXISTS products_ref_idx ON products (ref)`,
+  `CREATE TABLE IF NOT EXISTS suppliers (
+    id SERIAL PRIMARY KEY,
+    name TEXT NOT NULL,
+    wechat TEXT NOT NULL DEFAULT '',
+    phone TEXT NOT NULL DEFAULT '',
+    city TEXT NOT NULL DEFAULT '',
+    payment TEXT NOT NULL DEFAULT '',
+    lead_days INTEGER,
+    notes TEXT NOT NULL DEFAULT '',
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+  )`,
+  `ALTER TABLE products ADD COLUMN IF NOT EXISTS supplier_id INTEGER REFERENCES suppliers (id) ON DELETE SET NULL`,
+  `ALTER TABLE products ADD COLUMN IF NOT EXISTS supplier_ref TEXT NOT NULL DEFAULT ''`,
+  `CREATE TABLE IF NOT EXISTS fb_posts (
+    id SERIAL PRIMARY KEY,
+    fb_post_id TEXT,
+    message TEXT NOT NULL,
+    product_ids TEXT NOT NULL DEFAULT '[]',
+    photo_count INTEGER NOT NULL DEFAULT 0,
+    scheduled_at TIMESTAMPTZ,
+    status TEXT NOT NULL,
+    error TEXT NOT NULL DEFAULT '',
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+  )`,
 ];
 
 const globalForDb = globalThis as unknown as {

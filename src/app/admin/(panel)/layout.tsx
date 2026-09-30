@@ -16,8 +16,11 @@ export default async function AdminLayout({ children }: LayoutProps<"/admin">) {
           <Logo className="text-xl" />
           <nav className="flex flex-1 flex-wrap gap-4 text-sm font-medium">
             <Link href="/admin" className="hover:text-accent">Commandes</Link>
+            <Link href="/admin/logistique" className="hover:text-accent">Logistique</Link>
             <Link href="/admin/produits" className="hover:text-accent">Produits</Link>
-            <Link href="/admin/parametres" className="hover:text-accent">Prix & paramètres</Link>
+            <Link href="/admin/fournisseurs" className="hover:text-accent">Fournisseurs</Link>
+            <Link href="/admin/facebook" className="hover:text-accent">Facebook</Link>
+            <Link href="/admin/parametres" className="hover:text-accent">Paramètres</Link>
             <Link href="/" target="_blank" className="text-white/60 hover:text-accent">Voir le site ↗</Link>
           </nav>
           <form action={logout}>

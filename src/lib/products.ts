@@ -16,6 +16,8 @@ export type Product = {
   sizes: string[];
   images: string[];
   active: boolean;
+  supplier_id: number | null;
+  supplier_ref: string;
 };
 
 export type PricedProduct = Product & { pricing: PriceBreakdown };
@@ -34,6 +36,8 @@ function toProduct(r: Row): Product {
     sizes: r.sizes ? String(r.sizes).split(",").map((s: string) => s.trim()).filter(Boolean) : [],
     images: JSON.parse(r.images || "[]"),
     active: Boolean(r.active),
+    supplier_id: r.supplier_id == null ? null : Number(r.supplier_id),
+    supplier_ref: r.supplier_ref ?? "",
   };
 }
 
@@ -71,14 +75,16 @@ function params(p: ProductInput) {
     p.sizes.join(","),
     JSON.stringify(p.images),
     p.active,
+    p.supplier_id,
+    p.supplier_ref,
   ];
 }
 
 export async function createProduct(p: ProductInput) {
   const row = await queryOne(
     `INSERT INTO products (ref, name, category, description, price_rmb, weight_kg, margin_pct,
-       price_override, sizes, images, active)
-     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11) RETURNING id`,
+       price_override, sizes, images, active, supplier_id, supplier_ref)
+     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13) RETURNING id`,
     params(p),
   );
   return row!.id as number;
@@ -87,8 +93,8 @@ export async function createProduct(p: ProductInput) {
 export async function updateProduct(id: number, p: ProductInput) {
   await query(
     `UPDATE products SET ref=$1, name=$2, category=$3, description=$4, price_rmb=$5, weight_kg=$6,
-       margin_pct=$7, price_override=$8, sizes=$9, images=$10, active=$11
-     WHERE id = $12`,
+       margin_pct=$7, price_override=$8, sizes=$9, images=$10, active=$11, supplier_id=$12, supplier_ref=$13
+     WHERE id = $14`,
     [...params(p), id],
   );
 }

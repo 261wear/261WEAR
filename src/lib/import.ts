@@ -11,6 +11,8 @@ export type ImportRow = {
   margin_pct: number | null;
   price_override: number | null;
   sizes: string[];
+  supplier: string;
+  supplier_ref: string;
   errors: string[];
 };
 
@@ -69,7 +71,18 @@ export function parseTable(text: string): string[][] {
 
 // ---------- Column mapping ----------
 
-type Field = "ref" | "name" | "category" | "description" | "price_rmb" | "weight_kg" | "margin_pct" | "price_override" | "sizes";
+type Field =
+  | "ref"
+  | "name"
+  | "category"
+  | "description"
+  | "price_rmb"
+  | "weight_kg"
+  | "margin_pct"
+  | "price_override"
+  | "sizes"
+  | "supplier"
+  | "supplier_ref";
 
 const ALIASES: Record<Field, string[]> = {
   ref: ["ref", "reference", "sku", "code", "article", "item", "item_no", "model_no"],
@@ -81,13 +94,15 @@ const ALIASES: Record<Field, string[]> = {
   margin_pct: ["marge", "marge_pct", "margin", "margin_pct"],
   price_override: ["prix_force", "prix_ar", "prix_vente", "prix_mga"],
   sizes: ["pointures", "tailles", "sizes", "taille", "pointure"],
+  supplier: ["fournisseur", "supplier", "vendor", "usine", "factory"],
+  supplier_ref: ["ref_fournisseur", "reference_fournisseur", "supplier_ref", "supplier_sku", "vendor_sku"],
 };
 
-export const TEMPLATE_HEADERS = ["ref", "nom", "categorie", "description", "prix_rmb", "poids_kg", "marge", "prix_force", "pointures"];
+export const TEMPLATE_HEADERS = ["ref", "nom", "categorie", "description", "prix_rmb", "poids_kg", "marge", "prix_force", "pointures", "fournisseur", "ref_fournisseur"];
 
 export const TEMPLATE_EXAMPLE = [
-  ["AR261", "Air Runner 261 Black", "Sneakers", "Mesh respirant, semelle cousue", "150", "1,2", "", "", "39 40 41 42 43 44"],
-  ["CT-HIGH-W", "Court High White", "Sneakers", "Cuir synthétique premium", "185", "1,4", "40", "", "40 41 42 43"],
+  ["AR261", "Air Runner 261 Black", "Sneakers", "Mesh respirant, semelle cousue", "150", "1,2", "", "", "39 40 41 42 43 44", "Putian Shoes Co", "PT-8821"],
+  ["CT-HIGH-W", "Court High White", "Sneakers", "Cuir synthétique premium", "185", "1,4", "40", "", "40 41 42 43", "Guangzhou Kicks", "GZ-114"],
 ];
 
 function key(header: string) {
@@ -150,6 +165,8 @@ export function validateRow(r: Omit<ImportRow, "errors">): ImportRow {
     margin_pct: r.margin_pct,
     price_override: r.price_override === null ? null : Math.round(r.price_override),
     sizes: (Array.isArray(r.sizes) ? r.sizes : []).map(String).slice(0, 30),
+    supplier: String(r.supplier ?? "").trim().slice(0, 80),
+    supplier_ref: String(r.supplier_ref ?? "").trim().slice(0, 60),
     errors,
   };
 }
@@ -173,6 +190,8 @@ export function rowsFromText(text: string): { rows: ImportRow[]; missingColumns:
       margin_pct: parseNumber(cell(row, "margin_pct")),
       price_override: parseNumber(cell(row, "price_override")),
       sizes: parseSizes(cell(row, "sizes")),
+      supplier: cell(row, "supplier"),
+      supplier_ref: cell(row, "supplier_ref"),
     }),
   );
   // Duplicate references inside the same file.

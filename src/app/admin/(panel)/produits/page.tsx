@@ -26,6 +26,7 @@ export default async function AdminProductsPage() {
               <th className="p-3">Prix de vente</th>
               <th className="p-3">Marge</th>
               <th className="p-3">En ligne</th>
+              <th className="p-3"><span className="sr-only">Actions</span></th>
             </tr>
           </thead>
           <tbody>
@@ -65,11 +66,18 @@ export default async function AdminProductsPage() {
                     </SubmitButton>
                   </form>
                 </td>
+                <td className="p-3">
+                  {p.images.length > 0 && (
+                    <Link href={`/admin/facebook?produits=${p.id}`} className="text-xs font-semibold whitespace-nowrap text-[#1877F2] hover:underline">
+                      Facebook →
+                    </Link>
+                  )}
+                </td>
               </tr>
             ))}
             {!products.length && (
               <tr>
-                <td colSpan={6} className="p-10 text-center text-muted">Aucun produit. Ajoute ton premier modèle.</td>
+                <td colSpan={7} className="p-10 text-center text-muted">Aucun produit. Ajoute ton premier modèle.</td>
               </tr>
             )}
           </tbody>

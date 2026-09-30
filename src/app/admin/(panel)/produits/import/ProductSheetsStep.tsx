@@ -57,13 +57,14 @@ export function ProductSheetsStep({
     setResult(null);
     setProgress({ done: 0, total: valid.length });
     startTransition(async () => {
-      const total: ImportResult = { created: 0, updated: 0, skipped: [] };
+      const total: ImportResult = { created: 0, updated: 0, suppliersCreated: [], skipped: [] };
       try {
         for (let i = 0; i < valid.length; i += CHUNK) {
           const r = await importProducts(valid.slice(i, i + CHUNK), publish);
           total.created += r.created;
           total.updated += r.updated;
           total.skipped.push(...r.skipped);
+          total.suppliersCreated.push(...r.suppliersCreated);
           setProgress({ done: Math.min(i + CHUNK, valid.length), total: valid.length });
         }
         setResult(total);
@@ -84,7 +85,8 @@ export function ProductSheetsStep({
           <h2 className="text-base font-semibold">1. Prépare ton fichier</h2>
           <p className="mt-1 text-black/70">
             Colonnes obligatoires : <b>ref</b>, <b>nom</b>, <b>prix_rmb</b>. Facultatives : categorie, description, poids_kg, marge,
-            prix_force, pointures (ex. « 39 40 41 42 »). Vide = valeur par défaut des paramètres.
+            prix_force, pointures (ex. « 39 40 41 42 »), fournisseur, ref_fournisseur. Vide = valeur par défaut des paramètres.
+            Un fournisseur inconnu est créé automatiquement.
           </p>
           <p className="mt-1 text-black/70">
             La <b>ref</b> sert à retrouver le produit : réimporter une ref existante <b>met à jour</b> la fiche (photos conservées), sans doublon.
@@ -137,6 +139,7 @@ export function ProductSheetsStep({
                   <th className="p-2.5">Prix RMB</th>
                   <th className="p-2.5">Prix de vente</th>
                   <th className="p-2.5">Pointures</th>
+                  <th className="p-2.5">Fournisseur</th>
                   <th className="p-2.5">Statut</th>
                 </tr>
               </thead>
@@ -175,6 +178,11 @@ export function ProductSheetsStep({
             Import terminé : {result.created} fiche{result.created > 1 ? "s" : ""} créée{result.created > 1 ? "s" : ""}, {result.updated} mise{result.updated > 1 ? "s" : ""} à jour
             {result.skipped.length > 0 && `, ${result.skipped.length} ignorée${result.skipped.length > 1 ? "s" : ""}`}.
           </p>
+          {result.suppliersCreated.length > 0 && (
+            <p className="text-sm text-green-900">
+              Nouveaux fournisseurs créés : {result.suppliersCreated.join(", ")} — complète leurs coordonnées dans « Fournisseurs ».
+            </p>
+          )}
           {result.skipped.map((s) => (
             <p key={s.line} className="text-sm text-red-700">Ligne {s.line} ({s.ref || "sans réf."}) : {s.errors.join(", ")}</p>
           ))}
@@ -199,6 +207,10 @@ function PreviewRow({ row, settings, exists }: { row: ImportRow; settings: Prici
       <td className="p-2.5">{row.price_rmb != null && !Number.isNaN(row.price_rmb) ? `${row.price_rmb} ¥` : "—"}</td>
       <td className="p-2.5 font-semibold">{price != null ? formatAr(price) : "—"}</td>
       <td className="p-2.5 text-xs">{row.sizes.join(" ") || "—"}</td>
+      <td className="p-2.5 text-xs">
+        {row.supplier || "—"}
+        {row.supplier_ref && <span className="block font-mono text-muted">{row.supplier_ref}</span>}
+      </td>
       <td className="p-2.5 text-xs">
         {ok ? (
           <span className={`rounded-full px-2 py-0.5 font-semibold ${exists ? "bg-sky-100 text-sky-800" : "bg-green-100 text-green-800"}`}>
