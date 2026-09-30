@@ -23,20 +23,21 @@ prix  = coût × (1 + marge %), arrondi au-dessus (ex. aux 5 000 Ar)
 Exemple avec les réglages par défaut (taux 630, 80 000 Ar/kg, 1,2 kg, 5 000 Ar de frais, marge 35 %) :
 150 ¥ → coût 195 500 Ar → **prix 265 000 Ar**.
 
-**Produits « Disponible de suite »** (déjà à Tana) : le prix de vente part du **prix d'achat en Ariary**, transport
-déjà compris :
+**Produits « Disponible de suite »** (déjà à Tana) : seulement le **prix d'achat en Ariary**. Pas de poids, pas de
+transport, aucun frais ajouté :
 
 ```
-coût  = prix d'achat Ar + frais fixes
-prix  = coût × (1 + marge %), arrondi au-dessus
+prix  = prix d'achat Ar × (1 + marge %), arrondi au-dessus
 ```
 
-Exemple : achat 210 000 Ar → coût 215 000 Ar → **prix 295 000 Ar** (le taux RMB ne le change pas).
+Exemple : achat 210 000 Ar → **prix 285 000 Ar** (ni le taux RMB, ni le transport, ni les frais fixes ne le changent).
 
 Règles (identiques dans la fiche produit, l'import, le changement de statut rapide et côté serveur) :
-- *Sur commande* : prix RMB obligatoire ; *Disponible de suite* : prix d'achat Ar obligatoire ;
-  *Épuisé* / *Brouillon* : au moins un des deux.
-- Un produit peut avoir les deux prix : la base suit son statut, et la fiche montre l'autre scénario.
+- *Sur commande* (import Chine) : prix RMB **et poids** obligatoires ; *Disponible de suite* : prix d'achat Ar
+  obligatoire, poids inutile ; *Épuisé* / *Brouillon* : un prix Ar, ou un prix RMB avec son poids.
+- Un produit peut avoir les deux prix : « sur commande » est calculé en RMB, tous les autres statuts en Ar ; la fiche
+  montre l'autre scénario.
+- Valable à l'unité (fiche produit) comme en masse (import).
 - Limites : RMB ≤ 100 000, Ar entre 1 000 et 50 000 000 (un prix en Ar tapé dans la colonne RMB est refusé),
   poids 0,1–20 kg, marge 0–500 %. Un prix forcé sous le coût est accepté avec une alerte « perte ».
 - Si le prix change (taux, marge…) pendant qu'un client commande, la commande est refusée avec le nouveau prix,
@@ -85,9 +86,10 @@ depuis Excel / Google Sheets. Un modèle est téléchargeable dans le back-offic
 | `ref` | oui | `AR261` (lettres, chiffres, `-` `_` `.`) |
 | `nom` | pour un nouveau produit | `Air Runner 261 Black` |
 | `prix_rmb` | pour « sur commande » | `150` |
-| `prix_achat_ar` | pour « disponible de suite » | `210 000` ou `210.000` |
+| `poids_kg` | pour « sur commande » | `1,2` |
+| `prix_achat_ar` | pour « disponible de suite » (seul prix requis) | `210 000` ou `210.000` |
 | `categorie`, `description` | non | `Sneakers` |
-| `poids_kg`, `marge` | non (défaut des paramètres) | `1,2` · `40` |
+| `marge` | non (défaut des paramètres) | `40` |
 | `prix_force` | non | `420000` |
 | `pointures` | non | `39 40 41 42` |
 | `fournisseur`, `ref_fournisseur` | non | `Putian Shoes Co` · `PT-8821` |

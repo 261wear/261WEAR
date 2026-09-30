@@ -9,9 +9,9 @@ import type { Settings } from "@/lib/settings";
 const PRICING: [keyof Settings, string, string][] = [
   ["rmbRate", "Taux de change : 1 RMB = … Ar", "Vérifie le taux avant chaque drop."],
   ["transportPerKg", "Transport Chine → Tana (Ar / kg)", ""],
-  ["defaultWeightKg", "Poids par défaut d'une paire (kg)", "Boîte comprise. Modifiable produit par produit."],
+  ["defaultWeightKg", "Poids de secours (kg)", "Utilisé seulement pour les anciens produits sans poids (le poids est obligatoire pour les nouveaux produits sur commande)."],
   ["marginPct", "Marge par défaut (%)", "Appliquée sur le coût de revient."],
-  ["fixedFees", "Frais fixes par paire (Ar)", "Emballage, livraison à Tana, frais Mobile Money…"],
+  ["fixedFees", "Frais fixes par paire sur commande (Ar)", "Emballage, livraison, frais Mobile Money… Pas appliqués au stock déjà à Tana."],
   ["roundTo", "Arrondir le prix au-dessus à (Ar)", "Ex : 5000 → 187 300 devient 190 000."],
 ];
 
@@ -44,7 +44,8 @@ export function SettingsForm({ settings }: { settings: Settings }) {
           </div>
         ))}
         <p className="rounded-lg bg-paper p-3 text-xs">
-          Prix de vente = (prix RMB × taux + poids × transport + frais fixes) × (1 + marge), arrondi au-dessus.
+          Sur commande : (prix RMB × taux + poids × transport + frais fixes) × (1 + marge), arrondi au-dessus.
+          <br />Disponible de suite : prix d&apos;achat en Ar × (1 + marge), arrondi au-dessus.
         </p>
       </div>
       <div className="space-y-6">

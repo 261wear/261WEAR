@@ -43,6 +43,9 @@ export function productIssues(p: ProductCore): string[] {
   }
   if (p.price_rmb === null && p.cost_ar === null) e.push("Indique un prix fournisseur (RMB) ou un prix d'achat (Ar)");
   if (p.status === "sur_commande" && p.price_rmb === null) e.push("Sur commande : le prix fournisseur en RMB est obligatoire");
+  // A price from China is only complete with the weight (transport is paid per kg).
+  const usesRmb = p.status === "sur_commande" || (p.status !== "en_stock" && p.cost_ar === null && p.price_rmb !== null);
+  if (usesRmb && p.price_rmb !== null && p.weight_kg === null) e.push("Import Chine : le poids est obligatoire (transport au kg)");
   if (p.status === "en_stock" && p.cost_ar === null) e.push("Disponible de suite : le prix d'achat en Ar est obligatoire");
 
   if (p.weight_kg !== null && !(isNum(p.weight_kg) && p.weight_kg >= LIMITS.weightMin && p.weight_kg <= LIMITS.weightMax)) {

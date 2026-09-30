@@ -70,12 +70,15 @@ export function ProductForm({
   const preview = issues.length ? null : computePrice(settings, core);
   const warnings = productWarnings(core, settings);
   // The other way to price this product, when both prices are known.
+  const weightValue = parse(weight);
   const alt =
-    preview && rmbValue != null && costValue != null
+    preview && rmbValue != null && costValue != null && weightValue != null
       ? computePrice(settings, { ...core, status: preview.basis === "ar" ? "sur_commande" : "en_stock" })
       : null;
   const needRmb = status === "sur_commande";
   const needAr = status === "en_stock";
+  // Same rule as the server: a China price needs the weight, stock in Tana does not.
+  const needWeight = needRmb || (status !== "en_stock" && costValue == null && rmbValue != null);
 
   function move(i: number, dir: -1 | 1) {
     setImages((prev) => {
@@ -212,12 +215,15 @@ export function ProductForm({
               Prix d&apos;achat à Tana (Ar) {needAr && <span className="text-red-700">*</span>}
             </label>
             <input form="product-form" id="cost_ar" name="cost_ar" className="input text-lg font-semibold" inputMode="numeric" value={costAr} onChange={(e) => setCostAr(e.target.value)} required={needAr} placeholder="Ex. 210000" />
-            <p className="mt-1 text-xs text-muted">Pour « Disponible de suite » : coût total de la paire déjà à Tana, transport compris.</p>
+            <p className="mt-1 text-xs text-muted">Pour « Disponible de suite » : prix payé pour la paire déjà à Tana. Aucun frais ajouté, seulement ta marge.</p>
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div className={preview?.basis === "ar" ? "opacity-50" : ""}>
-              <label className="label" htmlFor="weight_kg">Poids (kg)</label>
-              <input form="product-form" id="weight_kg" name="weight_kg" className="input" inputMode="decimal" placeholder={String(settings.defaultWeightKg)} value={weight} onChange={(e) => setWeight(e.target.value)} />
+              <label className="label" htmlFor="weight_kg">
+                Poids (kg) {needWeight && <span className="text-red-700">*</span>}
+              </label>
+              <input form="product-form" id="weight_kg" name="weight_kg" className="input" inputMode="decimal" placeholder="Ex. 1,2" value={weight} onChange={(e) => setWeight(e.target.value)} required={needWeight} />
+              <p className="mt-1 text-xs text-muted">{needAr ? "Inutile : déjà à Tana." : "Boîte comprise, pour le transport."}</p>
             </div>
             <div>
               <label className="label" htmlFor="margin_pct">Marge (%)</label>
@@ -242,7 +248,7 @@ export function ProductForm({
                   <div className="flex justify-between"><dt>Transport ({preview.weightKg} kg)</dt><dd>{formatAr(preview.transport)}</dd></div>
                 </>
               )}
-              <div className="flex justify-between"><dt>Frais fixes</dt><dd>{formatAr(preview.fixedFees)}</dd></div>
+              {preview.basis === "rmb" && <div className="flex justify-between"><dt>Frais fixes</dt><dd>{formatAr(preview.fixedFees)}</dd></div>}
               <div className="flex justify-between border-t border-black/10 pt-1.5 font-semibold"><dt>Coût de revient</dt><dd>{formatAr(preview.cost)}</dd></div>
               <div className="flex justify-between"><dt>Marge {preview.overridden ? "" : `(${preview.marginPct} %)`}</dt><dd className={preview.profit > 0 ? "text-green-700" : "text-red-700"}>{formatAr(preview.profit)}</dd></div>
               <div className="flex justify-between border-t border-black/10 pt-2 text-lg font-bold"><dt>Prix de vente</dt><dd>{formatAr(preview.price)}</dd></div>

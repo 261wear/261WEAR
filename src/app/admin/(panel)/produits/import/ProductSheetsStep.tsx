@@ -88,10 +88,15 @@ export function ProductSheetsStep({
         <div className="text-sm">
           <h2 className="text-base font-semibold">1. Prépare ton fichier</h2>
           <p className="mt-1 text-black/70">
-            <b>Nouveau produit</b> : <b>ref</b>, <b>nom</b> et un prix : <b>prix_rmb</b> (sur commande) ou <b>prix_achat_ar</b>{" "}
-            (disponible de suite, transport compris). Facultatives : statut, categorie, description, poids_kg, marge, prix_force,
-            pointures (ex. « 39 40 41 42 »), fournisseur, ref_fournisseur. Poids / marge vides = valeurs des paramètres.
-            Un fournisseur inconnu est créé automatiquement.
+            <b>Nouveau produit</b> : <b>ref</b>, <b>nom</b>, puis selon le cas :
+          </p>
+          <ul className="mt-1 list-disc pl-5 text-black/70">
+            <li><b>Sur commande</b> (import Chine) : <b>prix_rmb</b> et <b>poids_kg</b> obligatoires.</li>
+            <li><b>Disponible de suite</b> (déjà à Tana) : <b>prix_achat_ar</b> seulement. Pas de poids, aucun frais ajouté : prix = achat + ta marge.</li>
+          </ul>
+          <p className="mt-1 text-black/70">
+            Facultatives : statut, categorie, description, marge (vide = paramètres), prix_force, pointures (ex. « 39 40 41 42 »),
+            fournisseur, ref_fournisseur. Un fournisseur inconnu est créé automatiquement.
           </p>
           <p className="mt-1 text-black/70">
             <b>Produit existant</b> (même ref) : la fiche est <b>mise à jour</b>, sans doublon, photos conservées ; une cellule vide
