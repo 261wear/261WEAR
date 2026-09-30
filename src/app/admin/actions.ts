@@ -6,7 +6,17 @@ import { checkPassword, endSession, requireAdmin, startSession } from "@/lib/aut
 import { createOrder, getOrder, updateOrder } from "@/lib/orders";
 import { ALL_STATUS_IDS, normalizePhone } from "@/lib/orders-shared";
 import { depositFor } from "@/lib/pricing";
-import { createProduct, deleteProduct, getProduct, updateProduct, type ProductInput } from "@/lib/products";
+import { isValidRef, MAX_IMPORT_ROWS, normalizeRef, validateRow, type ImportRow } from "@/lib/import";
+import {
+  createProduct,
+  deleteProduct,
+  getProduct,
+  getProductIdByRef,
+  setProductImages,
+  setProductsActive,
+  updateProduct,
+  type ProductInput,
+} from "@/lib/products";
 import { getSettings, saveSettings, type Settings } from "@/lib/settings";
 
 export type FormState = { error?: string; ok?: string } | undefined;
@@ -52,7 +62,15 @@ export async function saveProduct(_prev: FormState, form: FormData): Promise<For
     return { error: "Images invalides." };
   }
 
+  const ref = normalizeRef(str(form, "ref", 60));
+  if (ref && !isValidRef(ref)) return { error: "Référence invalide (lettres, chiffres, - _ .)." };
+  if (ref) {
+    const owner = await getProductIdByRef(ref);
+    if (owner && owner !== id) return { error: `La référence ${ref} est déjà utilisée par un autre produit.` };
+  }
+
   const input: ProductInput = {
+    ref: ref || null,
     name: str(form, "name", 120),
     category: str(form, "category", 60),
     description: str(form, "description", 3000),
@@ -92,6 +110,67 @@ export async function removeProduct(form: FormData) {
   await deleteProduct(Number(form.get("id")));
   revalidatePath("/", "layout");
   redirect("/admin/produits");
+}
+
+// ---------- Bulk import ----------
+
+export type ImportResult = { created: number; updated: number; skipped: { line: number; ref: string; errors: string[] }[] };
+
+// Step 1: product sheets. Rows are matched on their reference: an existing
+// reference is updated (photos and online status kept), a new one is created.
+export async function importProducts(rows: ImportRow[], publish: boolean): Promise<ImportResult> {
+  await requireAdmin();
+  const result: ImportResult = { created: 0, updated: 0, skipped: [] };
+  if (!Array.isArray(rows)) return result;
+  const seen = new Set<string>();
+  for (const raw of rows.slice(0, MAX_IMPORT_ROWS)) {
+    const row = validateRow(raw);
+    if (!row.errors.length && seen.has(row.ref)) row.errors.push("Référence en double");
+    if (row.errors.length) {
+      result.skipped.push({ line: row.line, ref: row.ref, errors: row.errors });
+      continue;
+    }
+    seen.add(row.ref);
+    const fields = {
+      ref: row.ref,
+      name: row.name,
+      category: row.category,
+      description: row.description,
+      price_rmb: row.price_rmb!,
+      weight_kg: row.weight_kg,
+      margin_pct: row.margin_pct,
+      price_override: row.price_override,
+      sizes: row.sizes,
+    };
+    const existingId = await getProductIdByRef(row.ref);
+    const existing = existingId ? await getProduct(existingId) : null;
+    if (existing) {
+      await updateProduct(existing.id, { ...fields, images: existing.images, active: existing.active || publish });
+      result.updated++;
+    } else {
+      await createProduct({ ...fields, images: [], active: publish });
+      result.created++;
+    }
+  }
+  revalidatePath("/", "layout");
+  return result;
+}
+
+// Step 2: attach uploaded photos to a product (in the given order).
+export async function attachProductImages(productId: number, urls: string[], replace: boolean) {
+  await requireAdmin();
+  const product = await getProduct(productId);
+  if (!product || !Array.isArray(urls)) return;
+  const clean = urls.filter((u) => typeof u === "string" && u);
+  const images = [...(replace ? [] : product.images), ...clean].slice(0, 12);
+  await setProductImages(product.id, images);
+  revalidatePath("/", "layout");
+}
+
+export async function publishProducts(ids: number[]) {
+  await requireAdmin();
+  await setProductsActive(ids.filter(Number.isInteger), true);
+  revalidatePath("/", "layout");
 }
 
 // ---------- Orders ----------

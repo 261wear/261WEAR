@@ -11,7 +11,10 @@ export default async function AdminProductsPage() {
     <>
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h1 className="font-display text-3xl">Produits</h1>
-        <Link href="/admin/produits/nouveau" className="btn-dark">+ Ajouter un produit</Link>
+        <div className="flex flex-wrap gap-2">
+          <Link href="/admin/produits/import" className="btn-ghost">Import en masse</Link>
+          <Link href="/admin/produits/nouveau" className="btn-dark">+ Ajouter un produit</Link>
+        </div>
       </div>
       <div className="card mt-6 overflow-x-auto">
         <table className="w-full min-w-[720px] text-left text-sm">
@@ -37,7 +40,10 @@ export default async function AdminProductsPage() {
                     )}
                     <span>
                       <span className="font-semibold underline">{p.name}</span>
-                      <span className="block text-xs text-muted">{p.category} {p.sizes.length ? `· ${p.sizes.join(", ")}` : ""}</span>
+                      <span className="block text-xs text-muted">
+                        {[p.ref, p.category, p.sizes.join(", ")].filter(Boolean).join(" · ")}
+                        {!p.images.length && <span className="ml-1 font-semibold text-amber-700">· sans photo</span>}
+                      </span>
                     </span>
                   </Link>
                 </td>

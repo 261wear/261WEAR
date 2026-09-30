@@ -5,6 +5,7 @@ import { getSettings } from "./settings";
 
 export type Product = {
   id: number;
+  ref: string | null;
   name: string;
   category: string;
   description: string;
@@ -22,6 +23,7 @@ export type PricedProduct = Product & { pricing: PriceBreakdown };
 function toProduct(r: Row): Product {
   return {
     id: r.id,
+    ref: r.ref ?? null,
     name: r.name,
     category: r.category,
     description: r.description,
@@ -58,6 +60,7 @@ export type ProductInput = Omit<Product, "id">;
 
 function params(p: ProductInput) {
   return [
+    p.ref,
     p.name,
     p.category,
     p.description,
@@ -73,9 +76,9 @@ function params(p: ProductInput) {
 
 export async function createProduct(p: ProductInput) {
   const row = await queryOne(
-    `INSERT INTO products (name, category, description, price_rmb, weight_kg, margin_pct,
+    `INSERT INTO products (ref, name, category, description, price_rmb, weight_kg, margin_pct,
        price_override, sizes, images, active)
-     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10) RETURNING id`,
+     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11) RETURNING id`,
     params(p),
   );
   return row!.id as number;
@@ -83,13 +86,27 @@ export async function createProduct(p: ProductInput) {
 
 export async function updateProduct(id: number, p: ProductInput) {
   await query(
-    `UPDATE products SET name=$1, category=$2, description=$3, price_rmb=$4, weight_kg=$5,
-       margin_pct=$6, price_override=$7, sizes=$8, images=$9, active=$10
-     WHERE id = $11`,
+    `UPDATE products SET ref=$1, name=$2, category=$3, description=$4, price_rmb=$5, weight_kg=$6,
+       margin_pct=$7, price_override=$8, sizes=$9, images=$10, active=$11
+     WHERE id = $12`,
     [...params(p), id],
   );
 }
 
 export async function deleteProduct(id: number) {
   await query(`DELETE FROM products WHERE id = $1`, [id]);
+}
+
+export async function getProductIdByRef(ref: string) {
+  const row = await queryOne(`SELECT id FROM products WHERE ref = $1`, [ref]);
+  return row ? (row.id as number) : null;
+}
+
+export async function setProductImages(id: number, images: string[]) {
+  await query(`UPDATE products SET images = $1 WHERE id = $2`, [JSON.stringify(images), id]);
+}
+
+export async function setProductsActive(ids: number[], active: boolean) {
+  if (!ids.length) return;
+  await query(`UPDATE products SET active = $1 WHERE id = ANY($2::int[])`, [active, ids]);
 }

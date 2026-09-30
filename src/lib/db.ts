@@ -49,6 +49,9 @@ const SCHEMA = [
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
   )`,
   `CREATE INDEX IF NOT EXISTS orders_status_idx ON orders (status)`,
+  // Supplier / catalogue reference, used by bulk import to match rows and photos.
+  `ALTER TABLE products ADD COLUMN IF NOT EXISTS ref TEXT`,
+  `CREATE UNIQUE INDEX IF NOT EXISTS products_ref_idx ON products (ref)`,
 ];
 
 const globalForDb = globalThis as unknown as {

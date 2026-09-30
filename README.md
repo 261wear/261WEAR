@@ -27,6 +27,32 @@ Le poids et la marge peuvent être modifiés produit par produit, et un prix peu
 Changer le taux dans « Prix & paramètres » met à jour tous les prix du site. Une commande garde le prix du
 moment où elle a été passée.
 
+## Import en masse (Produits → Import en masse)
+
+**Étape 1 — fiches produits.** Un fichier CSV (Excel : *Enregistrer sous → CSV*) ou un copier-coller de cellules
+depuis Excel / Google Sheets. Un modèle est téléchargeable dans le back-office.
+
+| Colonne | Obligatoire | Exemple |
+| --- | --- | --- |
+| `ref` | oui | `AR261` (lettres, chiffres, `-` `_` `.`) |
+| `nom` | oui | `Air Runner 261 Black` |
+| `prix_rmb` | oui | `150` |
+| `categorie`, `description` | non | `Sneakers` |
+| `poids_kg`, `marge` | non (défaut des paramètres) | `1,2` · `40` |
+| `prix_force` | non | `420000` |
+| `pointures` | non | `39 40 41 42` |
+
+Les en-têtes français ou anglais sont reconnus (Référence/SKU, Nom/Name, Prix/Price…), avec `;`, `,` ou tabulation.
+Un aperçu montre le prix de vente calculé et les erreurs ligne par ligne avant l'import. Réimporter une référence
+existante **met à jour** la fiche (photos et statut conservés), sans doublon. Les nouvelles fiches sont masquées
+par défaut.
+
+**Étape 2 — photos.** Sélectionner toutes les photos (ou un dossier) : chacune est rangée dans le produit dont la
+référence commence son nom de fichier, dans l'ordre du numéro :
+`AR261.jpg` (principale), `AR261-2.jpg`, `AR261_3.png`, `AR261 (4).jpg`. La référence la plus longue gagne
+(`AR261-B-1.jpg` va dans `AR261-B`, pas dans `AR261`). Les photos sans référence connue et les formats non pris en
+charge (HEIC) sont signalés. À la fin, un bouton met en ligne les produits qui viennent de recevoir leurs photos.
+
 ## Statuts de commande
 
 En attente de paiement → Acompte reçu → Commandé chez le fournisseur → Expédié depuis la Chine →

@@ -55,9 +55,15 @@ export function ProductForm({ product, settings }: { product?: Product; settings
         <input type="hidden" name="images" value={JSON.stringify(images)} />
 
         <div className="card space-y-4 p-5">
-          <div>
-            <label className="label" htmlFor="name">Nom du modèle</label>
-            <input id="name" name="name" className="input" defaultValue={product?.name} required />
+          <div className="grid gap-4 sm:grid-cols-[160px_1fr]">
+            <div>
+              <label className="label" htmlFor="ref">Référence</label>
+              <input id="ref" name="ref" className="input uppercase" defaultValue={product?.ref ?? ""} placeholder="AR261" />
+            </div>
+            <div>
+              <label className="label" htmlFor="name">Nom du modèle</label>
+              <input id="name" name="name" className="input" defaultValue={product?.name} required />
+            </div>
           </div>
           <div className="grid gap-4 sm:grid-cols-2">
             <div>
