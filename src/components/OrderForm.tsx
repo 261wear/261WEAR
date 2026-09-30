@@ -4,13 +4,16 @@ import { useFormAction } from "@/components/useFormAction";
 import Link from "next/link";
 import { useState } from "react";
 import { placeOrder } from "@/app/actions";
+import { Button } from "./ui/Button";
+import { FormMessage } from "./ui/FormMessage";
 import { WhatsAppIcon } from "./WhatsAppIcon";
 
 export function OrderForm({ productId, sizes }: { productId: number; sizes: string[] }) {
   const [state, onSubmit, pending] = useFormAction(placeOrder, undefined);
   const [size, setSize] = useState("");
   return (
-    <form onSubmit={onSubmit} className="space-y-5">
+    <form onSubmit={onSubmit} className="space-y-5" aria-busy={pending}>
+      <fieldset disabled={pending} className="contents">
       <input type="hidden" name="productId" value={productId} />
       {sizes.length > 0 && (
         <div>
@@ -51,14 +54,14 @@ export function OrderForm({ productId, sizes }: { productId: number; sizes: stri
         <label className="label" htmlFor="note">Remarque (facultatif)</label>
         <textarea id="note" name="note" rows={2} className="input" />
       </div>
-      {state?.error && <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{state.error}</p>}
-      <button type="submit" disabled={pending} className="btn-dark w-full py-4 text-base">
-        <WhatsAppIcon />
-        {pending ? "Création de la commande…" : "Commander via WhatsApp"}
-      </button>
+      <FormMessage error={state?.error} />
+      <Button type="submit" pending={pending} pendingLabel="Création de la commande…" icon={<WhatsAppIcon />} className="btn-dark w-full py-4 text-base">
+        Commander via WhatsApp
+      </Button>
       <p className="text-center text-xs text-muted">
         Ta commande est enregistrée, puis tu l&apos;envoies sur WhatsApp avec ta capture de paiement.
       </p>
+      </fieldset>
     </form>
   );
 }

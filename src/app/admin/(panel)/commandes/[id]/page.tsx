@@ -2,6 +2,8 @@ import { headers } from "next/headers";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Timeline } from "@/components/Timeline";
+import { SubmitButton } from "@/components/ui/Button";
+import { Img } from "@/components/ui/Img";
 import { WhatsAppIcon } from "@/components/WhatsAppIcon";
 import { setOrderStatus } from "@/app/admin/actions";
 import { getOrder } from "@/lib/orders";
@@ -51,8 +53,7 @@ export default async function AdminOrderPage(props: PageProps<"/admin/commandes/
         <div className="space-y-6">
           <div className="card flex gap-4 p-5">
             {order.product_image && (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img src={order.product_image} alt="" className="h-28 w-28 rounded-xl object-cover" />
+              <Img src={order.product_image} alt="" className="h-28 w-28 rounded-xl object-cover" />
             )}
             <div className="text-sm">
               <p className="text-base font-semibold">
@@ -92,7 +93,7 @@ export default async function AdminOrderPage(props: PageProps<"/admin/commandes/
               <form action={setOrderStatus} className="mt-3">
                 <input type="hidden" name="id" value={order.id} />
                 <input type="hidden" name="status" value={next.id} />
-                <button className="btn-accent w-full">Passer à : {next.label} →</button>
+                <SubmitButton pendingLabel="Mise à jour…" className="btn-accent w-full">Passer à : {next.label} →</SubmitButton>
               </form>
             )}
             <form action={setOrderStatus} className="mt-3 flex flex-wrap gap-2">
@@ -104,7 +105,7 @@ export default async function AdminOrderPage(props: PageProps<"/admin/commandes/
                 <option value={CANCELLED.id}>{CANCELLED.label}</option>
               </select>
               <input name="note" placeholder="Note visible par le client (facultatif)" className="input flex-[2]" />
-              <button className="btn-dark">Appliquer</button>
+              <SubmitButton pendingLabel="Mise à jour…">Appliquer</SubmitButton>
             </form>
             <p className="mt-2 text-xs text-muted">Après chaque changement, clique sur « Prévenir le client » pour lui envoyer la mise à jour.</p>
             <div className="mt-6">

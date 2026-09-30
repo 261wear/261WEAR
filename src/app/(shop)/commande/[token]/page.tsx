@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { Timeline } from "@/components/Timeline";
+import { Img } from "@/components/ui/Img";
 import { WhatsAppIcon } from "@/components/WhatsAppIcon";
 import { getOrderByToken, paidAt } from "@/lib/orders";
 import { orderNumber, waLink } from "@/lib/orders-shared";
@@ -56,8 +57,7 @@ export default async function OrderPage(props: PageProps<"/commande/[token]">) {
 
       <div className="card mt-6 flex gap-4 p-4">
         {order.product_image && (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img src={order.product_image} alt="" className="h-24 w-24 shrink-0 rounded-xl object-cover" />
+          <Img src={order.product_image} alt="" className="h-24 w-24 shrink-0 rounded-xl object-cover" />
         )}
         <div className="min-w-0 flex-1 text-sm">
           <p className="text-base font-semibold">{order.product_name}</p>

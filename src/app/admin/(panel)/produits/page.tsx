@@ -1,5 +1,7 @@
 import Link from "next/link";
 import { toggleProduct } from "@/app/admin/actions";
+import { SubmitButton } from "@/components/ui/Button";
+import { Img } from "@/components/ui/Img";
 import { formatAr } from "@/lib/pricing";
 import { listProducts } from "@/lib/products";
 
@@ -29,8 +31,7 @@ export default async function AdminProductsPage() {
                 <td className="p-3">
                   <Link href={`/admin/produits/${p.id}`} className="flex items-center gap-3">
                     {p.images[0] ? (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img src={p.images[0]} alt="" className="h-12 w-12 rounded-lg object-cover" />
+                      <Img src={p.images[0]} alt="" className="h-12 w-12 rounded-lg object-cover" />
                     ) : (
                       <span className="h-12 w-12 rounded-lg bg-paper" />
                     )}
@@ -50,9 +51,12 @@ export default async function AdminProductsPage() {
                 <td className="p-3">
                   <form action={toggleProduct}>
                     <input type="hidden" name="id" value={p.id} />
-                    <button className={`rounded-full px-3 py-1 text-xs font-semibold ${p.active ? "bg-green-100 text-green-800" : "bg-black/5 text-muted"}`}>
+                    <SubmitButton
+                      aria-label={p.active ? `Masquer ${p.name}` : `Mettre en ligne ${p.name}`}
+                      className={`inline-flex min-w-24 items-center justify-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold disabled:opacity-60 ${p.active ? "bg-green-100 text-green-800" : "bg-black/5 text-muted"}`}
+                    >
                       {p.active ? "En ligne" : "Masqué"}
-                    </button>
+                    </SubmitButton>
                   </form>
                 </td>
               </tr>

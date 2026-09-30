@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { countByStatus, listOrders } from "@/lib/orders";
 import { ALL_STATUS_IDS, displayPhone, orderNumber, statusLabel } from "@/lib/orders-shared";
+import { LinkPending } from "@/components/ui/LinkPending";
 import { formatAr } from "@/lib/pricing";
 import { StatusBadge } from "./StatusBadge";
 
@@ -18,7 +19,7 @@ export default async function OrdersPage(props: PageProps<"/admin">) {
         filter === id ? "bg-ink text-white" : "bg-white hover:bg-black/5"
       }`}
     >
-      {label} <span className="opacity-60">{n}</span>
+      {label} <span className="opacity-60">{n}</span> <LinkPending />
     </Link>
   );
 

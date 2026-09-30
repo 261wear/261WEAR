@@ -2,6 +2,8 @@
 
 import { useFormAction } from "@/components/useFormAction";
 import { updateSettings } from "@/app/admin/actions";
+import { Button } from "@/components/ui/Button";
+import { FormMessage } from "@/components/ui/FormMessage";
 import type { Settings } from "@/lib/settings";
 
 const PRICING: [keyof Settings, string, string][] = [
@@ -55,9 +57,8 @@ export function SettingsForm({ settings }: { settings: Settings }) {
             </div>
           ))}
         </div>
-        {state?.error && <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{state.error}</p>}
-        {state?.ok && <p className="rounded-lg bg-green-50 px-3 py-2 text-sm text-green-800">{state.ok}</p>}
-        <button className="btn-dark w-full py-4" disabled={pending}>{pending ? "Enregistrement…" : "Enregistrer"}</button>
+        <FormMessage error={state?.error} ok={pending ? undefined : state?.ok} />
+        <Button type="submit" pending={pending} pendingLabel="Enregistrement…" className="btn-dark w-full py-4">Enregistrer</Button>
       </div>
     </form>
   );

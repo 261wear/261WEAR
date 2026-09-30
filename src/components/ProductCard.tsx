@@ -1,14 +1,14 @@
 import Link from "next/link";
 import type { PricedProduct } from "@/lib/products";
 import { formatAr } from "@/lib/pricing";
+import { Img } from "./ui/Img";
 
 export function ProductCard({ product }: { product: PricedProduct }) {
   return (
     <Link href={`/produit/${product.id}`} className="group block">
       <div className="aspect-square overflow-hidden rounded-2xl bg-white">
         {product.images[0] ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
+          <Img
             src={product.images[0]}
             alt={product.name}
             loading="lazy"

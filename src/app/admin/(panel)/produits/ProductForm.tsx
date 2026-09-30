@@ -1,9 +1,12 @@
 "use client";
 
 import { useFormAction } from "@/components/useFormAction";
-import { useState, useTransition } from "react";
+import { useState } from "react";
 import { removeProduct, saveProduct } from "@/app/admin/actions";
-import { uploadImage } from "@/components/admin/upload";
+import { PendingTiles, UploadTile, useUploads } from "@/components/admin/UploadTile";
+import { Button, SubmitButton } from "@/components/ui/Button";
+import { FormMessage } from "@/components/ui/FormMessage";
+import { Img } from "@/components/ui/Img";
 import { computePrice, formatAr, type PricingSettings } from "@/lib/pricing";
 import type { Product } from "@/lib/products";
 
@@ -18,8 +21,7 @@ export function ProductForm({ product, settings }: { product?: Product; settings
   const [state, onSubmit, pending] = useFormAction(saveProduct, undefined);
   const [images, setImages] = useState<string[]>(product?.images ?? []);
   const [imageUrl, setImageUrl] = useState("");
-  const [uploading, startUpload] = useTransition();
-  const [uploadError, setUploadError] = useState("");
+  const uploads = useUploads("products", (url) => setImages((prev) => [...prev, url]));
   const [rmb, setRmb] = useState(product ? String(product.price_rmb) : "");
   const [weight, setWeight] = useState(product?.weight_kg != null ? String(product.weight_kg) : "");
   const [margin, setMargin] = useState(product?.margin_pct != null ? String(product.margin_pct) : "");
@@ -35,21 +37,6 @@ export function ProductForm({ product, settings }: { product?: Product; settings
           price_override: parse(override),
         })
       : null;
-
-  function onFiles(files: FileList | null) {
-    if (!files?.length) return;
-    setUploadError("");
-    startUpload(async () => {
-      try {
-        for (const file of Array.from(files)) {
-          const url = await uploadImage(file, "products");
-          setImages((prev) => [...prev, url]);
-        }
-      } catch (err) {
-        setUploadError((err as Error).message);
-      }
-    });
-  }
 
   function move(i: number, dir: -1 | 1) {
     setImages((prev) => {
@@ -101,8 +88,7 @@ export function ProductForm({ product, settings }: { product?: Product; settings
           <div className="mt-4 grid grid-cols-3 gap-3 sm:grid-cols-4">
             {images.map((src, i) => (
               <div key={src} className="relative">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={src} alt="" className="aspect-square w-full rounded-lg border border-black/10 object-cover" />
+                <Img src={src} alt="" className="aspect-square w-full rounded-lg border border-black/10 object-cover" />
                 <div className="absolute inset-x-1 bottom-1 flex justify-between">
                   <button type="button" onClick={() => move(i, -1)} className="rounded bg-black/70 px-1.5 text-xs text-white">←</button>
                   <button type="button" onClick={() => setImages(images.filter((u) => u !== src))} className="rounded bg-red-600 px-1.5 text-xs text-white">✕</button>
@@ -110,11 +96,8 @@ export function ProductForm({ product, settings }: { product?: Product; settings
                 </div>
               </div>
             ))}
-            <label className="flex aspect-square cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed border-black/20 text-center text-xs text-muted hover:border-black">
-              <span className="text-2xl">+</span>
-              {uploading ? "Envoi…" : "Ajouter"}
-              <input type="file" accept="image/*" multiple className="sr-only" onChange={(e) => onFiles(e.target.files)} disabled={uploading} />
-            </label>
+            <PendingTiles count={uploads.remaining} className="aspect-square" />
+            <UploadTile label="Ajouter" className="aspect-square" pending={uploads.pending} progress={uploads.progress} onFiles={uploads.upload} />
           </div>
           <div className="mt-3 flex gap-2">
             <input value={imageUrl} onChange={(e) => setImageUrl(e.target.value)} placeholder="…ou coller l'URL d'une image" className="input" />
@@ -129,13 +112,20 @@ export function ProductForm({ product, settings }: { product?: Product; settings
               Ajouter
             </button>
           </div>
-          {uploadError && <p className="mt-2 text-sm text-red-700">{uploadError}</p>}
+          {uploads.error && <div className="mt-2"><FormMessage error={uploads.error} /></div>}
         </div>
 
-        {state?.error && <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{state.error}</p>}
-        <button className="btn-dark w-full py-4" disabled={pending || uploading}>
-          {pending ? "Enregistrement…" : product ? "Enregistrer les modifications" : "Ajouter le produit"}
-        </button>
+        <FormMessage error={state?.error} />
+        <Button
+          type="submit"
+          pending={pending}
+          pendingLabel="Enregistrement…"
+          disabled={uploads.pending}
+          title={uploads.pending ? "Attends la fin de l'envoi des photos" : undefined}
+          className="btn-dark w-full py-4"
+        >
+          {uploads.pending ? "Envoi des photos en cours…" : product ? "Enregistrer les modifications" : "Ajouter le produit"}
+        </Button>
       </form>
 
       <aside className="space-y-4">
@@ -178,7 +168,7 @@ export function ProductForm({ product, settings }: { product?: Product; settings
         {product && (
           <form action={removeProduct} onSubmit={(e) => { if (!confirm("Supprimer ce produit ?")) e.preventDefault(); }}>
             <input type="hidden" name="id" value={product.id} />
-            <button className="w-full text-sm text-red-700 hover:underline">Supprimer le produit</button>
+            <SubmitButton pendingLabel="Suppression…" className="inline-flex w-full items-center justify-center gap-2 text-sm text-red-700 hover:underline disabled:opacity-50">Supprimer le produit</SubmitButton>
           </form>
         )}
       </aside>

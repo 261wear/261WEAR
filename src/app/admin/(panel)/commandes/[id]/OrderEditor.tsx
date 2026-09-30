@@ -1,9 +1,11 @@
 "use client";
 
 import { useFormAction } from "@/components/useFormAction";
-import { useState, useTransition } from "react";
 import { addProof, removeProof, saveOrderDetails } from "@/app/admin/actions";
-import { uploadImage } from "@/components/admin/upload";
+import { PendingTiles, UploadTile, useUploads } from "@/components/admin/UploadTile";
+import { Button, SubmitButton } from "@/components/ui/Button";
+import { FormMessage } from "@/components/ui/FormMessage";
+import { Img } from "@/components/ui/Img";
 
 type Props = {
   id: number;
@@ -17,22 +19,7 @@ type Props = {
 
 export function OrderEditor(p: Props) {
   const [state, onSubmit, pending] = useFormAction(saveOrderDetails, undefined);
-  const [uploading, startUpload] = useTransition();
-  const [uploadError, setUploadError] = useState("");
-
-  function onFiles(files: FileList | null) {
-    if (!files?.length) return;
-    setUploadError("");
-    startUpload(async () => {
-      try {
-        for (const file of Array.from(files)) {
-          await addProof(p.id, await uploadImage(file, "proofs"));
-        }
-      } catch (err) {
-        setUploadError((err as Error).message);
-      }
-    });
-  }
+  const uploads = useUploads("proofs", (url) => addProof(p.id, url));
 
   return (
     <div className="space-y-6">
@@ -59,9 +46,8 @@ export function OrderEditor(p: Props) {
           <label className="label" htmlFor="admin_note">Note interne</label>
           <textarea id="admin_note" name="admin_note" rows={3} className="input" defaultValue={p.adminNote} placeholder="Réf. MVola, fournisseur, prix d'achat réel…" />
         </div>
-        {state?.error && <p className="text-sm text-red-700">{state.error}</p>}
-        {state?.ok && <p className="text-sm text-green-700">{state.ok}</p>}
-        <button className="btn-dark" disabled={pending}>Enregistrer</button>
+        <FormMessage error={state?.error} ok={pending ? undefined : state?.ok} />
+        <Button type="submit" pending={pending} pendingLabel="Enregistrement…">Enregistrer</Button>
       </form>
 
       <div className="card p-5">
@@ -71,23 +57,19 @@ export function OrderEditor(p: Props) {
           {p.proofs.map((url) => (
             <div key={url} className="group relative">
               <a href={url} target="_blank" rel="noopener">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={url} alt="Preuve de paiement" className="aspect-[3/4] w-full rounded-lg border border-black/10 object-cover" />
+                <Img src={url} alt="Preuve de paiement" className="aspect-[3/4] w-full rounded-lg border border-black/10 object-cover" />
               </a>
               <form action={removeProof}>
                 <input type="hidden" name="id" value={p.id} />
                 <input type="hidden" name="url" value={url} />
-                <button className="absolute top-1 right-1 rounded-full bg-black/70 px-2 text-xs text-white" aria-label="Supprimer">✕</button>
+                <SubmitButton className="absolute top-1 right-1 inline-flex h-6 min-w-6 items-center justify-center rounded-full bg-black/70 px-1.5 text-xs text-white" aria-label="Supprimer la capture">✕</SubmitButton>
               </form>
             </div>
           ))}
-          <label className="flex aspect-[3/4] cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed border-black/20 text-center text-xs text-muted hover:border-black">
-            <span className="text-2xl">+</span>
-            {uploading ? "Envoi…" : "Ajouter une capture"}
-            <input type="file" accept="image/*" multiple className="sr-only" onChange={(e) => onFiles(e.target.files)} disabled={uploading} />
-          </label>
+          <PendingTiles count={uploads.remaining} className="aspect-[3/4]" />
+          <UploadTile label="Ajouter une capture" className="aspect-[3/4]" pending={uploads.pending} progress={uploads.progress} onFiles={uploads.upload} />
         </div>
-        {uploadError && <p className="mt-2 text-sm text-red-700">{uploadError}</p>}
+        {uploads.error && <div className="mt-2"><FormMessage error={uploads.error} /></div>}
       </div>
     </div>
   );

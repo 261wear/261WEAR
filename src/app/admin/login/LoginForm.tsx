@@ -1,6 +1,8 @@
 "use client";
 
 import { useFormAction } from "@/components/useFormAction";
+import { Button } from "@/components/ui/Button";
+import { FormMessage } from "@/components/ui/FormMessage";
 import { login } from "../actions";
 
 export function LoginForm() {
@@ -11,8 +13,8 @@ export function LoginForm() {
         <label className="label" htmlFor="password">Mot de passe</label>
         <input id="password" name="password" type="password" className="input" autoFocus required />
       </div>
-      {state?.error && <p className="text-sm text-red-700">{state.error}</p>}
-      <button className="btn-dark w-full" disabled={pending}>Se connecter</button>
+      <FormMessage error={state?.error} />
+      <Button type="submit" pending={pending} pendingLabel="Connexion…" className="btn-dark w-full">Se connecter</Button>
     </form>
   );
 }

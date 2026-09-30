@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { Logo } from "@/components/Logo";
+import { SubmitButton } from "@/components/ui/Button";
 import { requireAdmin } from "@/lib/auth";
 import { logout } from "../actions";
 
@@ -20,7 +21,7 @@ export default async function AdminLayout({ children }: LayoutProps<"/admin">) {
             <Link href="/" target="_blank" className="text-white/60 hover:text-accent">Voir le site ↗</Link>
           </nav>
           <form action={logout}>
-            <button className="text-sm text-white/60 hover:text-white">Déconnexion</button>
+            <SubmitButton pendingLabel="Déconnexion…" className="inline-flex items-center gap-2 text-sm text-white/60 hover:text-white">Déconnexion</SubmitButton>
           </form>
         </div>
       </header>

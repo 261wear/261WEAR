@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { Img } from "./ui/Img";
 
 export function Gallery({ images, alt }: { images: string[]; alt: string }) {
   const [active, setActive] = useState(0);
@@ -10,8 +11,7 @@ export function Gallery({ images, alt }: { images: string[]; alt: string }) {
   return (
     <div>
       <div className="aspect-square overflow-hidden rounded-2xl bg-white">
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src={images[active]} alt={alt} className="h-full w-full object-cover" />
+        <Img key={images[active]} src={images[active]} alt={alt} className="h-full w-full object-cover" />
       </div>
       {images.length > 1 && (
         <div className="mt-3 grid grid-cols-5 gap-2">
@@ -20,10 +20,11 @@ export function Gallery({ images, alt }: { images: string[]; alt: string }) {
               key={src}
               type="button"
               onClick={() => setActive(i)}
+              aria-label={`Photo ${i + 1}`}
+              aria-pressed={i === active}
               className={`aspect-square overflow-hidden rounded-lg border-2 bg-white ${i === active ? "border-ink" : "border-transparent"}`}
             >
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={src} alt="" className="h-full w-full object-cover" />
+              <Img src={src} alt="" className="h-full w-full object-cover" />
             </button>
           ))}
         </div>

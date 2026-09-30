@@ -2,6 +2,8 @@
 
 import { useFormAction } from "@/components/useFormAction";
 import { trackOrder } from "@/app/actions";
+import { Button } from "@/components/ui/Button";
+import { FormMessage } from "@/components/ui/FormMessage";
 
 export function TrackForm({ defaultNumber }: { defaultNumber?: string }) {
   const [state, onSubmit, pending] = useFormAction(trackOrder, undefined);
@@ -15,8 +17,8 @@ export function TrackForm({ defaultNumber }: { defaultNumber?: string }) {
         <label className="label" htmlFor="phone">Téléphone utilisé pour la commande</label>
         <input id="phone" name="phone" className="input" inputMode="tel" placeholder="034 12 345 67" required />
       </div>
-      {state?.error && <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{state.error}</p>}
-      <button className="btn-dark w-full" disabled={pending}>{pending ? "Recherche…" : "Suivre mon colis"}</button>
+      <FormMessage error={state?.error} />
+      <Button type="submit" pending={pending} pendingLabel="Recherche…" className="btn-dark w-full">Suivre mon colis</Button>
     </form>
   );
 }

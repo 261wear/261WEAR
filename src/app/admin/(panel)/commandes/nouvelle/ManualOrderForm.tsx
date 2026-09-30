@@ -3,6 +3,8 @@
 import { useFormAction } from "@/components/useFormAction";
 import { useState } from "react";
 import { createManualOrder } from "@/app/admin/actions";
+import { Button } from "@/components/ui/Button";
+import { FormMessage } from "@/components/ui/FormMessage";
 
 type Option = { id: number; name: string; price: number; sizes: string[] };
 
@@ -54,8 +56,8 @@ export function ManualOrderForm({ products }: { products: Option[] }) {
         <label className="label" htmlFor="note">Note</label>
         <textarea id="note" name="note" className="input" rows={2} />
       </div>
-      {state?.error && <p className="text-sm text-red-700">{state.error}</p>}
-      <button className="btn-dark" disabled={pending || !products.length}>Créer la commande</button>
+      <FormMessage error={state?.error} />
+      <Button type="submit" pending={pending} pendingLabel="Création…" disabled={!products.length}>Créer la commande</Button>
     </form>
   );
 }
