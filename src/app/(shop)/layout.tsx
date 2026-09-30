@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { Logo } from "@/components/Logo";
-import { WhatsAppIcon } from "@/components/WhatsAppIcon";
+import { FloatingWhatsApp } from "@/components/FloatingWhatsApp";
 import { waLink } from "@/lib/orders-shared";
 import { getSettings } from "@/lib/settings";
 
@@ -42,15 +42,7 @@ export default async function ShopLayout({ children }: LayoutProps<"/">) {
         </div>
         <p className="border-t border-white/10 py-5 text-center text-xs">© {new Date().getFullYear()} 261 WEAR · Antananarivo, Madagascar</p>
       </footer>
-      <a
-        href={wa}
-        target="_blank"
-        rel="noopener"
-        aria-label="Nous écrire sur WhatsApp"
-        className="fixed right-4 bottom-4 z-40 flex h-14 w-14 items-center justify-center rounded-full bg-[#25D366] text-white shadow-lg transition hover:scale-105"
-      >
-        <WhatsAppIcon className="h-7 w-7" />
-      </a>
+      <FloatingWhatsApp href={wa} />
     </>
   );
 }

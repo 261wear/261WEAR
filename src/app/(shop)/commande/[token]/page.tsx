@@ -27,6 +27,8 @@ export default async function OrderPage(props: PageProps<"/commande/[token]">) {
   const awaitingPayment = order.status === "en_attente_paiement";
   const remaining = Math.max(order.total - order.amount_paid, 0);
   const paid = paidAt(order);
+  const delivered = order.status === "livre";
+  const deliveredAt = [...order.history].reverse().find((h) => h.status === "livre")?.at;
 
   const message = [
     `Bonjour 261 WEAR ! 👟`,
@@ -68,7 +70,7 @@ export default async function OrderPage(props: PageProps<"/commande/[token]">) {
       {awaitingPayment && (
         <div className="card mt-6 p-5">
           <h2 className="font-semibold">1. Paie l&apos;acompte de {formatAr(order.deposit)}</h2>
-          <p className="mt-2 rounded-lg bg-paper p-3 font-mono text-sm whitespace-pre-line">{settings.paymentInfo}</p>
+          <p className="mt-2 rounded-lg bg-paper p-3 text-sm font-medium whitespace-pre-line">{settings.paymentInfo}</p>
           <p className="mt-2 text-xs text-muted">Référence à indiquer : {number}</p>
           <h2 className="mt-5 font-semibold">2. Envoie la commande et la capture sur WhatsApp</h2>
           <a
@@ -85,7 +87,9 @@ export default async function OrderPage(props: PageProps<"/commande/[token]">) {
       <div className="card mt-6 p-5">
         <h2 className="font-semibold">Suivi du colis</h2>
         <p className="mt-1 text-sm text-black/60">
-          {paid
+          {delivered && deliveredAt
+            ? `Livrée le ${new Date(deliveredAt).toLocaleDateString("fr-FR", { day: "numeric", month: "long", timeZone: "Indian/Antananarivo" })}. Merci pour ta confiance !`
+            : paid
             ? `Livraison estimée entre le ${addDays(paid, settings.deliveryMinDays)} et le ${addDays(paid, settings.deliveryMaxDays)}.`
             : `Livraison en ${settings.deliveryMinDays} à ${settings.deliveryMaxDays} jours après confirmation du paiement.`}
         </p>
@@ -94,6 +98,24 @@ export default async function OrderPage(props: PageProps<"/commande/[token]">) {
           <Timeline status={order.status} history={order.history} />
         </div>
       </div>
+
+      {delivered && (
+        <div className="card mt-6 p-5 text-center">
+          <p className="font-display text-2xl">Bienvenue dans la #261Family 🙌</p>
+          <p className="mt-1 text-sm text-black/60">Ton avis compte : envoie-nous une photo de toi avec ta paire.</p>
+          <a
+            href={waLink(
+              settings.whatsapp,
+              `Bonjour 261 WEAR ! J'ai bien reçu ma commande N° ${number} (${order.product_name}).\n\nMon avis : \n\n(Je joins une photo de moi avec ma paire 📸)`,
+            )}
+            target="_blank"
+            rel="noopener"
+            className="btn-accent mt-4 w-full"
+          >
+            <WhatsAppIcon /> Donner mon avis + photo
+          </a>
+        </div>
+      )}
 
       {!awaitingPayment && (
         <a href={waLink(settings.whatsapp, message)} target="_blank" rel="noopener" className="btn-ghost mt-6 w-full">
