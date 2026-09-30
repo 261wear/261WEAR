@@ -1,5 +1,7 @@
 import Link from "next/link";
-import { countByStatus, listOrders } from "@/lib/orders";
+import { Pagination } from "@/components/Pagination";
+import { countByStatus, listOrdersPage, recentOrders } from "@/lib/orders";
+import { pageParam, paginate } from "@/lib/pagination";
 import { ALL_STATUS_IDS, displayPhone, normalizePhone, orderNumber, parseOrderNumber, statusLabel } from "@/lib/orders-shared";
 import { Highlight } from "@/components/Highlight";
 import { scoreFields, tokenize } from "@/lib/search";
@@ -7,11 +9,19 @@ import { LinkPending } from "@/components/ui/LinkPending";
 import { formatAr } from "@/lib/pricing";
 import { StatusBadge } from "./StatusBadge";
 
+const PAGE_SIZE = 50;
+
 export default async function OrdersPage(props: PageProps<"/admin">) {
-  const { statut, q: rawQ } = await props.searchParams;
+  const { statut, q: rawQ, page: rawPage } = await props.searchParams;
   const filter = typeof statut === "string" && ALL_STATUS_IDS.includes(statut) ? statut : undefined;
   const q = typeof rawQ === "string" ? rawQ.slice(0, 80) : "";
-  const [allOrders, counts] = await Promise.all([listOrders(filter), countByStatus()]);
+  const page = pageParam(rawPage);
+  // Without a search the database paginates; a search scans the 5 000 latest orders.
+  const [source, counts] = await Promise.all([
+    q ? recentOrders(filter).then((orders) => ({ orders, total: orders.length })) : listOrdersPage(filter, page, PAGE_SIZE),
+    countByStatus(),
+  ]);
+  const allOrders = source.orders;
 
   // Search by order number, phone (any format), customer or product name.
   const byNumber = parseOrderNumber(q);
@@ -26,6 +36,18 @@ export default async function OrdersPage(props: PageProps<"/admin">) {
       )
     : allOrders;
   const total = Object.values(counts).reduce((a, b) => a + b, 0);
+  const pageData = q
+    ? paginate(orders, page, PAGE_SIZE)
+    : (() => {
+        const pageCount = Math.max(1, Math.ceil(source.total / PAGE_SIZE));
+        const from = source.total ? (page - 1) * PAGE_SIZE + 1 : 0;
+        return { items: orders, page: Math.min(page, pageCount), pageCount, total: source.total, from, to: from ? from + orders.length - 1 : 0 };
+      })();
+  const pageHref = (n: number) => {
+    const params = new URLSearchParams({ ...(filter && { statut: filter }), ...(q && { q }), ...(n > 1 && { page: String(n) }) });
+    const s = params.toString();
+    return `/admin${s ? `?${s}` : ""}`;
+  };
 
   const tab = (id: string | undefined, label: string, n: number) => (
     <Link
@@ -69,7 +91,7 @@ export default async function OrdersPage(props: PageProps<"/admin">) {
             </tr>
           </thead>
           <tbody>
-            {orders.map((o) => (
+            {pageData.items.map((o) => (
               <tr key={o.id} className="border-b border-black/5 last:border-0 hover:bg-paper">
                 <td className="p-3 font-semibold">
                   <Link href={`/admin/commandes/${o.id}`} className="underline">{orderNumber(o.id)}</Link>
@@ -91,7 +113,7 @@ export default async function OrdersPage(props: PageProps<"/admin">) {
                 <td className="p-3 text-muted">{o.created_at.toLocaleDateString("fr-FR", { timeZone: "Indian/Antananarivo" })}</td>
               </tr>
             ))}
-            {!orders.length && (
+            {!pageData.items.length && (
               <tr>
                 <td colSpan={7} className="p-10 text-center text-muted">{q ? `Aucune commande pour « ${q} ».` : "Aucune commande."}</td>
               </tr>
@@ -99,6 +121,12 @@ export default async function OrdersPage(props: PageProps<"/admin">) {
           </tbody>
         </table>
       </div>
+      {pageData.total > 0 && (
+        <p className="mt-3 text-center text-xs text-muted">
+          {pageData.from}–{pageData.to} sur {pageData.total} commande{pageData.total > 1 ? "s" : ""}
+        </p>
+      )}
+      <Pagination page={pageData.page} pageCount={pageData.pageCount} hrefFor={pageHref} label="Pages de commandes" />
     </>
   );
 }

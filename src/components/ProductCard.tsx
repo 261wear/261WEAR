@@ -1,3 +1,4 @@
+import { thumbUrl } from "@/lib/images";
 import Link from "next/link";
 import type { ShopProduct } from "@/lib/catalog";
 import { formatAr } from "@/lib/pricing";
@@ -5,16 +6,18 @@ import { Highlight } from "./Highlight";
 import { FreshBadge, StatusBadge } from "./ProductBadges";
 import { Img } from "./ui/Img";
 
-export function ProductCard({ product, query = "" }: { product: ShopProduct; query?: string }) {
+export function ProductCard({ product, query = "", priority = false }: { product: ShopProduct; query?: string; priority?: boolean }) {
   const soldOut = product.status === "epuise";
   return (
     <Link href={`/produit/${product.id}`} className="group block">
       <div className="relative aspect-square overflow-hidden rounded-2xl bg-white">
         {product.images[0] ? (
           <Img
-            src={product.images[0]}
+            src={thumbUrl(product.images[0])}
+            fallback={product.images[0]}
             alt={product.name}
-            loading="lazy"
+            loading={priority ? "eager" : "lazy"}
+            fetchPriority={priority ? "high" : "auto"}
             className={`h-full w-full object-cover transition duration-500 group-hover:scale-105 ${soldOut ? "opacity-50 grayscale" : ""}`}
           />
         ) : (

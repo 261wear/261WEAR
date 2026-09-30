@@ -1,5 +1,6 @@
 "use client";
 
+import { thumbUrl } from "@/lib/images";
 import { useFormAction } from "@/components/useFormAction";
 import { useState } from "react";
 import { removeProduct, saveProduct } from "@/app/admin/actions";
@@ -160,7 +161,7 @@ export function ProductForm({
           <div className="mt-4 grid grid-cols-3 gap-3 sm:grid-cols-4">
             {images.map((src, i) => (
               <div key={src} className="relative">
-                <Img src={src} alt="" className="aspect-square w-full rounded-lg border border-black/10 object-cover" />
+                <Img src={thumbUrl(src)} fallback={src} alt="" className="aspect-square w-full rounded-lg border border-black/10 object-cover" />
                 <div className="absolute inset-x-1 bottom-1 flex justify-between">
                   <button type="button" onClick={() => move(i, -1)} className="rounded bg-black/70 px-1.5 text-xs text-white">←</button>
                   <button type="button" onClick={() => setImages(images.filter((u) => u !== src))} className="rounded bg-red-600 px-1.5 text-xs text-white">✕</button>

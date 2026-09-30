@@ -145,6 +145,23 @@ puis appeler `GET /me/accounts` : le `access_token` de la Page 261 WEAR est le j
 que le mot de passe et les droits ne changent pas). Le back-office affiche « Connecté à la Page … » quand tout est bon.
 Sans configuration, l'écran permet de copier le texte et de télécharger les photos pour publier à la main.
 
+## Gros volumes, pagination et photos
+
+- **Miniatures** : chaque photo produit est enregistrée en deux tailles au moment de l'upload (grande 1600 px et
+  miniature 600 px `…-t.jpg`). Listes, cartes, recherche et vignettes chargent la miniature ; la fiche produit
+  charge la grande. Une ancienne photo sans miniature s'affiche quand même (repli automatique sur l'originale).
+- **Galerie produit** : swipe sur mobile, flèches, compteur « 2 / 5 », points, vignettes cliquables et flèches du
+  clavier. Seule la première photo est chargée tout de suite, les autres au fil du défilement.
+- **Pagination** : boutique (recherche 24 modèles par page, accueil limité aux 12 dernières nouveautés avec un
+  lien « Voir les N modèles »), back-office produits et commandes (50 par page, en SQL pour les commandes).
+  Changer un filtre ramène à la page 1 ; une page hors limites affiche la dernière.
+- **Actions groupées** (Produits) : cocher des lignes, ou « Sélectionner les N résultats » d'un filtre, puis changer
+  le statut en une fois (chaque produit est vérifié : un produit incomplet est refusé et listé) ou les publier sur
+  Facebook.
+- **Filtre fournisseur** : depuis la fiche d'un fournisseur, « Voir tous ses produits » ouvre la liste filtrée.
+- **Cache catalogue** : la boutique garde le catalogue 15 s en mémoire, vidé immédiatement à chaque modification
+  dans le back-office. Index SQL sur statut, date de publication et date de commande.
+
 ## Sécurité
 
 - Back-office : chaque action vérifie la session (une action rejouée sans session est sans effet) ; connexion limitée

@@ -76,6 +76,10 @@ const SCHEMA = [
   // Purchase price in Ariary for stock already in Tana; RMB price becomes optional.
   `ALTER TABLE products ADD COLUMN IF NOT EXISTS cost_ar INTEGER`,
   `ALTER TABLE products ALTER COLUMN price_rmb DROP NOT NULL`,
+  // Large catalogues: lists filter by status and sort by date.
+  `CREATE INDEX IF NOT EXISTS products_status_idx ON products (status, published_at DESC)`,
+  `CREATE INDEX IF NOT EXISTS products_created_idx ON products (created_at DESC)`,
+  `CREATE INDEX IF NOT EXISTS orders_created_idx ON orders (created_at DESC)`,
   `CREATE TABLE IF NOT EXISTS fb_posts (
     id SERIAL PRIMARY KEY,
     fb_post_id TEXT,

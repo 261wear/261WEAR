@@ -90,10 +90,22 @@ export async function createOrder(o: NewOrder) {
   return toOrder(row!);
 }
 
-export async function listOrders(status?: string) {
+// One page of orders, paginated by the database (any volume).
+export async function listOrdersPage(status: string | undefined, page: number, size: number) {
+  const where = status ? `WHERE status = $1` : "";
+  const args = status ? [status] : [];
+  const [rows, count] = await Promise.all([
+    query(`SELECT * FROM orders ${where} ORDER BY id DESC LIMIT ${size} OFFSET ${(page - 1) * size}`, args),
+    query(`SELECT COUNT(*)::int AS n FROM orders ${where}`, args),
+  ]);
+  return { orders: rows.map(toOrder), total: Number(count[0]?.n ?? 0) };
+}
+
+// For searching: the most recent orders (bounded, newest first).
+export async function recentOrders(status: string | undefined, limit = 5000) {
   const rows = status
-    ? await query(`SELECT * FROM orders WHERE status = $1 ORDER BY id DESC`, [status])
-    : await query(`SELECT * FROM orders ORDER BY id DESC LIMIT 500`);
+    ? await query(`SELECT * FROM orders WHERE status = $1 ORDER BY id DESC LIMIT ${limit}`, [status])
+    : await query(`SELECT * FROM orders ORDER BY id DESC LIMIT ${limit}`);
   return rows.map(toOrder);
 }
 

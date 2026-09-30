@@ -1,4 +1,5 @@
 import "server-only";
+import { query } from "./db";
 import { freshness, type Freshness, type ProductStatus } from "./product-status";
 import { listProducts, type PricedProduct } from "./products";
 import { scoreFields, tokenize } from "./search";
@@ -23,9 +24,26 @@ export type CatalogQuery = {
   tri?: string;
 };
 
+// The public catalogue is read on every search keystroke: keep it in memory a
+// few seconds. Every back-office write clears it (invalidateCatalog), so the
+// instance that made the change is always up to date.
+const CACHE_MS = 15_000;
+const globalCache = globalThis as unknown as { __catalog?: { at: number; data: Promise<ShopProduct[]> } };
+
+export function invalidateCatalog() {
+  globalCache.__catalog = undefined;
+}
+
 export async function shopProducts(): Promise<ShopProduct[]> {
-  const [products, settings] = await Promise.all([listProducts({ onlyActive: true }), getSettings()]);
-  return products.map((p) => ({ ...p, fresh: freshness(p, settings.badgeDays) }));
+  const hit = globalCache.__catalog;
+  if (hit && Date.now() - hit.at < CACHE_MS) return hit.data;
+  const data = (async () => {
+    const [products, settings] = await Promise.all([listProducts({ onlyActive: true }), getSettings()]);
+    return products.map((p) => ({ ...p, fresh: freshness(p, settings.badgeDays) }));
+  })();
+  globalCache.__catalog = { at: Date.now(), data };
+  data.catch(() => invalidateCatalog());
+  return data;
 }
 
 function fields(p: PricedProduct) {
@@ -106,7 +124,11 @@ export async function suggest(q: string) {
   };
 }
 
+// Shown in the header on every page: counted by the database, not in memory.
 export async function popularCategories() {
-  const all = await shopProducts();
-  return countBy(all, (p) => [p.category]).sort((a, b) => b.count - a.count).slice(0, 6);
+  const rows = await query(
+    `SELECT category AS value, COUNT(*)::int AS count FROM products
+     WHERE status <> 'brouillon' AND category <> '' GROUP BY category ORDER BY count DESC, category LIMIT 6`,
+  );
+  return rows.map((r) => ({ value: String(r.value), count: Number(r.count) }));
 }

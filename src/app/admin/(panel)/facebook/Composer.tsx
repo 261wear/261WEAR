@@ -1,5 +1,6 @@
 "use client";
 
+import { thumbUrl } from "@/lib/images";
 import { useMemo, useState, useTransition } from "react";
 import { publishToFacebook, type PublishResult } from "@/app/admin/actions";
 import { Button } from "@/components/ui/Button";
@@ -77,6 +78,7 @@ export function Composer({
     return out;
   });
   const [search, setSearch] = useState("");
+  const [limit, setLimit] = useState(40);
   const [custom, setCustom] = useState<string | null>(null);
   const [schedule, setSchedule] = useState(false);
   const [when, setWhen] = useState("");
@@ -88,10 +90,13 @@ export function Composer({
   const message = custom ?? generated;
   const hidden = chosen.filter((p) => !p.active);
 
-  const visible = useMemo(() => {
+  // Selected products first, then the others; long catalogues are shown 40 at a time.
+  const matching = useMemo(() => {
     const q = search.trim().toLowerCase();
-    return q ? products.filter((p) => `${p.name} ${p.ref ?? ""} ${p.category}`.toLowerCase().includes(q)) : products;
-  }, [products, search]);
+    const list = q ? products.filter((p) => `${p.name} ${p.ref ?? ""} ${p.category}`.toLowerCase().includes(q)) : products;
+    return [...list.filter((p) => selected.includes(p.id)), ...list.filter((p) => !selected.includes(p.id))];
+  }, [products, search, selected]);
+  const visible = matching.slice(0, limit);
 
   function toggleProduct(p: P) {
     setResult(null);
@@ -137,7 +142,7 @@ export function Composer({
       <div className="card p-5">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <h2 className="font-semibold">1. Produits et photos</h2>
-          <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Rechercher (nom, réf.)" className="input max-w-60 py-2 text-sm" aria-label="Rechercher un produit" />
+          <input value={search} onChange={(e) => { setSearch(e.target.value); setLimit(40); }} placeholder="Rechercher (nom, réf.)" className="input max-w-60 py-2 text-sm" aria-label="Rechercher un produit" />
         </div>
         <p className="mt-1 text-xs text-muted">{photos.length}/{maxPhotos} photos sélectionnées · clique sur une photo pour l&apos;ajouter ou la retirer</p>
         <div className="mt-4 space-y-3">
@@ -169,7 +174,7 @@ export function Composer({
                           disabled={idx < 0 && photos.length >= maxPhotos}
                           className={`relative h-20 w-20 overflow-hidden rounded-lg border-2 transition disabled:cursor-not-allowed disabled:opacity-40 ${idx >= 0 ? "border-[#1877F2]" : "border-transparent opacity-60 hover:opacity-100"}`}
                         >
-                          <Img src={u} alt="" className="h-full w-full object-cover" />
+                          <Img src={thumbUrl(u)} fallback={u} alt="" className="h-full w-full object-cover" />
                           {idx >= 0 && (
                             <span className="absolute top-1 right-1 flex h-5 w-5 items-center justify-center rounded-full bg-[#1877F2] text-[11px] font-bold text-white">{idx + 1}</span>
                           )}
@@ -182,6 +187,11 @@ export function Composer({
             );
           })}
           {!visible.length && <p className="text-sm text-muted">Aucun produit avec photo{search ? " pour cette recherche" : ""}.</p>}
+          {matching.length > limit && (
+            <button type="button" onClick={() => setLimit((l) => l + 40)} className="btn-ghost w-full">
+              Afficher plus ({matching.length - limit} restants)
+            </button>
+          )}
         </div>
       </div>
 
@@ -267,7 +277,7 @@ function PhotoGrid({ photos }: { photos: string[] }) {
   if (photos.length === 2)
     return (
       <div className="grid grid-cols-2 gap-0.5">
-        {photos.map((u) => <Img key={u} src={u} alt="" className="aspect-square w-full object-cover" />)}
+        {photos.map((u) => <Img key={u} src={thumbUrl(u)} fallback={u} alt="" className="aspect-square w-full object-cover" />)}
       </div>
     );
   const rest = photos.slice(1, 4);
@@ -278,7 +288,7 @@ function PhotoGrid({ photos }: { photos: string[] }) {
       <div className={`grid gap-0.5 ${rest.length === 3 ? "grid-cols-3" : "grid-cols-2"}`}>
         {rest.map((u, i) => (
           <div key={u} className="relative">
-            <Img src={u} alt="" className="aspect-square w-full object-cover" />
+            <Img src={thumbUrl(u)} fallback={u} alt="" className="aspect-square w-full object-cover" />
             {i === rest.length - 1 && more > 0 && (
               <span className="absolute inset-0 flex items-center justify-center bg-black/50 text-2xl font-semibold text-white">+{more}</span>
             )}

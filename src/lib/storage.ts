@@ -24,18 +24,25 @@ function sniff(bytes: Uint8Array): string | null {
   return null;
 }
 
-export async function saveImage(file: File, folder: "products" | "proofs") {
+async function checkedImage(file: File) {
   if (file.size > 4 * 1024 * 1024) throw new Error("Image trop lourde (4 Mo max).");
   if (file.size < 16) throw new Error("Fichier vide ou illisible.");
   const type = sniff(new Uint8Array(await file.slice(0, 16).arrayBuffer()));
   const ext = type ? EXT[type] : undefined;
   if (!type || !ext) throw new Error("Format d'image non supporté (JPG, PNG, WEBP, GIF).");
-  file = new File([file], `image.${ext}`, { type });
-  const name = `${folder}-${Date.now()}-${randomBytes(6).toString("hex")}.${ext}`;
+  return { file: new File([file], `image.${ext}`, { type }), ext };
+}
 
+async function store(name: string, folder: string, file: File) {
   if (process.env.BLOB_READ_WRITE_TOKEN) {
     const { put } = await import("@vercel/blob");
-    const blob = await put(`${folder}/${name}`, file, { access: "public", contentType: file.type });
+    // No random suffix: the thumbnail URL is derived from the image URL (see lib/images).
+    const blob = await put(`${folder}/${name}`, file, {
+      access: "public",
+      contentType: file.type,
+      addRandomSuffix: false,
+      cacheControlMaxAge: 31536000,
+    });
     return blob.url;
   }
   if (process.env.VERCEL) {
@@ -46,8 +53,19 @@ export async function saveImage(file: File, folder: "products" | "proofs") {
   return `/api/files/${name}`;
 }
 
+// Saves an image; for products, also its thumbnail ("<name>-t.jpg") when given.
+export async function saveImage(file: File, folder: "products" | "proofs", thumb?: File | null) {
+  const full = await checkedImage(file);
+  const base = `${folder}-${Date.now()}-${randomBytes(6).toString("hex")}`;
+  const small = folder === "products" && thumb ? await checkedImage(thumb) : null;
+  if (small && small.ext !== "jpg") throw new Error("Vignette invalide.");
+  const url = await store(`${base}.${full.ext}`, folder, full.file);
+  if (small) await store(`${base}-t.jpg`, folder, small.file);
+  return url;
+}
+
 export async function readLocalImage(name: string) {
-  if (!/^[a-z]+-\d+-[a-f0-9]+\.(jpg|png|webp|gif)$/.test(name)) return null;
+  if (!/^[a-z]+-\d+-[a-f0-9]+(-t)?\.(jpg|png|webp|gif)$/.test(name)) return null;
   try {
     const data = await readFile(path.join(LOCAL_UPLOAD_DIR, name));
     const ext = name.split(".").pop()!;

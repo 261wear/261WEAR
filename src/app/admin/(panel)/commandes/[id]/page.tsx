@@ -1,3 +1,4 @@
+import { thumbUrl } from "@/lib/images";
 import { headers } from "next/headers";
 import Link from "next/link";
 import { notFound } from "next/navigation";
@@ -60,7 +61,7 @@ export default async function AdminOrderPage(props: PageProps<"/admin/commandes/
         <div className="space-y-6">
           <div className="card flex gap-4 p-5">
             {order.product_image && (
-              <Img src={order.product_image} alt="" className="h-28 w-28 rounded-xl object-cover" />
+              <Img src={thumbUrl(order.product_image)} fallback={order.product_image} alt="" className="h-28 w-28 rounded-xl object-cover" />
             )}
             <div className="text-sm">
               <p className="text-base font-semibold">

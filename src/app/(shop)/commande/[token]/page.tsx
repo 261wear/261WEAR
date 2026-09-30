@@ -1,3 +1,4 @@
+import { thumbUrl } from "@/lib/images";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { Timeline } from "@/components/Timeline";
@@ -60,7 +61,7 @@ export default async function OrderPage(props: PageProps<"/commande/[token]">) {
 
       <div className="card mt-6 flex gap-4 p-4">
         {order.product_image && (
-          <Img src={order.product_image} alt="" className="h-24 w-24 shrink-0 rounded-xl object-cover" />
+          <Img src={thumbUrl(order.product_image)} fallback={order.product_image} alt="" className="h-24 w-24 shrink-0 rounded-xl object-cover" />
         )}
         <div className="min-w-0 flex-1 text-sm">
           <p className="text-base font-semibold">{order.product_name}</p>

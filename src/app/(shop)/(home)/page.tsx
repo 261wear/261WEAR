@@ -3,6 +3,9 @@ import { ProductCard } from "@/components/ProductCard";
 import { shopProducts } from "@/lib/catalog";
 import { getSettings } from "@/lib/settings";
 
+// The home page shows the latest pairs; the full catalogue is paginated in /recherche.
+const HOME_DROP = 12;
+
 export default async function Home() {
   const [products, settings] = await Promise.all([shopProducts(), getSettings()]);
   const inStock = products.filter((p) => p.status === "en_stock");
@@ -70,11 +73,17 @@ export default async function Home() {
         </div>
         {products.length ? (
           <div className="mt-8 grid grid-cols-2 gap-x-4 gap-y-8 md:grid-cols-3 lg:grid-cols-4">
-            {products.map((p) => (
-              <ProductCard key={p.id} product={p} />
+            {products.slice(0, HOME_DROP).map((p, i) => (
+              <ProductCard key={p.id} product={p} priority={i < 4} />
             ))}
           </div>
-        ) : (
+        ) : null}
+        {products.length > HOME_DROP && (
+          <div className="mt-10 text-center">
+            <Link href="/recherche?tri=nouveautes" className="btn-dark">Voir les {products.length} modèles</Link>
+          </div>
+        )}
+        {!products.length && (
           <p className="card mt-8 p-10 text-center text-muted">Le prochain drop arrive bientôt. Reste connecté sur nos réseaux.</p>
         )}
       </section>

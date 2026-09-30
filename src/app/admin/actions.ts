@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { checkPassword, endSession, requireAdmin, startSession } from "@/lib/auth";
 import { FB_MAX_PHOTOS, facebookConfigured, logPost, publishPhotoPost } from "@/lib/facebook";
+import { invalidateCatalog } from "@/lib/catalog";
 import { rateLimit } from "@/lib/rate-limit";
 import { createOrder, getOrder, updateOrder } from "@/lib/orders";
 import { ALL_STATUS_IDS, isDbId, normalizePhone, stepsFor } from "@/lib/orders-shared";
@@ -34,6 +35,12 @@ import {
 } from "@/lib/suppliers";
 
 export type FormState = { error?: string; ok?: string } | undefined;
+
+// Any change visible in the shop: clear the catalogue cache and re-render.
+function refreshShop() {
+  invalidateCatalog();
+  revalidatePath("/", "layout");
+}
 
 function str(form: FormData, key: string, max = 2000) {
   return String(form.get(key) ?? "").trim().slice(0, max);
@@ -119,7 +126,7 @@ export async function saveProduct(_prev: FormState, form: FormData): Promise<For
 
   if (id) await updateProduct(id, input);
   else await createProduct(input);
-  revalidatePath("/", "layout");
+  refreshShop();
   redirect("/admin/produits");
 }
 
@@ -132,14 +139,37 @@ export async function setProductStatus(form: FormData): Promise<{ error?: string
   const issues = [...productIssues({ ...product, status }), ...priceIssues({ ...product, status }, await getSettings())];
   if (issues.length) return { error: issues.join(" · ") };
   await setProductsStatus([product.id], status);
-  revalidatePath("/", "layout");
+  refreshShop();
   return {};
+}
+
+export type BulkResult = { updated: number; failed: { id: number; name: string; error: string }[] };
+
+// Bulk status change from the product list: each product goes through the same
+// rules as the form; the ones that fail are reported, the others are applied.
+export async function bulkSetStatus(ids: number[], status: ProductStatus): Promise<BulkResult> {
+  await requireAdmin();
+  const result: BulkResult = { updated: 0, failed: [] };
+  if (!isProductStatus(status) || !Array.isArray(ids)) return result;
+  const wanted = new Set(ids.filter(isDbId).slice(0, 10_000));
+  const [catalog, settings] = await Promise.all([listProducts({ onlyActive: false }), getSettings()]);
+  const ok: number[] = [];
+  for (const p of catalog) {
+    if (!wanted.has(p.id)) continue;
+    const issues = [...productIssues({ ...p, status }), ...priceIssues({ ...p, status }, settings)];
+    if (issues.length) result.failed.push({ id: p.id, name: p.name, error: issues[0] });
+    else ok.push(p.id);
+  }
+  await setProductsStatus(ok, status);
+  result.updated = ok.length;
+  refreshShop();
+  return result;
 }
 
 export async function removeProduct(form: FormData) {
   await requireAdmin();
   await deleteProduct(Number(form.get("id")));
-  revalidatePath("/", "layout");
+  refreshShop();
   redirect("/admin/produits");
 }
 
@@ -208,7 +238,7 @@ export async function importProducts(rows: ImportRow[], defaultStatus: ProductSt
       result.created++;
     }
   }
-  revalidatePath("/", "layout");
+  refreshShop();
   return result;
 }
 
@@ -220,7 +250,7 @@ export async function attachProductImages(productId: number, urls: string[], rep
   const clean = urls.filter(isAllowedImageUrl);
   const images = [...(replace ? [] : product.images), ...clean].slice(0, MAX_IMAGES);
   await setProductImages(product.id, images);
-  revalidatePath("/", "layout");
+  refreshShop();
 }
 
 export async function publishProducts(ids: number[]) {
@@ -233,7 +263,7 @@ export async function publishProducts(ids: number[]) {
     const status = p.price_rmb != null ? "sur_commande" : "en_stock";
     if (!productIssues({ ...p, status }).length) await setProductsStatus([p.id], status);
   }
-  revalidatePath("/", "layout");
+  refreshShop();
 }
 
 // ---------- Suppliers ----------
@@ -474,6 +504,6 @@ export async function updateSettings(_prev: FormState, form: FormData): Promise<
     whatsapp,
     paymentInfo: str(form, "paymentInfo", 1000),
   });
-  revalidatePath("/", "layout");
+  refreshShop();
   return { ok: "Paramètres enregistrés. Tous les prix sont recalculés." };
 }

@@ -1,3 +1,4 @@
+import { thumbUrl } from "@/lib/images";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { removeSupplier } from "@/app/admin/actions";
@@ -22,10 +23,10 @@ export default async function SupplierPage(props: PageProps<"/admin/fournisseurs
           <div className="card p-5">
             <h2 className="font-semibold">Produits de ce fournisseur ({products.length})</h2>
             <ul className="mt-3 divide-y divide-black/5">
-              {products.map((p) => (
+              {products.slice(0, 100).map((p) => (
                 <li key={p.id}>
                   <Link href={`/admin/produits/${p.id}`} className="flex items-center gap-3 py-2 hover:bg-paper">
-                    {p.images[0] ? <Img src={p.images[0]} alt="" className="h-10 w-10 rounded-md object-cover" /> : <span className="h-10 w-10 rounded-md bg-paper" />}
+                    {p.images[0] ? <Img src={thumbUrl(p.images[0])} fallback={p.images[0]} alt="" className="h-10 w-10 rounded-md object-cover" /> : <span className="h-10 w-10 rounded-md bg-paper" />}
                     <span className="min-w-0 flex-1 text-sm">
                       <span className="block truncate font-semibold">{p.name}</span>
                       <span className="text-xs text-muted">
@@ -38,6 +39,11 @@ export default async function SupplierPage(props: PageProps<"/admin/fournisseurs
                   </Link>
                 </li>
               ))}
+              {products.length > 100 && (
+                <li className="py-3 text-sm text-muted">
+                  … et {products.length - 100} autres. <Link href={`/admin/produits?fournisseur=${supplier.id}`} className="underline">Voir tous ses produits</Link>
+                </li>
+              )}
               {!products.length && <li className="py-3 text-sm text-muted">Aucun produit. Choisis ce fournisseur dans une fiche produit ou via l&apos;import.</li>}
             </ul>
           </div>

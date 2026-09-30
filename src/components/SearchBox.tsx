@@ -1,10 +1,12 @@
 "use client";
 
+import { thumbUrl } from "@/lib/images";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useId, useRef, useState } from "react";
 import { formatAr } from "@/lib/pricing";
 import { productStatus, STATUS_BADGE, type ProductStatus } from "@/lib/product-status";
 import { Highlight } from "./Highlight";
+import { Img } from "./ui/Img";
 import { Spinner } from "./ui/Spinner";
 
 type Suggest = {
@@ -262,8 +264,7 @@ export function SearchBox({ popular, initialQuery = "" }: { popular: { value: st
               {data.products.map((p, i) => (
                 <div key={p.id} {...optionProps(prodOffset + i)}>
                   {p.image ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img src={p.image} alt="" className="h-11 w-11 shrink-0 rounded-lg bg-paper object-cover" />
+                    <Img src={thumbUrl(p.image)} fallback={p.image} alt="" className="h-11 w-11 shrink-0 rounded-lg bg-paper object-cover" />
                   ) : (
                     <span className="h-11 w-11 shrink-0 rounded-lg bg-paper" />
                   )}

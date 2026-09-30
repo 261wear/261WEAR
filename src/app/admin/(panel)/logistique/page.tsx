@@ -1,3 +1,4 @@
+import { thumbUrl } from "@/lib/images";
 import Link from "next/link";
 import { markOrdered } from "@/app/admin/actions";
 import { SubmitButton } from "@/components/ui/Button";
@@ -89,7 +90,7 @@ export default async function LogisticsPage() {
                   {items.map((it) => (
                     <tr key={it.key} className="border-b border-black/5 last:border-0">
                       <td className="w-14 p-3">
-                        {it.line.productImage ? <Img src={it.line.productImage} alt="" className="h-10 w-10 rounded-md object-cover" /> : <span className="block h-10 w-10 rounded-md bg-paper" />}
+                        {it.line.productImage ? <Img src={thumbUrl(it.line.productImage)} fallback={it.line.productImage} alt="" className="h-10 w-10 rounded-md object-cover" /> : <span className="block h-10 w-10 rounded-md bg-paper" />}
                       </td>
                       <td className="p-3">
                         <span className="font-semibold">{it.line.productName}</span>
