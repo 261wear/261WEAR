@@ -35,7 +35,7 @@ export default async function Home() {
             {[
               ["100 %", "neuves, commandées pour toi"],
               [`${settings.deliveryMinDays}-${settings.deliveryMaxDays} j`, "livraison à Tana"],
-              ["Photo QC", "de ta paire avant l'envoi"],
+              ["Photo", "de contrôle qualité de ta paire avant l'envoi"],
             ].map(([big, small]) => (
               <div key={big} className="rounded-2xl border border-white/10 p-4">
                 <p className="font-display text-2xl text-accent sm:text-3xl">{big}</p>

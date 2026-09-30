@@ -21,7 +21,7 @@ function caption(products: P[], origin: string, delivery: string, stockDelivery:
   const allInStock = products.every((p) => p.inStock);
   const footer = [
     allInStock ? `⚡ Disponible de suite — livrée à Tana en ${stockDelivery}` : `📦 Sur commande — livrée à Tana en ${delivery}`,
-    "✅ Photo QC de ta paire avant l'envoi",
+    "✅ Photo de contrôle qualité de ta paire avant l'envoi",
   ];
   if (products.length === 1) {
     const p = products[0];

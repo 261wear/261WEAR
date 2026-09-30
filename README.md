@@ -119,7 +119,7 @@ charge (HEIC) sont signalés. À la fin, un bouton met en ligne les produits qui
   - *À commander* : les commandes dont l'acompte est reçu, regroupées par fournisseur, avec la même paire et la même
     pointure fusionnées (« 42 × 2 »), le total en RMB, le poids et le transport estimés. Le bouton
     **Copier la commande pour WeChat** prépare le message (anglais/chinois, réf. fournisseur, pointures, total, demande
-    de photos QC). **Marquer comme commandées** fait passer toutes ces commandes à « Commandé chez le fournisseur ».
+    de photos de contrôle qualité). **Marquer comme commandées** fait passer toutes ces commandes à « Commandé chez le fournisseur ».
   - *En cours d'acheminement* : commandes chez le fournisseur ou expédiées, avec le nombre de jours écoulés ; une
     commande qui dépasse le délai habituel du fournisseur est signalée **en retard**.
 - Le nom du fournisseur n'est jamais montré au client.

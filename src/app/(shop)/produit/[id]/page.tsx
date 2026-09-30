@@ -50,7 +50,7 @@ export default async function ProductPage(props: PageProps<"/produit/[id]">) {
             <p className="font-bold">{inStock ? "⚡ " : ""}{dMin}–{dMax} j</p>
             {inStock ? "Déjà à Tana" : "Sur commande"}
           </div>
-          <div className="p-3"><p className="font-bold">Photo QC</p>avant envoi</div>
+          <div className="p-3"><p className="font-bold">Contrôle qualité</p>photo avant envoi</div>
           <div className="p-3"><p className="font-bold">Suivi</p>en ligne</div>
         </div>
         {product.description && <p className="mt-6 whitespace-pre-line text-black/80">{product.description}</p>}

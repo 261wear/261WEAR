@@ -41,7 +41,7 @@ function wechatText(bucket: SupplierBucket, items: Item[]) {
     ...lines,
     ``,
     `Total: ${pairs} pairs / 双 — ¥${total.toLocaleString("en-US")}`,
-    `Please send QC photos before shipping. 发货前请发QC照片，谢谢！`,
+    `Please send quality control photos before shipping. 发货前请发质检照片，谢谢！`,
   ].join("\n");
 }
 

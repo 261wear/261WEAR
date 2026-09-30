@@ -28,7 +28,7 @@ export default async function CgvPage() {
     ],
     [
       "6. Contrôle qualité et photos",
-      "Les visuels du site sont fournis par nos fournisseurs ; de légères variations de teinte sont possibles. Avant l'envoi, une photo de contrôle qualité (QC) de la paire du client lui est transmise : c'est cette photo qui fait foi.",
+      "Les visuels du site sont fournis par nos fournisseurs ; de légères variations de teinte sont possibles. Avant l'envoi, une photo de contrôle qualité de la paire du client lui est transmise : c'est cette photo qui fait foi.",
     ],
     [
       "7. Annulation",
