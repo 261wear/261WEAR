@@ -1,4 +1,5 @@
 import "server-only";
+import { isDbId } from "./orders-shared";
 import { query, queryOne, type Row } from "./db";
 import type { HistoryEntry } from "./orders";
 
@@ -49,7 +50,7 @@ export async function listSupplierOptions() {
 }
 
 export async function getSupplier(id: number) {
-  if (!Number.isInteger(id)) return null;
+  if (!isDbId(id)) return null;
   const row = await queryOne(`SELECT * FROM suppliers WHERE id = $1`, [id]);
   return row ? toSupplier(row) : null;
 }
@@ -68,6 +69,7 @@ export async function createSupplier(s: SupplierInput) {
 }
 
 export async function updateSupplier(id: number, s: SupplierInput) {
+  if (!isDbId(id)) return;
   await query(
     `UPDATE suppliers SET name=$1, wechat=$2, phone=$3, city=$4, payment=$5, lead_days=$6, notes=$7 WHERE id = $8`,
     [...params(s), id],
@@ -75,6 +77,7 @@ export async function updateSupplier(id: number, s: SupplierInput) {
 }
 
 export async function deleteSupplier(id: number) {
+  if (!isDbId(id)) return;
   await query(`DELETE FROM suppliers WHERE id = $1`, [id]);
 }
 

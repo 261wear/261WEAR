@@ -6,16 +6,17 @@ import { checkPassword, endSession, requireAdmin, startSession } from "@/lib/aut
 import { FB_MAX_PHOTOS, facebookConfigured, logPost, publishPhotoPost } from "@/lib/facebook";
 import { rateLimit } from "@/lib/rate-limit";
 import { createOrder, getOrder, updateOrder } from "@/lib/orders";
-import { ALL_STATUS_IDS, normalizePhone, stepsFor } from "@/lib/orders-shared";
+import { ALL_STATUS_IDS, isDbId, normalizePhone, stepsFor } from "@/lib/orders-shared";
 import { depositFor } from "@/lib/pricing";
 import { isValidRef, MAX_IMPORT_ROWS, normalizeRef, resolveRow, validateRow, type ImportRow } from "@/lib/import";
-import { isAllowedImageUrl, MAX_IMAGES, productIssues } from "@/lib/product-rules";
+import { isAllowedImageUrl, MAX_IMAGES, priceIssues, productIssues } from "@/lib/product-rules";
 import { isProductStatus, type ProductStatus } from "@/lib/product-status";
 import {
   createProduct,
   deleteProduct,
   getProduct,
   getProductIdByRef,
+  listProducts,
   setProductImages,
   setProductsStatus,
   updateProduct,
@@ -113,7 +114,7 @@ export async function saveProduct(_prev: FormState, form: FormData): Promise<For
     images: images as string[],
     status: isProductStatus(status) ? status : "brouillon",
   };
-  const issues = productIssues(input);
+  const issues = [...productIssues(input), ...priceIssues(input, await getSettings())];
   if (issues.length) return { error: issues.join(" · ") };
 
   if (id) await updateProduct(id, input);
@@ -128,7 +129,7 @@ export async function setProductStatus(form: FormData): Promise<{ error?: string
   const status = form.get("status");
   const product = await getProduct(Number(form.get("id")));
   if (!product || !isProductStatus(status)) return { error: "Produit ou statut invalide." };
-  const issues = productIssues({ ...product, status });
+  const issues = [...productIssues({ ...product, status }), ...priceIssues({ ...product, status }, await getSettings())];
   if (issues.length) return { error: issues.join(" · ") };
   await setProductsStatus([product.id], status);
   revalidatePath("/", "layout");
@@ -161,12 +162,14 @@ export async function importProducts(rows: ImportRow[], defaultStatus: ProductSt
   const seen = new Set<string>();
   const suppliers = new Map<string, number>();
   const knownSuppliers = new Set((await listSupplierOptions()).map((o) => o.name.toLowerCase()));
+  // Loaded once for the whole batch (one query instead of several per row).
+  const [catalog, settings] = await Promise.all([listProducts({ onlyActive: false }), getSettings()]);
+  const byRef = new Map(catalog.filter((p) => p.ref).map((p) => [p.ref!, p]));
   for (const raw of rows.slice(0, MAX_IMPORT_ROWS)) {
     const row = validateRow(raw);
-    const existingId = row.ref && isValidRef(row.ref) ? await getProductIdByRef(row.ref) : null;
-    const existing = existingId ? await getProduct(existingId) : null;
-    const resolved = resolveRow(row, existing ?? undefined, defaultStatus);
-    const errors = [...resolved.errors];
+    const existing = byRef.get(row.ref);
+    const resolved = resolveRow(row, existing, defaultStatus);
+    const errors = resolved.errors.length ? [...resolved.errors] : priceIssues(resolved.product, settings);
     if (!errors.length && seen.has(row.ref)) errors.push("Référence en double");
     if (errors.length) {
       result.skipped.push({ line: row.line, ref: row.ref, errors });
@@ -224,7 +227,7 @@ export async function publishProducts(ids: number[]) {
   await requireAdmin();
   // Only drafts are published; products already online keep their availability.
   // A draft goes "sur commande" if it has a RMB price, else "disponible de suite".
-  for (const id of (Array.isArray(ids) ? ids : []).filter(Number.isInteger)) {
+  for (const id of (Array.isArray(ids) ? ids : []).filter(isDbId)) {
     const p = await getProduct(id);
     if (p?.status !== "brouillon") continue;
     const status = p.price_rmb != null ? "sur_commande" : "en_stock";
@@ -249,6 +252,7 @@ export async function saveSupplier(_prev: FormState, form: FormData): Promise<Fo
     notes: str(form, "notes", 2000),
   };
   if (!input.name) return { error: "Le nom du fournisseur est obligatoire." };
+  if (id && !(await getSupplier(id))) return { error: "Ce fournisseur n'existe plus." };
   if (lead !== null && (Number.isNaN(lead) || lead < 0 || lead > 120)) return { error: "Délai invalide (0 à 120 jours)." };
   if (id) await updateSupplier(id, input);
   else await createSupplier(input);
@@ -269,7 +273,7 @@ export async function markOrdered(form: FormData) {
   const ids = String(form.get("orderIds") ?? "")
     .split(",")
     .map(Number)
-    .filter(Number.isInteger);
+    .filter(isDbId);
   for (const id of ids) {
     const order = await getOrder(id);
     if (!order || order.status !== "paiement_recu" || order.in_stock) continue;
@@ -296,7 +300,7 @@ export async function publishToFacebook(input: {
   if (!message) return { error: "Le texte de la publication est vide." };
 
   // Only photos that belong to the selected products can be sent.
-  const productIds = (Array.isArray(input.productIds) ? input.productIds : []).filter(Number.isInteger).slice(0, 30);
+  const productIds = (Array.isArray(input.productIds) ? input.productIds : []).filter(isDbId).slice(0, 30);
   const allowed = new Set<string>();
   for (const id of productIds) (await getProduct(id))?.images.forEach((u) => allowed.add(u));
   const images = (Array.isArray(input.images) ? input.images : []).filter((u) => allowed.has(u));
@@ -388,8 +392,8 @@ export async function createManualOrder(_prev: FormState, form: FormData): Promi
   const name = str(form, "name", 80);
   if (name.length < 2) return { error: "Nom du client obligatoire." };
   if (!/^2613\d{8}$/.test(phone)) return { error: "Numéro invalide (ex : 034 12 345 67)." };
-  const price = num(form, "price") ?? product.pricing.price;
-  if (Number.isNaN(price) || price <= 0) return { error: "Prix invalide." };
+  const price = numAr(form, "price") ?? product.pricing.price;
+  if (Number.isNaN(price) || price < 1000 || price > 1_000_000_000) return { error: "Prix invalide." };
   const settings = await getSettings();
   const order = await createOrder({
     product_id: product.id,
@@ -435,6 +439,18 @@ export async function updateSettings(_prev: FormState, form: FormData): Promise<
     values[key] = n;
   }
   if (!values.rmbRate) return { error: "Le taux RMB doit être supérieur à 0." };
+  const bounds: [keyof Settings, number, string][] = [
+    ["rmbRate", 10_000, "Taux RMB"],
+    ["transportPerKg", 5_000_000, "Transport par kg"],
+    ["fixedFees", 5_000_000, "Frais fixes"],
+    ["roundTo", 1_000_000, "Arrondi"],
+    ["deliveryMaxDays", 365, "Délai maximum"],
+    ["stockDeliveryMaxDays", 365, "Délai maximum (stock)"],
+    ["badgeDays", 365, "Durée des badges"],
+  ];
+  for (const [k, max, label] of bounds) {
+    if ((values[k] as number) > max) return { error: `${label} trop élevé (${max.toLocaleString("fr-FR")} max) : faute de frappe ?` };
+  }
   if (!(values.depositPct! >= 1 && values.depositPct! <= 100)) return { error: "L'acompte doit être entre 1 et 100 %." };
   if (values.marginPct! > 500) return { error: "Marge par défaut trop élevée (500 % max)." };
   if (!(values.defaultWeightKg! >= 0.1 && values.defaultWeightKg! <= 20)) return { error: "Poids par défaut invalide (0,1 à 20 kg)." };

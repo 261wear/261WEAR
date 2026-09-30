@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/Button";
 import { FormMessage } from "@/components/ui/FormMessage";
 import { resolveRow, rowsFromText, TEMPLATE_EXAMPLE, TEMPLATE_HEADERS, type ImportRow, type ResolvedRow } from "@/lib/import";
 import { computePrice, formatAr, type PricingSettings } from "@/lib/pricing";
-import { productWarnings } from "@/lib/product-rules";
+import { priceIssues, productWarnings } from "@/lib/product-rules";
 import { PRODUCT_STATUSES, productStatus, STATUS_BADGE, type ProductStatus } from "@/lib/product-status";
 import type { ProductSummary } from "./ImportWizard";
 
@@ -41,10 +41,13 @@ export function ProductSheetsStep({
   const [result, setResult] = useState<ImportResult | null>(null);
   const [error, setError] = useState("");
 
-  const { rows, missingColumns } = rowsFromText(text);
+  const { rows, missingColumns, ignored } = rowsFromText(text);
   const byRef = new Map(products.filter((p) => p.ref).map((p) => [p.ref!, p]));
   // Same merge + rules as the server: what you see is what will be saved.
-  const resolved = rows.map((r) => ({ row: r, ...resolveRow(r, byRef.get(r.ref), defaultStatus) }));
+  const resolved = rows.map((r) => {
+    const res = resolveRow(r, byRef.get(r.ref), defaultStatus);
+    return { row: r, ...res, errors: res.errors.length ? res.errors : priceIssues(res.product, settings) };
+  });
   const valid = resolved.filter((r) => !r.errors.length).map((r) => r.row);
   const invalid = rows.length - valid.length;
   const toUpdate = resolved.filter((r) => !r.errors.length && !r.isNew).length;
@@ -130,6 +133,12 @@ export function ProductSheetsStep({
         />
       </div>
 
+      {text.trim() && !missingColumns.length && !rows.length && (
+        <FormMessage error="Aucune ligne de produit trouvée : il faut la ligne d'en-tête puis au moins une ligne (voir le modèle)." />
+      )}
+      {ignored > 0 && (
+        <FormMessage error={`Fichier trop long : seules les ${rows.length} premières lignes sont prises en compte, ${ignored} ligne${ignored > 1 ? "s" : ""} ignorée${ignored > 1 ? "s" : ""}. Importe le reste dans un second fichier.`} />
+      )}
       {missingColumns.length > 0 && <FormMessage error={`Colonnes introuvables : ${missingColumns.join(", ")}. Vérifie la ligne d'en-tête (voir le modèle).`} />}
 
       {rows.length > 0 && (

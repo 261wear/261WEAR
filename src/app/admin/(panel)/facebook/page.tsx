@@ -1,5 +1,6 @@
 import { headers } from "next/headers";
 import { FB_MAX_PHOTOS, facebookConfigured, getPageName, listPosts } from "@/lib/facebook";
+import { isDbId } from "@/lib/orders-shared";
 import { listProducts } from "@/lib/products";
 import { getSettings } from "@/lib/settings";
 import { Composer } from "./Composer";
@@ -15,7 +16,7 @@ export default async function FacebookPage(props: PageProps<"/admin/facebook">) 
   const configured = facebookConfigured();
   const page = configured ? await getPageName() : null;
   const origin = `${h.get("x-forwarded-proto") ?? "https"}://${h.get("host")}`;
-  const preselected = typeof produits === "string" ? produits.split(",").map(Number).filter(Number.isInteger) : [];
+  const preselected = typeof produits === "string" ? produits.split(",").map(Number).filter(isDbId) : [];
 
   return (
     <>

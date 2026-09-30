@@ -8,7 +8,7 @@ import { Button, SubmitButton } from "@/components/ui/Button";
 import { FormMessage } from "@/components/ui/FormMessage";
 import { Img } from "@/components/ui/Img";
 import { computePrice, formatAr, type PricingSettings } from "@/lib/pricing";
-import { isAllowedImageUrl, productIssues, productWarnings } from "@/lib/product-rules";
+import { isAllowedImageUrl, priceIssues, productIssues, productWarnings } from "@/lib/product-rules";
 import { PRODUCT_STATUSES, type ProductStatus } from "@/lib/product-status";
 import type { Product } from "@/lib/products";
 
@@ -66,7 +66,7 @@ export function ProductForm({
     price_override: parseAr(override),
     sizes: [],
   };
-  const issues = productIssues(core);
+  const issues = [...productIssues(core), ...priceIssues(core, settings)];
   const preview = issues.length ? null : computePrice(settings, core);
   const warnings = productWarnings(core, settings);
   // The other way to price this product, when both prices are known.

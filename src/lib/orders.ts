@@ -1,4 +1,5 @@
 import "server-only";
+import { isDbId } from "./orders-shared";
 import { randomBytes } from "node:crypto";
 import { query, queryOne, type Row } from "./db";
 
@@ -102,7 +103,7 @@ export async function countByStatus() {
 }
 
 export async function getOrder(id: number) {
-  if (!Number.isInteger(id)) return null;
+  if (!isDbId(id)) return null;
   const row = await queryOne(`SELECT * FROM orders WHERE id = $1`, [id]);
   return row ? toOrder(row) : null;
 }

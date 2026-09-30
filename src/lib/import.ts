@@ -248,12 +248,12 @@ export function resolveRow(row: ImportRow, existing: ImportExisting | undefined,
   return { product, isNew: !existing, errors };
 }
 
-export function rowsFromText(text: string): { rows: ImportRow[]; missingColumns: string[] } {
+export function rowsFromText(text: string): { rows: ImportRow[]; missingColumns: string[]; ignored: number } {
   const table = parseTable(text);
-  if (table.length < 2) return { rows: [], missingColumns: [] };
+  if (table.length < 2) return { rows: [], missingColumns: [], ignored: 0 };
   const map = mapColumns(table[0]);
   const missingColumns = (["ref"] as Field[]).filter((f) => map[f] === undefined);
-  if (missingColumns.length) return { rows: [], missingColumns };
+  if (missingColumns.length) return { rows: [], missingColumns, ignored: 0 };
   const cell = (row: string[], f: Field) => (map[f] === undefined ? "" : (row[map[f]!] ?? "").trim());
   const body = table.slice(1, MAX_IMPORT_ROWS + 1);
   const rows = body.map((row, i) =>
@@ -286,7 +286,7 @@ export function rowsFromText(text: string): { rows: ImportRow[]; missingColumns:
     if (seen.has(r.ref)) r.errors.push(`Référence en double (ligne ${seen.get(r.ref)})`);
     else seen.set(r.ref, r.line);
   }
-  return { rows, missingColumns };
+  return { rows, missingColumns, ignored: Math.max(0, table.length - 1 - MAX_IMPORT_ROWS) };
 }
 
 // ---------- Photo ↔ product matching by file name ----------

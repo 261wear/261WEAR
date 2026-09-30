@@ -58,3 +58,8 @@ export function displayPhone(p: string) {
 export function waLink(phone: string, text: string) {
   return `https://wa.me/${phone.replace(/\D/g, "")}?text=${encodeURIComponent(text)}`;
 }
+
+// Database ids are 32-bit integers: anything else (from a URL or a form) is not an id.
+export function isDbId(v: unknown): v is number {
+  return typeof v === "number" && Number.isInteger(v) && v > 0 && v <= 2_147_483_647;
+}

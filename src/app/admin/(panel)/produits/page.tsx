@@ -5,7 +5,7 @@ import { Img } from "@/components/ui/Img";
 import { LinkPending } from "@/components/ui/LinkPending";
 import { formatAr } from "@/lib/pricing";
 import { freshness, isProductStatus, PRODUCT_STATUSES } from "@/lib/product-status";
-import { productIssues } from "@/lib/product-rules";
+import { priceIssues, productIssues } from "@/lib/product-rules";
 import { listProducts } from "@/lib/products";
 import { scoreFields, tokenize } from "@/lib/search";
 import { getSettings } from "@/lib/settings";
@@ -97,9 +97,10 @@ export default async function AdminProductsPage(props: PageProps<"/admin/produit
                       <span className="block text-xs text-muted">
                         {[p.ref, p.category, p.sizes.join(", ")].filter(Boolean).join(" · ")}
                         {!p.images.length && <span className="ml-1 font-semibold text-amber-700">· sans photo</span>}
-                        {productIssues(p).length > 0 && (
-                          <span className="block font-semibold text-red-700" title={productIssues(p).join(" · ")}>⚠ à compléter : {productIssues(p).join(" · ")}</span>
-                        )}
+                        {(() => {
+                          const issues = [...productIssues(p), ...priceIssues(p, settings)];
+                          return issues.length > 0 && <span className="block font-semibold text-red-700">⚠ à compléter : {issues.join(" · ")}</span>;
+                        })()}
                       </span>
                     </span>
                   </Link>

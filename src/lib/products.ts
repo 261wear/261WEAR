@@ -1,4 +1,5 @@
 import "server-only";
+import { isDbId } from "./orders-shared";
 import { query, queryOne, type Row } from "./db";
 import { computePrice, type PriceBreakdown } from "./pricing";
 import { isProductStatus, type ProductStatus } from "./product-status";
@@ -68,7 +69,7 @@ export async function listProducts({ onlyActive }: { onlyActive: boolean }) {
 }
 
 export async function getProduct(id: number) {
-  if (!Number.isInteger(id)) return null;
+  if (!isDbId(id)) return null;
   const row = await queryOne(`SELECT * FROM products WHERE id = $1`, [id]);
   if (!row) return null;
   return (await withPrices([toProduct(row)]))[0];
@@ -125,6 +126,7 @@ export async function updateProduct(id: number, p: ProductInput) {
 }
 
 export async function deleteProduct(id: number) {
+  if (!isDbId(id)) return;
   await query(`DELETE FROM products WHERE id = $1`, [id]);
 }
 

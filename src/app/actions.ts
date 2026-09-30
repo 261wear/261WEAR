@@ -37,6 +37,7 @@ export async function placeOrder(_prev: FormState, form: FormData): Promise<Form
 
   const settings = await getSettings();
   const price = product.pricing.price;
+  if (!(price > 0 && price <= 1_000_000_000)) return { error: "Ce modèle n'est pas disponible à la commande pour le moment." };
   // The customer must order at the price they saw (it can change with the exchange rate).
   const expected = Number(form.get("expectedPrice"));
   if (expected !== price) {

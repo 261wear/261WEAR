@@ -16,6 +16,7 @@ export const LIMITS = {
   weightMin: 0.1,
   weightMax: 20,
   marginMax: 500,
+  priceMax: 1_000_000_000, // stays far below the database integer limit
 } as const;
 
 export type ProductCore = {
@@ -61,6 +62,14 @@ export function productIssues(p: ProductCore): string[] {
   if (p.sizes.some((s) => s.length > LIMITS.size)) e.push("Pointure trop longue");
   if (new Set(p.sizes).size !== p.sizes.length) e.push("Pointure en double");
   return e;
+}
+
+// Blocking checks that need the settings (the computed price must stay sane).
+export function priceIssues(p: ProductCore, s: PricingSettings): string[] {
+  if (productIssues(p).length) return [];
+  const price = computePrice(s, p).price;
+  if (!(price > 0 && price <= LIMITS.priceMax)) return [`Prix de vente calculé hors limites (${Math.round(price).toLocaleString("fr-FR")} Ar) : vérifie le prix et les paramètres`];
+  return [];
 }
 
 // Non-blocking: shown in the form / import preview.
