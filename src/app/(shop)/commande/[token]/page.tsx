@@ -29,12 +29,15 @@ export default async function OrderPage(props: PageProps<"/commande/[token]">) {
   const remaining = Math.max(order.total - order.amount_paid, 0);
   const paid = paidAt(order);
   const delivered = order.status === "livre";
+  const [dMin, dMax] = order.in_stock
+    ? [settings.stockDeliveryMinDays, settings.stockDeliveryMaxDays]
+    : [settings.deliveryMinDays, settings.deliveryMaxDays];
   const deliveredAt = [...order.history].reverse().find((h) => h.status === "livre")?.at;
 
   const message = [
     `Bonjour 261 WEAR ! 👟`,
     `Commande N° ${number}`,
-    `Modèle : ${order.product_name}${order.size ? ` — Pointure ${order.size}` : ""}`,
+    `Modèle : ${order.product_name}${order.size ? ` — Pointure ${order.size}` : ""}${order.in_stock ? " (dispo de suite)" : ""}`,
     `Prix : ${formatAr(order.total)} — Acompte : ${formatAr(order.deposit)}`,
     `Nom : ${order.customer_name}`,
     `Livraison : ${order.address}`,
@@ -90,12 +93,12 @@ export default async function OrderPage(props: PageProps<"/commande/[token]">) {
           {delivered && deliveredAt
             ? `Livrée le ${new Date(deliveredAt).toLocaleDateString("fr-FR", { day: "numeric", month: "long", timeZone: "Indian/Antananarivo" })}. Merci pour ta confiance !`
             : paid
-            ? `Livraison estimée entre le ${addDays(paid, settings.deliveryMinDays)} et le ${addDays(paid, settings.deliveryMaxDays)}.`
-            : `Livraison en ${settings.deliveryMinDays} à ${settings.deliveryMaxDays} jours après confirmation du paiement.`}
+            ? `Livraison estimée entre le ${addDays(paid, dMin)} et le ${addDays(paid, dMax)}.`
+            : `${order.in_stock ? "⚡ Disponible de suite : l" : "L"}ivraison en ${dMin} à ${dMax} jours après confirmation du paiement.`}
         </p>
         {order.tracking_ref && <p className="mt-1 text-sm">Référence colis : <b>{order.tracking_ref}</b></p>}
         <div className="mt-5">
-          <Timeline status={order.status} history={order.history} />
+          <Timeline status={order.status} history={order.history} inStock={order.in_stock} />
         </div>
       </div>
 

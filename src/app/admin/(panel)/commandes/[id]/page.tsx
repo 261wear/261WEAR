@@ -9,7 +9,7 @@ import { setOrderStatus } from "@/app/admin/actions";
 import { getOrder } from "@/lib/orders";
 import { getProduct } from "@/lib/products";
 import { getSupplier } from "@/lib/suppliers";
-import { CANCELLED, STATUSES, displayPhone, orderNumber, statusIndex, waLink } from "@/lib/orders-shared";
+import { CANCELLED, STATUSES, displayPhone, orderNumber, stepsFor, waLink } from "@/lib/orders-shared";
 import { formatAr } from "@/lib/pricing";
 import { StatusBadge } from "../../StatusBadge";
 import { OrderEditor } from "./OrderEditor";
@@ -38,8 +38,9 @@ export default async function AdminOrderPage(props: PageProps<"/admin/commandes/
   const number = orderNumber(order.id);
   const firstName = order.customer_name.split(" ")[0];
   const remaining = Math.max(order.total - order.amount_paid, 0);
-  const currentIdx = statusIndex(order.status);
-  const next = currentIdx >= 0 ? STATUSES[currentIdx + 1] : undefined;
+  const steps = stepsFor(order.in_stock);
+  const currentIdx = steps.findIndex((s) => s.id === order.status);
+  const next = currentIdx >= 0 ? steps[currentIdx + 1] : undefined;
 
   const notify = waLink(
     order.phone,
@@ -52,6 +53,7 @@ export default async function AdminOrderPage(props: PageProps<"/admin/commandes/
       <div className="mt-2 flex flex-wrap items-center gap-3">
         <h1 className="font-display text-3xl">{number}</h1>
         <StatusBadge status={order.status} />
+        {order.in_stock && <span className="rounded-full bg-emerald-600 px-2.5 py-1 text-xs font-semibold text-white">⚡ Stock Tana</span>}
       </div>
 
       <div className="mt-6 grid gap-6 lg:grid-cols-[1fr_380px]">
@@ -126,7 +128,7 @@ export default async function AdminOrderPage(props: PageProps<"/admin/commandes/
             </form>
             <p className="mt-2 text-xs text-muted">Après chaque changement, clique sur « Prévenir le client » pour lui envoyer la mise à jour.</p>
             <div className="mt-6">
-              <Timeline status={order.status} history={order.history} />
+              <Timeline status={order.status} history={order.history} inStock={order.in_stock} />
             </div>
           </div>
         </div>

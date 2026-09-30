@@ -27,6 +27,35 @@ Le poids et la marge peuvent être modifiés produit par produit, et un prix peu
 Changer le taux dans « Prix & paramètres » met à jour tous les prix du site. Une commande garde le prix du
 moment où elle a été passée.
 
+## Statuts produit et badges
+
+| Statut | Sur le site | Commande |
+| --- | --- | --- |
+| **Sur commande** | visible | oui, délai normal (7–14 j) |
+| **Disponible de suite** | visible, badge « ⚡ Dispo de suite », section dédiée sur l'accueil | oui, délai court (1–2 j), sans étapes « Chine » dans le suivi ni dans la logistique |
+| **Épuisé** | visible, photo grisée, en fin de liste | non : bouton WhatsApp « Me prévenir du retour en stock » |
+| **Brouillon** | invisible | non |
+
+Le statut se change dans la fiche produit, directement dans la liste des produits, ou via la colonne `statut` de
+l'import (sur commande, en stock, épuisé, brouillon). Badges publics : **NEW** pendant N jours après la publication,
+**↻ Mis à jour** pendant N jours après une modification (prix, statut…) ; N se règle dans les paramètres (14 par défaut).
+
+## Recherche
+
+- **Boutique** : barre de recherche dans l'en-tête (pleine largeur sur mobile), suggestions instantanées (photo, prix,
+  disponibilité, mots surlignés), recherches récentes, catégories populaires, clavier (↑ ↓ Entrée Échap, `/` pour y
+  aller). Insensible aux accents et majuscules, tolérante aux fautes (« runer » → Runner), comprend les pointures
+  (« air 42 »). Page `/recherche` : filtres disponibilité / catégorie / pointure / prix avec compteurs, pastilles
+  de filtres actifs, tris, liens partageables, résultats approchants si rien d'exact, et bouton « Demander ce modèle »
+  sur WhatsApp quand rien ne correspond.
+- **Back-office** : recherche produits (nom, réf., réf. fournisseur, catégorie) avec onglets par statut et « sans photo »,
+  recherche commandes (n°, téléphone sous toute forme, client, modèle).
+
+## Réseaux sociaux
+
+Liens Facebook, Instagram et TikTok (+ WhatsApp) avec logos dans le pied de page, modifiables dans Paramètres ;
+un lien vide masque le réseau.
+
 ## Import en masse (Produits → Import en masse)
 
 **Étape 1 — fiches produits.** Un fichier CSV (Excel : *Enregistrer sous → CSV*) ou un copier-coller de cellules
@@ -41,6 +70,8 @@ depuis Excel / Google Sheets. Un modèle est téléchargeable dans le back-offic
 | `poids_kg`, `marge` | non (défaut des paramètres) | `1,2` · `40` |
 | `prix_force` | non | `420000` |
 | `pointures` | non | `39 40 41 42` |
+| `fournisseur`, `ref_fournisseur` | non | `Putian Shoes Co` · `PT-8821` |
+| `statut` | non (défaut choisi à l'import) | `sur commande`, `en stock`, `épuisé`, `brouillon` |
 
 Les en-têtes français ou anglais sont reconnus (Référence/SKU, Nom/Name, Prix/Price…), avec `;`, `,` ou tabulation.
 Un aperçu montre le prix de vente calculé et les erreurs ligne par ligne avant l'import. Réimporter une référence

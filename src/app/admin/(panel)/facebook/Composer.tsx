@@ -8,7 +8,7 @@ import { FormMessage } from "@/components/ui/FormMessage";
 import { Img } from "@/components/ui/Img";
 import { formatAr } from "@/lib/pricing";
 
-type P = { id: number; ref: string | null; name: string; category: string; price: number; sizes: string[]; images: string[]; active: boolean };
+type P = { id: number; ref: string | null; name: string; category: string; price: number; sizes: string[]; images: string[]; active: boolean; inStock: boolean };
 
 function sizeRange(sizes: string[]) {
   const nums = sizes.map(Number).filter(Number.isFinite).sort((a, b) => a - b);
@@ -16,9 +16,13 @@ function sizeRange(sizes: string[]) {
   return sizes.join(" · ");
 }
 
-function caption(products: P[], origin: string, delivery: string) {
+function caption(products: P[], origin: string, delivery: string, stockDelivery: string) {
   const tags = "#261WEAR #Sneakers #Tana #Madagascar #Antananarivo";
-  const footer = [`📦 Sur commande — livrée à Tana en ${delivery}`, "✅ Photo QC de ta paire avant l'envoi"];
+  const allInStock = products.every((p) => p.inStock);
+  const footer = [
+    allInStock ? `⚡ Disponible de suite — livrée à Tana en ${stockDelivery}` : `📦 Sur commande — livrée à Tana en ${delivery}`,
+    "✅ Photo QC de ta paire avant l'envoi",
+  ];
   if (products.length === 1) {
     const p = products[0];
     return [
@@ -37,7 +41,7 @@ function caption(products: P[], origin: string, delivery: string) {
     "🔥 NOUVEAU DROP 261 WEAR 🔥",
     "",
     ...products.flatMap((p) => [
-      `👟 ${p.name} — ${formatAr(p.price)}${p.sizes.length ? ` (${sizeRange(p.sizes)})` : ""}`,
+      `👟 ${p.name} — ${formatAr(p.price)}${p.sizes.length ? ` (${sizeRange(p.sizes)})` : ""}${p.inStock && !allInStock ? " ⚡ dispo de suite" : ""}`,
       `👉 ${origin}/produit/${p.id}`,
     ]),
     "",
@@ -55,6 +59,7 @@ export function Composer({
   maxPhotos,
   origin,
   deliveryText,
+  stockDeliveryText,
 }: {
   products: P[];
   preselected: number[];
@@ -62,6 +67,7 @@ export function Composer({
   maxPhotos: number;
   origin: string;
   deliveryText: string;
+  stockDeliveryText: string;
 }) {
   const initial = preselected.filter((id) => products.some((p) => p.id === id));
   const [selected, setSelected] = useState<number[]>(initial);
@@ -78,7 +84,7 @@ export function Composer({
   const [result, setResult] = useState<PublishResult | null>(null);
 
   const chosen = selected.map((id) => products.find((p) => p.id === id)!).filter(Boolean);
-  const generated = chosen.length ? caption(chosen, origin, deliveryText) : "";
+  const generated = chosen.length ? caption(chosen, origin, deliveryText, stockDeliveryText) : "";
   const message = custom ?? generated;
   const hidden = chosen.filter((p) => !p.active);
 
@@ -145,7 +151,7 @@ export function Composer({
                     <span className="block truncate font-semibold">{p.name}</span>
                     <span className="text-xs text-muted">
                       {[p.ref, formatAr(p.price), `${p.images.length} photo${p.images.length > 1 ? "s" : ""}`].filter(Boolean).join(" · ")}
-                      {!p.active && <span className="ml-1 font-semibold text-amber-700">· masqué sur le site</span>}
+                      {!p.active && <span className="ml-1 font-semibold text-amber-700">· non commandable</span>}
                     </span>
                   </span>
                 </label>
@@ -200,7 +206,7 @@ export function Composer({
           </div>
           {hidden.length > 0 && (
             <p className="rounded-lg bg-amber-50 px-3 py-2 text-xs text-amber-900">
-              ⚠ {hidden.map((p) => p.name).join(", ")} {hidden.length > 1 ? "sont masqués" : "est masqué"} sur le site : le lien de commande ne fonctionnera pas. Mets-{hidden.length > 1 ? "les" : "le"} en ligne avant de publier.
+              ⚠ {hidden.map((p) => p.name).join(", ")} {hidden.length > 1 ? "ne sont pas commandables" : "n'est pas commandable"} sur le site (brouillon ou épuisé) : les clients ne pourront pas commander via le lien.
             </p>
           )}
           <label className="flex items-center gap-2 text-sm">

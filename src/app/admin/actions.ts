@@ -8,13 +8,14 @@ import { createOrder, getOrder, updateOrder } from "@/lib/orders";
 import { ALL_STATUS_IDS, normalizePhone } from "@/lib/orders-shared";
 import { depositFor } from "@/lib/pricing";
 import { isValidRef, MAX_IMPORT_ROWS, normalizeRef, validateRow, type ImportRow } from "@/lib/import";
+import { isProductStatus, type ProductStatus } from "@/lib/product-status";
 import {
   createProduct,
   deleteProduct,
   getProduct,
   getProductIdByRef,
   setProductImages,
-  setProductsActive,
+  setProductsStatus,
   updateProduct,
   type ProductInput,
 } from "@/lib/products";
@@ -95,7 +96,7 @@ export async function saveProduct(_prev: FormState, form: FormData): Promise<For
     price_override: override ? Math.round(override) : null,
     sizes: str(form, "sizes", 300).split(/[,;\s]+/).map((s) => s.trim()).filter(Boolean),
     images: images.filter((u) => typeof u === "string").slice(0, 12),
-    active: form.get("active") === "on",
+    status: isProductStatus(form.get("status")) ? (form.get("status") as ProductStatus) : "brouillon",
   };
 
   if (!input.name) return { error: "Le nom est obligatoire." };
@@ -110,13 +111,12 @@ export async function saveProduct(_prev: FormState, form: FormData): Promise<For
   redirect("/admin/produits");
 }
 
-export async function toggleProduct(form: FormData) {
+export async function setProductStatus(form: FormData) {
   await requireAdmin();
-  const product = await getProduct(Number(form.get("id")));
-  if (!product) return;
-  const { id, pricing, ...rest } = product;
-  void pricing;
-  await updateProduct(id, { ...rest, active: !product.active });
+  const status = form.get("status");
+  const id = Number(form.get("id"));
+  if (!Number.isInteger(id) || !isProductStatus(status)) return;
+  await setProductsStatus([id], status);
   revalidatePath("/", "layout");
 }
 
@@ -138,10 +138,10 @@ export type ImportResult = {
 
 // Step 1: product sheets. Rows are matched on their reference: an existing
 // reference is updated (photos and online status kept), a new one is created.
-export async function importProducts(rows: ImportRow[], publish: boolean): Promise<ImportResult> {
+export async function importProducts(rows: ImportRow[], defaultStatus: ProductStatus): Promise<ImportResult> {
   await requireAdmin();
   const result: ImportResult = { created: 0, updated: 0, suppliersCreated: [], skipped: [] };
-  if (!Array.isArray(rows)) return result;
+  if (!Array.isArray(rows) || !isProductStatus(defaultStatus)) return result;
   const seen = new Set<string>();
   const suppliers = new Map<string, number>();
   const knownSuppliers = new Set((await listSupplierOptions()).map((o) => o.name.toLowerCase()));
@@ -178,11 +178,11 @@ export async function importProducts(rows: ImportRow[], publish: boolean): Promi
         supplier_id: supplierId ?? existing.supplier_id,
         supplier_ref: row.supplier_ref || existing.supplier_ref,
         images: existing.images,
-        active: existing.active || publish,
+        status: row.status ?? existing.status,
       });
       result.updated++;
     } else {
-      await createProduct({ ...fields, supplier_id: supplierId, supplier_ref: row.supplier_ref, images: [], active: publish });
+      await createProduct({ ...fields, supplier_id: supplierId, supplier_ref: row.supplier_ref, images: [], status: row.status ?? defaultStatus });
       result.created++;
     }
   }
@@ -203,7 +203,10 @@ export async function attachProductImages(productId: number, urls: string[], rep
 
 export async function publishProducts(ids: number[]) {
   await requireAdmin();
-  await setProductsActive(ids.filter(Number.isInteger), true);
+  // Only drafts are published; products already online keep their availability.
+  const drafts: number[] = [];
+  for (const id of ids.filter(Number.isInteger)) if ((await getProduct(id))?.status === "brouillon") drafts.push(id);
+  await setProductsStatus(drafts, "sur_commande");
   revalidatePath("/", "layout");
 }
 
@@ -374,6 +377,7 @@ export async function createManualOrder(_prev: FormState, form: FormData): Promi
     phone,
     address: str(form, "address", 200),
     note: str(form, "note", 500),
+    in_stock: product.status === "en_stock",
   });
   revalidatePath("/admin", "layout");
   redirect(`/admin/commandes/${order.id}`);
@@ -393,6 +397,9 @@ export async function updateSettings(_prev: FormState, form: FormData): Promise<
     "depositPct",
     "deliveryMinDays",
     "deliveryMaxDays",
+    "stockDeliveryMinDays",
+    "stockDeliveryMaxDays",
+    "badgeDays",
   ] as const;
   const values: Partial<Settings> = {};
   for (const key of fields) {
@@ -402,11 +409,18 @@ export async function updateSettings(_prev: FormState, form: FormData): Promise<
   }
   if (!values.rmbRate) return { error: "Le taux RMB doit être supérieur à 0." };
   if (values.depositPct! > 100) return { error: "L'acompte ne peut pas dépasser 100 %." };
+  const urls: Partial<Settings> = {};
+  for (const key of ["facebookUrl", "instagramUrl", "tiktokUrl"] as const) {
+    const v = str(form, key, 300);
+    if (v && !/^https:\/\/[^\s]+$/.test(v)) return { error: `Lien invalide pour ${key.replace("Url", "")} (doit commencer par https://).` };
+    urls[key] = v;
+  }
   const whatsapp = normalizePhone(str(form, "whatsapp", 30));
   if (!/^\d{10,15}$/.test(whatsapp)) return { error: "Numéro WhatsApp invalide." };
   await saveSettings({
     ...(await getSettings()),
     ...values,
+    ...urls,
     whatsapp,
     paymentInfo: str(form, "paymentInfo", 1000),
   });

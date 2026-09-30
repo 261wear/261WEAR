@@ -1,20 +1,36 @@
 import Link from "next/link";
 import { countByStatus, listOrders } from "@/lib/orders";
-import { ALL_STATUS_IDS, displayPhone, orderNumber, statusLabel } from "@/lib/orders-shared";
+import { ALL_STATUS_IDS, displayPhone, normalizePhone, orderNumber, parseOrderNumber, statusLabel } from "@/lib/orders-shared";
+import { Highlight } from "@/components/Highlight";
+import { scoreFields, tokenize } from "@/lib/search";
 import { LinkPending } from "@/components/ui/LinkPending";
 import { formatAr } from "@/lib/pricing";
 import { StatusBadge } from "./StatusBadge";
 
 export default async function OrdersPage(props: PageProps<"/admin">) {
-  const { statut } = await props.searchParams;
+  const { statut, q: rawQ } = await props.searchParams;
   const filter = typeof statut === "string" && ALL_STATUS_IDS.includes(statut) ? statut : undefined;
-  const [orders, counts] = await Promise.all([listOrders(filter), countByStatus()]);
+  const q = typeof rawQ === "string" ? rawQ.slice(0, 80) : "";
+  const [allOrders, counts] = await Promise.all([listOrders(filter), countByStatus()]);
+
+  // Search by order number, phone (any format), customer or product name.
+  const byNumber = parseOrderNumber(q);
+  const digits = q.replace(/\D/g, "");
+  const tokens = tokenize(q);
+  const orders = q
+    ? allOrders.filter(
+        (o) =>
+          (byNumber !== null && o.id === byNumber) ||
+          (digits.length >= 6 && o.phone.includes(normalizePhone(digits).slice(-9))) ||
+          scoreFields(tokens, [{ text: o.customer_name, weight: 3 }, { text: o.product_name, weight: 2 }, { text: o.address, weight: 1 }]) > 0,
+      )
+    : allOrders;
   const total = Object.values(counts).reduce((a, b) => a + b, 0);
 
   const tab = (id: string | undefined, label: string, n: number) => (
     <Link
       key={id ?? "all"}
-      href={id ? `/admin?statut=${id}` : "/admin"}
+      href={id ? `/admin?statut=${id}${q ? `&q=${encodeURIComponent(q)}` : ""}` : `/admin${q ? `?q=${encodeURIComponent(q)}` : ""}`}
       className={`rounded-full px-3 py-1.5 text-sm whitespace-nowrap ${
         filter === id ? "bg-ink text-white" : "bg-white hover:bg-black/5"
       }`}
@@ -29,7 +45,13 @@ export default async function OrdersPage(props: PageProps<"/admin">) {
         <h1 className="font-display text-3xl">Commandes</h1>
         <Link href="/admin/commandes/nouvelle" className="btn-dark">+ Commande manuelle</Link>
       </div>
-      <div className="mt-5 flex gap-2 overflow-x-auto pb-2">
+      <form action="/admin" role="search" className="mt-5 flex gap-2">
+        {filter && <input type="hidden" name="statut" value={filter} />}
+        <input name="q" type="search" defaultValue={q} placeholder="N° de commande, téléphone, client, modèle…" aria-label="Rechercher une commande" className="input max-w-lg" />
+        <button className="btn-dark">Rechercher</button>
+        {q && <Link href={filter ? `/admin?statut=${filter}` : "/admin"} className="btn-ghost">Effacer</Link>}
+      </form>
+      <div className="mt-4 flex gap-2 overflow-x-auto pb-2">
         {tab(undefined, "Toutes", total)}
         {ALL_STATUS_IDS.map((id) => tab(id, statusLabel(id), counts[id] ?? 0))}
       </div>
@@ -53,12 +75,13 @@ export default async function OrdersPage(props: PageProps<"/admin">) {
                   <Link href={`/admin/commandes/${o.id}`} className="underline">{orderNumber(o.id)}</Link>
                 </td>
                 <td className="p-3">
-                  {o.customer_name}
+                  <Highlight text={o.customer_name} query={q} />
                   <div className="text-xs text-muted">{displayPhone(o.phone)}</div>
                 </td>
                 <td className="p-3">
-                  {o.product_name}
+                  <Highlight text={o.product_name} query={q} />
                   {o.size && <span className="text-muted"> · {o.size}</span>}
+                  {o.in_stock && <span className="ml-1 text-xs font-semibold text-emerald-700">⚡ stock</span>}
                 </td>
                 <td className="p-3">{formatAr(o.total)}</td>
                 <td className={`p-3 ${o.amount_paid >= o.deposit ? "text-green-700" : "text-red-700"}`}>
@@ -70,7 +93,7 @@ export default async function OrdersPage(props: PageProps<"/admin">) {
             ))}
             {!orders.length && (
               <tr>
-                <td colSpan={7} className="p-10 text-center text-muted">Aucune commande.</td>
+                <td colSpan={7} className="p-10 text-center text-muted">{q ? `Aucune commande pour « ${q} ».` : "Aucune commande."}</td>
               </tr>
             )}
           </tbody>

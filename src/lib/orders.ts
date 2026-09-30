@@ -25,6 +25,7 @@ export type Order = {
   admin_note: string;
   proofs: string[];
   history: HistoryEntry[];
+  in_stock: boolean; // product was "Disponible de suite": no China steps
   created_at: Date;
   updated_at: Date;
 };
@@ -34,6 +35,7 @@ function toOrder(r: Row): Order {
     ...(r as Order),
     proofs: JSON.parse(r.proofs || "[]"),
     history: JSON.parse(r.history || "[]"),
+    in_stock: Boolean(r.in_stock),
     created_at: new Date(r.created_at),
     updated_at: new Date(r.updated_at),
   };
@@ -53,6 +55,7 @@ export type NewOrder = Pick<
   | "phone"
   | "address"
   | "note"
+  | "in_stock"
 >;
 
 export async function createOrder(o: NewOrder) {
@@ -62,8 +65,8 @@ export async function createOrder(o: NewOrder) {
   ];
   const row = await queryOne(
     `INSERT INTO orders (token, product_id, product_name, product_image, size, qty, unit_price,
-       total, deposit, customer_name, phone, address, note, status, history)
-     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,'en_attente_paiement',$14)
+       total, deposit, customer_name, phone, address, note, status, history, in_stock)
+     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,'en_attente_paiement',$14,$15)
      RETURNING *`,
     [
       token,
@@ -80,6 +83,7 @@ export async function createOrder(o: NewOrder) {
       o.address,
       o.note,
       JSON.stringify(history),
+      o.in_stock,
     ],
   );
   return toOrder(row!);

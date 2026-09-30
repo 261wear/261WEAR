@@ -35,7 +35,7 @@ export async function listSuppliers(): Promise<SupplierWithStats[]> {
     `SELECT s.*,
        (SELECT COUNT(*) FROM products p WHERE p.supplier_id = s.id)::int AS products,
        (SELECT COUNT(*) FROM orders o JOIN products p ON p.id = o.product_id
-          WHERE p.supplier_id = s.id AND o.status = 'paiement_recu')::int AS to_order,
+          WHERE p.supplier_id = s.id AND o.status = 'paiement_recu' AND NOT o.in_stock)::int AS to_order,
        (SELECT COUNT(*) FROM orders o JOIN products p ON p.id = o.product_id
           WHERE p.supplier_id = s.id AND o.status IN ('commande_fournisseur', 'expedie'))::int AS in_transit
      FROM suppliers s ORDER BY s.name`,
@@ -119,7 +119,7 @@ async function linesByStatus(statuses: string[]): Promise<SupplierBucket[]> {
      FROM orders o
      LEFT JOIN products p ON p.id = o.product_id
      LEFT JOIN suppliers s ON s.id = p.supplier_id
-     WHERE o.status = ANY($1::text[])
+     WHERE o.status = ANY($1::text[]) AND NOT o.in_stock
      ORDER BY s.name NULLS LAST, o.id`,
     [statuses],
   );

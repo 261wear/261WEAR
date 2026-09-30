@@ -1,5 +1,7 @@
 // Bulk import helpers, shared by the browser (preview) and the server (re-validation).
 
+import { type ProductStatus } from "./product-status";
+
 export type ImportRow = {
   line: number;
   ref: string;
@@ -13,6 +15,7 @@ export type ImportRow = {
   sizes: string[];
   supplier: string;
   supplier_ref: string;
+  status: ProductStatus | null; // null = keep current / use the default
   errors: string[];
 };
 
@@ -82,7 +85,8 @@ type Field =
   | "price_override"
   | "sizes"
   | "supplier"
-  | "supplier_ref";
+  | "supplier_ref"
+  | "status";
 
 const ALIASES: Record<Field, string[]> = {
   ref: ["ref", "reference", "sku", "code", "article", "item", "item_no", "model_no"],
@@ -96,13 +100,29 @@ const ALIASES: Record<Field, string[]> = {
   sizes: ["pointures", "tailles", "sizes", "taille", "pointure"],
   supplier: ["fournisseur", "supplier", "vendor", "usine", "factory"],
   supplier_ref: ["ref_fournisseur", "reference_fournisseur", "supplier_ref", "supplier_sku", "vendor_sku"],
+  status: ["statut", "status", "disponibilite", "dispo", "availability", "etat"],
 };
 
-export const TEMPLATE_HEADERS = ["ref", "nom", "categorie", "description", "prix_rmb", "poids_kg", "marge", "prix_force", "pointures", "fournisseur", "ref_fournisseur"];
+const STATUS_WORDS: [ProductStatus, string[]][] = [
+  ["sur_commande", ["sur commande", "commande", "precommande", "pre-commande", "on order", "preorder"]],
+  ["en_stock", ["disponible de suite", "dispo de suite", "en stock", "stock", "disponible", "dispo", "in stock", "immediat"]],
+  ["epuise", ["epuise", "epuisee", "rupture", "rupture de stock", "sold out", "out of stock"]],
+  ["brouillon", ["brouillon", "draft", "masque", "non publie", "cache"]],
+];
+
+// Returns undefined when the value is not understood.
+export function parseStatus(value: string): ProductStatus | null | undefined {
+  const k = value.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/_/g, " ").trim();
+  if (!k) return null;
+  for (const [id, words] of STATUS_WORDS) if (id.replace("_", " ") === k || words.includes(k)) return id;
+  return undefined;
+}
+
+export const TEMPLATE_HEADERS = ["ref", "nom", "categorie", "description", "prix_rmb", "poids_kg", "marge", "prix_force", "pointures", "fournisseur", "ref_fournisseur", "statut"];
 
 export const TEMPLATE_EXAMPLE = [
-  ["AR261", "Air Runner 261 Black", "Sneakers", "Mesh respirant, semelle cousue", "150", "1,2", "", "", "39 40 41 42 43 44", "Putian Shoes Co", "PT-8821"],
-  ["CT-HIGH-W", "Court High White", "Sneakers", "Cuir synthétique premium", "185", "1,4", "40", "", "40 41 42 43", "Guangzhou Kicks", "GZ-114"],
+  ["AR261", "Air Runner 261 Black", "Sneakers", "Mesh respirant, semelle cousue", "150", "1,2", "", "", "39 40 41 42 43 44", "Putian Shoes Co", "PT-8821", "sur commande"],
+  ["CT-HIGH-W", "Court High White", "Sneakers", "Cuir synthétique premium", "185", "1,4", "40", "", "40 41 42 43", "Guangzhou Kicks", "GZ-114", "en stock"],
 ];
 
 function key(header: string) {
@@ -154,6 +174,7 @@ export function validateRow(r: Omit<ImportRow, "errors">): ImportRow {
   if (!numOk(r.weight_kg) || (r.weight_kg !== null && r.weight_kg <= 0)) errors.push("Poids invalide");
   if (!numOk(r.margin_pct)) errors.push("Marge invalide");
   if (!numOk(r.price_override)) errors.push("Prix forcé invalide");
+  if (r.status != null && !["sur_commande", "en_stock", "epuise", "brouillon"].includes(r.status)) errors.push("Statut invalide");
   return {
     line: r.line,
     ref,
@@ -167,6 +188,7 @@ export function validateRow(r: Omit<ImportRow, "errors">): ImportRow {
     sizes: (Array.isArray(r.sizes) ? r.sizes : []).map(String).slice(0, 30),
     supplier: String(r.supplier ?? "").trim().slice(0, 80),
     supplier_ref: String(r.supplier_ref ?? "").trim().slice(0, 60),
+    status: r.status ?? null,
     errors,
   };
 }
@@ -192,8 +214,14 @@ export function rowsFromText(text: string): { rows: ImportRow[]; missingColumns:
       sizes: parseSizes(cell(row, "sizes")),
       supplier: cell(row, "supplier"),
       supplier_ref: cell(row, "supplier_ref"),
+      status: parseStatus(cell(row, "status")) ?? null,
     }),
   );
+  // Unknown status words are reported, not silently ignored.
+  table.slice(1, MAX_IMPORT_ROWS + 1).forEach((row, i) => {
+    const raw = cell(row, "status");
+    if (raw && parseStatus(raw) === undefined) rows[i].errors.push(`Statut inconnu « ${raw} » (sur commande, en stock, épuisé, brouillon)`);
+  });
   // Duplicate references inside the same file.
   const seen = new Map<string, number>();
   for (const r of rows) {

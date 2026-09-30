@@ -1,4 +1,4 @@
-import { CANCELLED, STATUSES, statusIndex } from "@/lib/orders-shared";
+import { CANCELLED, stepsFor } from "@/lib/orders-shared";
 import type { HistoryEntry } from "@/lib/orders";
 
 function fmt(at: string) {
@@ -11,14 +11,15 @@ function fmt(at: string) {
   });
 }
 
-export function Timeline({ status, history }: { status: string; history: HistoryEntry[] }) {
+export function Timeline({ status, history, inStock = false }: { status: string; history: HistoryEntry[]; inStock?: boolean }) {
   if (status === CANCELLED.id) {
     return <p className="rounded-lg bg-red-50 px-4 py-3 text-sm font-semibold text-red-700">Commande annulée.</p>;
   }
-  const current = statusIndex(status);
+  const steps = stepsFor(inStock);
+  const current = steps.findIndex((s) => s.id === status);
   return (
     <ol className="relative space-y-5 border-l-2 border-black/10 pl-6">
-      {STATUSES.map((s, i) => {
+      {steps.map((s, i) => {
         const done = i <= current;
         const entry = [...history].reverse().find((h) => h.status === s.id);
         return (

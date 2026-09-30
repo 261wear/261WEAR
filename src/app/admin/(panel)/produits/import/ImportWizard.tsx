@@ -4,8 +4,17 @@ import { useState } from "react";
 import { ProductSheetsStep } from "./ProductSheetsStep";
 import { PhotosStep } from "./PhotosStep";
 import type { PricingSettings } from "@/lib/pricing";
+import type { ProductStatus } from "@/lib/product-status";
 
-export type ProductSummary = { id: number; ref: string | null; name: string; images: number; active: boolean };
+export type ProductSummary = {
+  id: number;
+  ref: string | null;
+  name: string;
+  images: number;
+  active: boolean;
+  status: ProductStatus;
+  price_rmb: number;
+};
 
 export function ImportWizard({
   initialStep,

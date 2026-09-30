@@ -16,6 +16,7 @@ function text(form: FormData, key: string, max = 200) {
 export async function placeOrder(_prev: FormState, form: FormData): Promise<FormState> {
   const product = await getProduct(Number(form.get("productId")));
   if (!product || !product.active) return { error: "Ce modèle n'est plus disponible." };
+  if (product.status === "epuise") return { error: "Ce modèle vient d'être épuisé." };
 
   const size = text(form, "size", 20);
   const name = text(form, "name", 80);
@@ -43,6 +44,7 @@ export async function placeOrder(_prev: FormState, form: FormData): Promise<Form
     phone,
     address,
     note,
+    in_stock: product.status === "en_stock",
   });
   redirect(`/commande/${order.token}?nouvelle=1`);
 }

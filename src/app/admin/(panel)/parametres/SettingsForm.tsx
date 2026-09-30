@@ -17,8 +17,17 @@ const PRICING: [keyof Settings, string, string][] = [
 
 const ORDERS: [keyof Settings, string][] = [
   ["depositPct", "Acompte à la commande (%)"],
-  ["deliveryMinDays", "Délai minimum (jours)"],
-  ["deliveryMaxDays", "Délai maximum (jours)"],
+  ["deliveryMinDays", "Sur commande : délai minimum (jours)"],
+  ["deliveryMaxDays", "Sur commande : délai maximum (jours)"],
+  ["stockDeliveryMinDays", "Disponible de suite : délai minimum (jours)"],
+  ["stockDeliveryMaxDays", "Disponible de suite : délai maximum (jours)"],
+  ["badgeDays", "Durée des badges « New » / « Mis à jour » (jours)"],
+];
+
+const SOCIALS: [keyof Settings, string, string][] = [
+  ["facebookUrl", "Page Facebook", "https://www.facebook.com/261wear"],
+  ["instagramUrl", "Instagram", "https://www.instagram.com/261wear"],
+  ["tiktokUrl", "TikTok", "https://www.tiktok.com/@261wear"],
 ];
 
 export function SettingsForm({ settings }: { settings: Settings }) {
@@ -56,6 +65,16 @@ export function SettingsForm({ settings }: { settings: Settings }) {
               <input id={key} name={key} className="input" inputMode="numeric" defaultValue={String(settings[key])} required />
             </div>
           ))}
+        </div>
+        <div className="card space-y-4 p-5">
+          <h2 className="font-semibold">Réseaux sociaux (pied de page du site)</h2>
+          {SOCIALS.map(([key, label, placeholder]) => (
+            <div key={key}>
+              <label className="label" htmlFor={key}>{label}</label>
+              <input id={key} name={key} type="url" className="input" defaultValue={String(settings[key])} placeholder={placeholder} />
+            </div>
+          ))}
+          <p className="text-xs text-muted">Laisse vide pour masquer un réseau.</p>
         </div>
         <FormMessage error={state?.error} ok={pending ? undefined : state?.ok} />
         <Button type="submit" pending={pending} pendingLabel="Enregistrement…" className="btn-dark w-full py-4">Enregistrer</Button>

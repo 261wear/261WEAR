@@ -12,6 +12,13 @@ export const STATUSES = [
 
 export const CANCELLED = { id: "annule", label: "Annulé" } as const;
 
+// "Disponible de suite" orders are already in Tana: no China steps.
+const CHINA_STEPS = ["commande_fournisseur", "expedie", "arrive_tana"];
+
+export function stepsFor(inStock: boolean) {
+  return inStock ? STATUSES.filter((s) => !CHINA_STEPS.includes(s.id)) : [...STATUSES];
+}
+
 export type StatusId = (typeof STATUSES)[number]["id"] | typeof CANCELLED.id;
 
 export const ALL_STATUS_IDS: string[] = [...STATUSES.map((s) => s.id), CANCELLED.id];

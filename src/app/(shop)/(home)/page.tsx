@@ -1,10 +1,11 @@
 import Link from "next/link";
 import { ProductCard } from "@/components/ProductCard";
-import { listProducts } from "@/lib/products";
+import { shopProducts } from "@/lib/catalog";
 import { getSettings } from "@/lib/settings";
 
 export default async function Home() {
-  const [products, settings] = await Promise.all([listProducts({ onlyActive: true }), getSettings()]);
+  const [products, settings] = await Promise.all([shopProducts(), getSettings()]);
+  const inStock = products.filter((p) => p.status === "en_stock");
   const steps = [
     ["01", "Choisis ta paire", "Sélectionne ton modèle et ta pointure, puis valide sur WhatsApp."],
     ["02", "Paie l'acompte", `${settings.depositPct} % par Mobile Money. Envoie la capture sur WhatsApp.`],
@@ -45,10 +46,27 @@ export default async function Home() {
         </div>
       </section>
 
+      {inStock.length > 0 && (
+        <section className="mx-auto max-w-6xl px-4 pt-16">
+          <div className="flex items-end justify-between gap-4">
+            <h2 className="font-display text-4xl sm:text-5xl">
+              <span className="text-emerald-600">⚡</span> Dispo de suite
+            </h2>
+            <Link href="/recherche?dispo=en_stock" className="text-sm font-semibold underline">Tout voir</Link>
+          </div>
+          <p className="mt-1 text-sm text-muted">Déjà à Tana · livrée en {settings.stockDeliveryMinDays} à {settings.stockDeliveryMaxDays} jours.</p>
+          <div className="mt-6 grid grid-cols-2 gap-x-4 gap-y-8 md:grid-cols-3 lg:grid-cols-4">
+            {inStock.slice(0, 4).map((p) => (
+              <ProductCard key={p.id} product={p} />
+            ))}
+          </div>
+        </section>
+      )}
+
       <section id="drop" className="mx-auto max-w-6xl scroll-mt-20 px-4 py-16">
         <div className="flex items-end justify-between gap-4">
           <h2 className="font-display text-4xl sm:text-5xl">Le drop</h2>
-          <p className="text-sm text-muted">{products.length} modèle{products.length > 1 ? "s" : ""}</p>
+          <Link href="/recherche" className="text-sm font-semibold underline">Tout le catalogue ({products.length})</Link>
         </div>
         {products.length ? (
           <div className="mt-8 grid grid-cols-2 gap-x-4 gap-y-8 md:grid-cols-3 lg:grid-cols-4">

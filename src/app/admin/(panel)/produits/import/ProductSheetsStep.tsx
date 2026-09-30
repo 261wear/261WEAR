@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/Button";
 import { FormMessage } from "@/components/ui/FormMessage";
 import { rowsFromText, TEMPLATE_EXAMPLE, TEMPLATE_HEADERS, type ImportRow } from "@/lib/import";
 import { computePrice, formatAr, type PricingSettings } from "@/lib/pricing";
+import { PRODUCT_STATUSES, productStatus, STATUS_BADGE, type ProductStatus } from "@/lib/product-status";
 import type { ProductSummary } from "./ImportWizard";
 
 const CHUNK = 50;
@@ -33,14 +34,15 @@ export function ProductSheetsStep({
 }) {
   const [text, setText] = useState("");
   const [fileName, setFileName] = useState("");
-  const [publish, setPublish] = useState(false);
+  const [defaultStatus, setDefaultStatus] = useState<ProductStatus>("brouillon");
   const [pending, startTransition] = useTransition();
   const [progress, setProgress] = useState<{ done: number; total: number } | null>(null);
   const [result, setResult] = useState<ImportResult | null>(null);
   const [error, setError] = useState("");
 
   const { rows, missingColumns } = rowsFromText(text);
-  const existingRefs = new Set(products.map((p) => p.ref).filter(Boolean));
+  const byRef = new Map(products.filter((p) => p.ref).map((p) => [p.ref!, p]));
+  const existingRefs = new Set(byRef.keys());
   const valid = rows.filter((r) => !r.errors.length);
   const invalid = rows.length - valid.length;
   const toUpdate = valid.filter((r) => existingRefs.has(r.ref)).length;
@@ -60,7 +62,7 @@ export function ProductSheetsStep({
       const total: ImportResult = { created: 0, updated: 0, suppliersCreated: [], skipped: [] };
       try {
         for (let i = 0; i < valid.length; i += CHUNK) {
-          const r = await importProducts(valid.slice(i, i + CHUNK), publish);
+          const r = await importProducts(valid.slice(i, i + CHUNK), defaultStatus);
           total.created += r.created;
           total.updated += r.updated;
           total.skipped.push(...r.skipped);
@@ -140,12 +142,13 @@ export function ProductSheetsStep({
                   <th className="p-2.5">Prix de vente</th>
                   <th className="p-2.5">Pointures</th>
                   <th className="p-2.5">Fournisseur</th>
+                  <th className="p-2.5">Dispo</th>
                   <th className="p-2.5">Statut</th>
                 </tr>
               </thead>
               <tbody>
                 {rows.map((r) => (
-                  <PreviewRow key={r.line} row={r} settings={settings} exists={existingRefs.has(r.ref)} />
+                  <PreviewRow key={r.line} row={r} settings={settings} existing={byRef.get(r.ref)} defaultStatus={defaultStatus} />
                 ))}
               </tbody>
             </table>
@@ -155,9 +158,12 @@ export function ProductSheetsStep({
 
       {rows.length > 0 && (
         <div className="card flex flex-wrap items-center justify-between gap-4 p-5">
-          <label className="flex items-center gap-2 text-sm">
-            <input type="checkbox" checked={publish} onChange={(e) => setPublish(e.target.checked)} className="h-4 w-4" />
-            Mettre en ligne tout de suite <span className="text-muted">(conseillé : après avoir ajouté les photos)</span>
+          <label className="flex flex-wrap items-center gap-2 text-sm">
+            Statut des nouveaux produits
+            <select value={defaultStatus} onChange={(e) => setDefaultStatus(e.target.value as ProductStatus)} className="input w-auto py-2">
+              {PRODUCT_STATUSES.map((s) => <option key={s.id} value={s.id}>{s.label}</option>)}
+            </select>
+            <span className="text-xs text-muted">(si la colonne « statut » est vide · conseillé : brouillon, puis publier après les photos)</span>
           </label>
           <Button
             type="button"
@@ -193,8 +199,23 @@ export function ProductSheetsStep({
   );
 }
 
-function PreviewRow({ row, settings, exists }: { row: ImportRow; settings: PricingSettings; exists: boolean }) {
+function PreviewRow({
+  row,
+  settings,
+  existing,
+  defaultStatus,
+}: {
+  row: ImportRow;
+  settings: PricingSettings;
+  existing?: ProductSummary;
+  defaultStatus: ProductStatus;
+}) {
   const ok = !row.errors.length;
+  const exists = Boolean(existing);
+  const status = row.status ?? existing?.status ?? defaultStatus;
+  const changes: string[] = [];
+  if (existing && row.price_rmb != null && row.price_rmb !== existing.price_rmb) changes.push(`prix ${existing.price_rmb} → ${row.price_rmb} ¥`);
+  if (existing && row.status && row.status !== existing.status) changes.push(`${productStatus(existing.status).short} → ${productStatus(row.status).short}`);
   const price = ok ? computePrice(settings, { price_rmb: row.price_rmb!, weight_kg: row.weight_kg, margin_pct: row.margin_pct, price_override: row.price_override }).price : null;
   return (
     <tr className={`border-b border-black/5 align-top last:border-0 ${ok ? "" : "bg-red-50/60"}`}>
@@ -212,10 +233,18 @@ function PreviewRow({ row, settings, exists }: { row: ImportRow; settings: Prici
         {row.supplier_ref && <span className="block font-mono text-muted">{row.supplier_ref}</span>}
       </td>
       <td className="p-2.5 text-xs">
+        <span className={`inline-block rounded-full px-2 py-0.5 font-semibold whitespace-nowrap ${STATUS_BADGE[status]}`}>{productStatus(status).short}</span>
+      </td>
+      <td className="p-2.5 text-xs">
         {ok ? (
-          <span className={`rounded-full px-2 py-0.5 font-semibold ${exists ? "bg-sky-100 text-sky-800" : "bg-green-100 text-green-800"}`}>
-            {exists ? "Mise à jour" : "Nouveau"}
-          </span>
+          exists ? (
+            <span>
+              <span className="inline-flex items-center gap-1 rounded-md bg-sky-600 px-2 py-0.5 font-bold whitespace-nowrap text-white">↻ Mise à jour</span>
+              <span className="mt-1 block text-sky-800">{changes.length ? changes.join(" · ") : "infos inchangées"}</span>
+            </span>
+          ) : (
+            <span className="inline-flex items-center gap-1 rounded-md bg-emerald-600 px-2 py-0.5 font-bold whitespace-nowrap text-white">✦ Nouveau</span>
+          )
         ) : (
           <span className="text-red-700">{row.errors.join(" · ")}</span>
         )}

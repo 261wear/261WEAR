@@ -65,6 +65,14 @@ const SCHEMA = [
   )`,
   `ALTER TABLE products ADD COLUMN IF NOT EXISTS supplier_id INTEGER REFERENCES suppliers (id) ON DELETE SET NULL`,
   `ALTER TABLE products ADD COLUMN IF NOT EXISTS supplier_ref TEXT NOT NULL DEFAULT ''`,
+  // Availability status (replaces the old online/hidden switch, kept in sync in "active").
+  `ALTER TABLE products ADD COLUMN IF NOT EXISTS status TEXT`,
+  `UPDATE products SET status = CASE WHEN active THEN 'sur_commande' ELSE 'brouillon' END WHERE status IS NULL`,
+  `ALTER TABLE products ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ`,
+  `UPDATE products SET updated_at = created_at WHERE updated_at IS NULL`,
+  `ALTER TABLE products ADD COLUMN IF NOT EXISTS published_at TIMESTAMPTZ`,
+  `UPDATE products SET published_at = created_at WHERE published_at IS NULL AND active`,
+  `ALTER TABLE orders ADD COLUMN IF NOT EXISTS in_stock BOOLEAN NOT NULL DEFAULT FALSE`,
   `CREATE TABLE IF NOT EXISTS fb_posts (
     id SERIAL PRIMARY KEY,
     fb_post_id TEXT,

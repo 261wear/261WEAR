@@ -8,6 +8,12 @@ export type Settings = PricingSettings & {
   paymentInfo: string;
   deliveryMinDays: number;
   deliveryMaxDays: number;
+  stockDeliveryMinDays: number; // "Disponible de suite" products, already in Tana
+  stockDeliveryMaxDays: number;
+  badgeDays: number; // "Nouveau" / "Mis à jour" badges stay this many days
+  facebookUrl: string;
+  instagramUrl: string;
+  tiktokUrl: string;
 };
 
 export const DEFAULT_SETTINGS: Settings = {
@@ -23,6 +29,12 @@ export const DEFAULT_SETTINGS: Settings = {
     "MVola : 034 00 000 00 (Nom Prénom)\nOrange Money : 032 00 000 00 (Nom Prénom)",
   deliveryMinDays: 7,
   deliveryMaxDays: 14,
+  stockDeliveryMinDays: 1,
+  stockDeliveryMaxDays: 2,
+  badgeDays: 14,
+  facebookUrl: "https://www.facebook.com/261wear",
+  instagramUrl: "https://www.instagram.com/261wear",
+  tiktokUrl: "https://www.tiktok.com/@261wear",
 };
 
 export async function getSettings(): Promise<Settings> {

@@ -49,10 +49,11 @@ export default async function FacebookPage(props: PageProps<"/admin/facebook">) 
         maxPhotos={FB_MAX_PHOTOS}
         origin={origin}
         deliveryText={`${settings.deliveryMinDays} à ${settings.deliveryMaxDays} jours`}
+        stockDeliveryText={`${settings.stockDeliveryMinDays} à ${settings.stockDeliveryMaxDays} jours`}
         preselected={preselected}
         products={products
           .filter((p) => p.images.length)
-          .map((p) => ({ id: p.id, ref: p.ref, name: p.name, category: p.category, price: p.pricing.price, sizes: p.sizes, images: p.images, active: p.active }))}
+          .map((p) => ({ id: p.id, ref: p.ref, name: p.name, category: p.category, price: p.pricing.price, sizes: p.sizes, images: p.images, active: p.active && p.status !== "epuise", inStock: p.status === "en_stock" }))}
       />
 
       <h2 className="mt-10 text-lg font-semibold">Dernières publications</h2>

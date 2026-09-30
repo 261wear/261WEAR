@@ -8,7 +8,15 @@ import { Button, SubmitButton } from "@/components/ui/Button";
 import { FormMessage } from "@/components/ui/FormMessage";
 import { Img } from "@/components/ui/Img";
 import { computePrice, formatAr, type PricingSettings } from "@/lib/pricing";
+import { PRODUCT_STATUSES, type ProductStatus } from "@/lib/product-status";
 import type { Product } from "@/lib/products";
+
+const STATUS_HELP: Record<ProductStatus, string> = {
+  sur_commande: "Visible, commandé en Chine (délai normal)",
+  en_stock: "Visible, déjà à Tana : livraison rapide",
+  epuise: "Visible mais ne peut plus être commandé",
+  brouillon: "Invisible sur le site",
+};
 
 const CATEGORIES = ["Sneakers", "Running", "Basketball", "Chaussures de ville", "Boots", "Mocassins", "Sandales"];
 
@@ -104,10 +112,20 @@ export function ProductForm({
               <input id="supplier_ref" name="supplier_ref" className="input" defaultValue={product?.supplier_ref} placeholder="Ex. PT-8821" />
             </div>
           </div>
-          <label className="flex items-center gap-2 text-sm font-medium">
-            <input type="checkbox" name="active" defaultChecked={product?.active ?? true} className="h-4 w-4" />
-            Afficher sur le site
-          </label>
+          <fieldset>
+            <legend className="label">Statut</legend>
+            <div className="grid gap-2 sm:grid-cols-2">
+              {PRODUCT_STATUSES.map((st) => (
+                <label key={st.id} className="flex cursor-pointer items-start gap-2 rounded-lg border border-black/10 p-3 text-sm has-[:checked]:border-ink has-[:checked]:bg-paper">
+                  <input type="radio" name="status" value={st.id} defaultChecked={(product?.status ?? "sur_commande") === st.id} className="mt-0.5" />
+                  <span>
+                    <span className="font-semibold">{st.label}</span>
+                    <span className="block text-xs text-muted">{STATUS_HELP[st.id]}</span>
+                  </span>
+                </label>
+              ))}
+            </div>
+          </fieldset>
         </div>
 
         <div className="card p-5">
