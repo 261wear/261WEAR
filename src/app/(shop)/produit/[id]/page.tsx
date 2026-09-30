@@ -69,7 +69,7 @@ export default async function ProductPage(props: PageProps<"/produit/[id]">) {
               </a>
             </div>
           ) : (
-            <OrderForm productId={product.id} sizes={product.sizes} />
+            <OrderForm productId={product.id} sizes={product.sizes} price={price} />
           )}
         </div>
       </div>

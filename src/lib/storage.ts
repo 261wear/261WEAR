@@ -12,10 +12,25 @@ const EXT: Record<string, string> = {
   "image/gif": "gif",
 };
 
+// The declared type comes from the browser: check the real file signature too,
+// so nothing else (HTML, SVG, scripts) can be stored as an "image".
+function sniff(bytes: Uint8Array): string | null {
+  const b = (i: number) => bytes[i];
+  if (b(0) === 0xff && b(1) === 0xd8 && b(2) === 0xff) return "image/jpeg";
+  if (b(0) === 0x89 && b(1) === 0x50 && b(2) === 0x4e && b(3) === 0x47) return "image/png";
+  if (b(0) === 0x47 && b(1) === 0x49 && b(2) === 0x46 && b(3) === 0x38) return "image/gif";
+  const ascii = (from: number, to: number) => String.fromCharCode(...bytes.slice(from, to));
+  if (ascii(0, 4) === "RIFF" && ascii(8, 12) === "WEBP") return "image/webp";
+  return null;
+}
+
 export async function saveImage(file: File, folder: "products" | "proofs") {
-  const ext = EXT[file.type];
-  if (!ext) throw new Error("Format d'image non supporté (JPG, PNG, WEBP).");
   if (file.size > 4 * 1024 * 1024) throw new Error("Image trop lourde (4 Mo max).");
+  if (file.size < 16) throw new Error("Fichier vide ou illisible.");
+  const type = sniff(new Uint8Array(await file.slice(0, 16).arrayBuffer()));
+  const ext = type ? EXT[type] : undefined;
+  if (!type || !ext) throw new Error("Format d'image non supporté (JPG, PNG, WEBP, GIF).");
+  file = new File([file], `image.${ext}`, { type });
   const name = `${folder}-${Date.now()}-${randomBytes(6).toString("hex")}.${ext}`;
 
   if (process.env.BLOB_READ_WRITE_TOKEN) {

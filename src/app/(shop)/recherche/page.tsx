@@ -45,7 +45,7 @@ export default async function SearchPage(props: PageProps<"/recherche">) {
     q: current.q,
     cat: current.cat,
     taille: current.taille,
-    dispo: isProductStatus(current.dispo) ? current.dispo : undefined,
+    dispo: isProductStatus(current.dispo) && productStatus(current.dispo).isPublic ? current.dispo : undefined,
     min: num(current.min),
     max: num(current.max),
     tri: SORTS.some((s) => s.id === current.tri) ? current.tri : undefined,

@@ -8,6 +8,7 @@ import { Button, SubmitButton } from "@/components/ui/Button";
 import { FormMessage } from "@/components/ui/FormMessage";
 import { Img } from "@/components/ui/Img";
 import { computePrice, formatAr, type PricingSettings } from "@/lib/pricing";
+import { isAllowedImageUrl, productIssues, productWarnings } from "@/lib/product-rules";
 import { PRODUCT_STATUSES, type ProductStatus } from "@/lib/product-status";
 import type { Product } from "@/lib/products";
 
@@ -21,8 +22,16 @@ const STATUS_HELP: Record<ProductStatus, string> = {
 const CATEGORIES = ["Sneakers", "Running", "Basketball", "Chaussures de ville", "Boots", "Mocassins", "Sandales"];
 
 function parse(v: string): number | null {
+  if (!v.trim()) return null;
   const n = Number(v.replace(/\s/g, "").replace(",", "."));
-  return v.trim() && Number.isFinite(n) ? n : null;
+  return Number.isFinite(n) ? n : NaN;
+}
+
+// Ariary: "210 000", "210.000" → 210000.
+function parseAr(v: string): number | null {
+  if (!v.trim()) return null;
+  const n = Number(v.replace(/[.,]\d{1,2}$/, "").replace(/[\s.,]/g, ""));
+  return Number.isFinite(n) ? Math.round(n) : NaN;
 }
 
 export function ProductForm({
@@ -38,21 +47,35 @@ export function ProductForm({
   const [images, setImages] = useState<string[]>(product?.images ?? []);
   const [imageUrl, setImageUrl] = useState("");
   const uploads = useUploads("products", (url) => setImages((prev) => [...prev, url]));
-  const [rmb, setRmb] = useState(product ? String(product.price_rmb) : "");
+  const [status, setStatus] = useState<ProductStatus>(product?.status ?? "sur_commande");
+  const [rmb, setRmb] = useState(product?.price_rmb != null ? String(product.price_rmb) : "");
+  const [costAr, setCostAr] = useState(product?.cost_ar != null ? String(product.cost_ar) : "");
   const [weight, setWeight] = useState(product?.weight_kg != null ? String(product.weight_kg) : "");
   const [margin, setMargin] = useState(product?.margin_pct != null ? String(product.margin_pct) : "");
   const [override, setOverride] = useState(product?.price_override != null ? String(product.price_override) : "");
 
   const rmbValue = parse(rmb);
-  const preview =
-    rmbValue && rmbValue > 0
-      ? computePrice(settings, {
-          price_rmb: rmbValue,
-          weight_kg: parse(weight),
-          margin_pct: parse(margin),
-          price_override: parse(override),
-        })
+  const costValue = parseAr(costAr);
+  const core = {
+    name: "x", // the name is checked by the browser (required field)
+    status,
+    price_rmb: rmbValue,
+    cost_ar: costValue,
+    weight_kg: parse(weight),
+    margin_pct: parse(margin),
+    price_override: parseAr(override),
+    sizes: [],
+  };
+  const issues = productIssues(core);
+  const preview = issues.length ? null : computePrice(settings, core);
+  const warnings = productWarnings(core, settings);
+  // The other way to price this product, when both prices are known.
+  const alt =
+    preview && rmbValue != null && costValue != null
+      ? computePrice(settings, { ...core, status: preview.basis === "ar" ? "sur_commande" : "en_stock" })
       : null;
+  const needRmb = status === "sur_commande";
+  const needAr = status === "en_stock";
 
   function move(i: number, dir: -1 | 1) {
     setImages((prev) => {
@@ -117,7 +140,7 @@ export function ProductForm({
             <div className="grid gap-2 sm:grid-cols-2">
               {PRODUCT_STATUSES.map((st) => (
                 <label key={st.id} className="flex cursor-pointer items-start gap-2 rounded-lg border border-black/10 p-3 text-sm has-[:checked]:border-ink has-[:checked]:bg-paper">
-                  <input type="radio" name="status" value={st.id} defaultChecked={(product?.status ?? "sur_commande") === st.id} className="mt-0.5" />
+                  <input type="radio" name="status" value={st.id} checked={status === st.id} onChange={() => setStatus(st.id)} className="mt-0.5" />
                   <span>
                     <span className="font-semibold">{st.label}</span>
                     <span className="block text-xs text-muted">{STATUS_HELP[st.id]}</span>
@@ -146,12 +169,12 @@ export function ProductForm({
             <UploadTile label="Ajouter" className="aspect-square" pending={uploads.pending} progress={uploads.progress} onFiles={uploads.upload} />
           </div>
           <div className="mt-3 flex gap-2">
-            <input value={imageUrl} onChange={(e) => setImageUrl(e.target.value)} placeholder="…ou coller l'URL d'une image" className="input" />
+            <input value={imageUrl} onChange={(e) => setImageUrl(e.target.value)} placeholder="…ou coller l'adresse https:// d'une image" className="input" />
             <button
               type="button"
               className="btn-ghost"
               onClick={() => {
-                if (/^https?:\/\//.test(imageUrl.trim())) setImages([...images, imageUrl.trim()]);
+                if (isAllowedImageUrl(imageUrl.trim()) && !images.includes(imageUrl.trim())) setImages([...images, imageUrl.trim()]);
                 setImageUrl("");
               }}
             >
@@ -178,11 +201,21 @@ export function ProductForm({
         <div className="card space-y-4 p-5 lg:sticky lg:top-4">
           <h2 className="font-semibold">Prix</h2>
           <div>
-            <label className="label" htmlFor="price_rmb">Prix fournisseur (RMB ¥)</label>
-            <input form="product-form" id="price_rmb" name="price_rmb" className="input text-lg font-semibold" inputMode="decimal" value={rmb} onChange={(e) => setRmb(e.target.value)} required />
+            <label className="label" htmlFor="price_rmb">
+              Prix fournisseur (RMB ¥) {needRmb && <span className="text-red-700">*</span>}
+            </label>
+            <input form="product-form" id="price_rmb" name="price_rmb" className="input text-lg font-semibold" inputMode="decimal" value={rmb} onChange={(e) => setRmb(e.target.value)} required={needRmb} />
+            <p className="mt-1 text-xs text-muted">Pour la vente sur commande (Chine → Tana).</p>
+          </div>
+          <div>
+            <label className="label" htmlFor="cost_ar">
+              Prix d&apos;achat à Tana (Ar) {needAr && <span className="text-red-700">*</span>}
+            </label>
+            <input form="product-form" id="cost_ar" name="cost_ar" className="input text-lg font-semibold" inputMode="numeric" value={costAr} onChange={(e) => setCostAr(e.target.value)} required={needAr} placeholder="Ex. 210000" />
+            <p className="mt-1 text-xs text-muted">Pour « Disponible de suite » : coût total de la paire déjà à Tana, transport compris.</p>
           </div>
           <div className="grid grid-cols-2 gap-3">
-            <div>
+            <div className={preview?.basis === "ar" ? "opacity-50" : ""}>
               <label className="label" htmlFor="weight_kg">Poids (kg)</label>
               <input form="product-form" id="weight_kg" name="weight_kg" className="input" inputMode="decimal" placeholder={String(settings.defaultWeightKg)} value={weight} onChange={(e) => setWeight(e.target.value)} />
             </div>
@@ -197,16 +230,33 @@ export function ProductForm({
           </div>
 
           {preview ? (
-            <dl className="space-y-1.5 rounded-xl bg-paper p-4 text-sm">
-              <div className="flex justify-between"><dt>Produit ({rmbValue} ¥ × {settings.rmbRate})</dt><dd>{formatAr(preview.productCost)}</dd></div>
-              <div className="flex justify-between"><dt>Transport ({preview.weightKg} kg)</dt><dd>{formatAr(preview.transport)}</dd></div>
+            <dl className="space-y-1.5 rounded-xl bg-paper p-4 text-sm" aria-live="polite">
+              <div className="mb-1 text-xs font-semibold tracking-wide text-muted uppercase">
+                {preview.basis === "ar" ? "Calcul « Disponible de suite » (achat en Ar)" : "Calcul « Sur commande » (RMB + transport)"}
+              </div>
+              {preview.basis === "ar" ? (
+                <div className="flex justify-between"><dt>Achat à Tana</dt><dd>{formatAr(preview.productCost)}</dd></div>
+              ) : (
+                <>
+                  <div className="flex justify-between"><dt>Produit ({rmbValue} ¥ × {settings.rmbRate})</dt><dd>{formatAr(preview.productCost)}</dd></div>
+                  <div className="flex justify-between"><dt>Transport ({preview.weightKg} kg)</dt><dd>{formatAr(preview.transport)}</dd></div>
+                </>
+              )}
               <div className="flex justify-between"><dt>Frais fixes</dt><dd>{formatAr(preview.fixedFees)}</dd></div>
               <div className="flex justify-between border-t border-black/10 pt-1.5 font-semibold"><dt>Coût de revient</dt><dd>{formatAr(preview.cost)}</dd></div>
               <div className="flex justify-between"><dt>Marge {preview.overridden ? "" : `(${preview.marginPct} %)`}</dt><dd className={preview.profit > 0 ? "text-green-700" : "text-red-700"}>{formatAr(preview.profit)}</dd></div>
               <div className="flex justify-between border-t border-black/10 pt-2 text-lg font-bold"><dt>Prix de vente</dt><dd>{formatAr(preview.price)}</dd></div>
             </dl>
           ) : (
-            <p className="rounded-xl bg-paper p-4 text-sm text-muted">Saisis le prix en RMB pour voir le calcul.</p>
+            <ul className="space-y-1 rounded-xl bg-paper p-4 text-sm text-muted" aria-live="polite">
+              {issues.map((i) => <li key={i}>• {i}</li>)}
+            </ul>
+          )}
+          {warnings.map((w) => <p key={w} role="alert" className="rounded-lg bg-amber-50 px-3 py-2 text-xs text-amber-900">⚠ {w}</p>)}
+          {alt && (
+            <p className="text-xs text-muted">
+              {alt.basis === "rmb" ? "Si commandé en Chine (sur commande)" : "Si vendu depuis le stock de Tana"} : <b>{formatAr(alt.price)}</b>
+            </p>
           )}
           <p className="text-xs text-muted">Si tu changes le taux ou le transport dans « Prix & paramètres », tous les prix se mettent à jour.</p>
         </div>

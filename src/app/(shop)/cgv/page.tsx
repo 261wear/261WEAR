@@ -12,7 +12,7 @@ export default async function CgvPage() {
     ],
     [
       "2. Commande sur mesure",
-      "Les articles sont commandés spécialement pour chaque client auprès de nos fournisseurs, dans le modèle et la pointure choisis. La commande est enregistrée sur le site puis confirmée par WhatsApp.",
+      "Les articles « sur commande » sont commandés spécialement pour chaque client auprès de nos fournisseurs, dans le modèle et la pointure choisis. Les articles « disponibles de suite » sont déjà en stock à Antananarivo. Un article « épuisé » ne peut pas être commandé. La commande est enregistrée sur le site puis confirmée par WhatsApp.",
     ],
     [
       "3. Prix et paiement",
@@ -20,7 +20,7 @@ export default async function CgvPage() {
     ],
     [
       "4. Délais de livraison",
-      `La livraison intervient en ${s.deliveryMinDays} à ${s.deliveryMaxDays} jours après confirmation de l'acompte, à titre indicatif. Des retards indépendants de notre volonté (transport aérien, douane, intempéries) peuvent survenir ; le client en est informé et peut suivre sa commande en ligne. Au-delà de 25 jours de retard, le client peut demander l'annulation et le remboursement de son acompte.`,
+      `Articles « sur commande » : livraison en ${s.deliveryMinDays} à ${s.deliveryMaxDays} jours après confirmation de l'acompte. Articles « disponibles de suite » (déjà à Antananarivo) : livraison en ${s.stockDeliveryMinDays} à ${s.stockDeliveryMaxDays} jours. Ces délais sont indicatifs. Des retards indépendants de notre volonté (transport aérien, douane, intempéries) peuvent survenir ; le client en est informé et peut suivre sa commande en ligne. Au-delà de 25 jours de retard, le client peut demander l'annulation et le remboursement de son acompte.`,
     ],
     [
       "5. Pointures",

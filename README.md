@@ -23,6 +23,25 @@ prix  = coût × (1 + marge %), arrondi au-dessus (ex. aux 5 000 Ar)
 Exemple avec les réglages par défaut (taux 630, 80 000 Ar/kg, 1,2 kg, 5 000 Ar de frais, marge 35 %) :
 150 ¥ → coût 195 500 Ar → **prix 265 000 Ar**.
 
+**Produits « Disponible de suite »** (déjà à Tana) : le prix de vente part du **prix d'achat en Ariary**, transport
+déjà compris :
+
+```
+coût  = prix d'achat Ar + frais fixes
+prix  = coût × (1 + marge %), arrondi au-dessus
+```
+
+Exemple : achat 210 000 Ar → coût 215 000 Ar → **prix 295 000 Ar** (le taux RMB ne le change pas).
+
+Règles (identiques dans la fiche produit, l'import, le changement de statut rapide et côté serveur) :
+- *Sur commande* : prix RMB obligatoire ; *Disponible de suite* : prix d'achat Ar obligatoire ;
+  *Épuisé* / *Brouillon* : au moins un des deux.
+- Un produit peut avoir les deux prix : la base suit son statut, et la fiche montre l'autre scénario.
+- Limites : RMB ≤ 100 000, Ar entre 1 000 et 50 000 000 (un prix en Ar tapé dans la colonne RMB est refusé),
+  poids 0,1–20 kg, marge 0–500 %. Un prix forcé sous le coût est accepté avec une alerte « perte ».
+- Si le prix change (taux, marge…) pendant qu'un client commande, la commande est refusée avec le nouveau prix,
+  la page se met à jour et le client revalide : il paie toujours le prix qu'il a vu.
+
 Le poids et la marge peuvent être modifiés produit par produit, et un prix peut être forcé.
 Changer le taux dans « Prix & paramètres » met à jour tous les prix du site. Une commande garde le prix du
 moment où elle a été passée.
@@ -64,14 +83,19 @@ depuis Excel / Google Sheets. Un modèle est téléchargeable dans le back-offic
 | Colonne | Obligatoire | Exemple |
 | --- | --- | --- |
 | `ref` | oui | `AR261` (lettres, chiffres, `-` `_` `.`) |
-| `nom` | oui | `Air Runner 261 Black` |
-| `prix_rmb` | oui | `150` |
+| `nom` | pour un nouveau produit | `Air Runner 261 Black` |
+| `prix_rmb` | pour « sur commande » | `150` |
+| `prix_achat_ar` | pour « disponible de suite » | `210 000` ou `210.000` |
 | `categorie`, `description` | non | `Sneakers` |
 | `poids_kg`, `marge` | non (défaut des paramètres) | `1,2` · `40` |
 | `prix_force` | non | `420000` |
 | `pointures` | non | `39 40 41 42` |
 | `fournisseur`, `ref_fournisseur` | non | `Putian Shoes Co` · `PT-8821` |
 | `statut` | non (défaut choisi à l'import) | `sur commande`, `en stock`, `épuisé`, `brouillon` |
+
+Pour une référence existante, une cellule vide garde la valeur actuelle : un fichier `ref;statut` suffit à changer la
+disponibilité de tout le catalogue. Nouveau produit sans statut : seulement un prix Ar → « disponible de suite »,
+seulement un prix RMB → « sur commande » (sinon le statut par défaut choisi à l'import).
 
 Les en-têtes français ou anglais sont reconnus (Référence/SKU, Nom/Name, Prix/Price…), avec `;`, `,` ou tabulation.
 Un aperçu montre le prix de vente calculé et les erreurs ligne par ligne avant l'import. Réimporter une référence
@@ -118,6 +142,17 @@ Graph**, générer un jeton utilisateur avec les deux permissions ci-dessus, l'�
 puis appeler `GET /me/accounts` : le `access_token` de la Page 261 WEAR est le jeton à utiliser (il n'expire pas tant
 que le mot de passe et les droits ne changent pas). Le back-office affiche « Connecté à la Page … » quand tout est bon.
 Sans configuration, l'écran permet de copier le texte et de télécharger les photos pour publier à la main.
+
+## Sécurité
+
+- Back-office : chaque action vérifie la session (une action rejouée sans session est sans effet) ; connexion limitée
+  à 10 essais / 15 min.
+- Formulaires publics : champ piège anti-robots, commandes limitées à 8 / heure et suivi à 20 essais / 10 min par
+  connexion (limite en mémoire, par instance).
+- Photos : signature du fichier vérifiée (un faux PNG est refusé), servies avec `nosniff` ; adresses d'images limitées
+  aux uploads du site et au `https://`. Captures de paiement réservées au back-office en local ; sur Vercel Blob elles
+  ont une adresse publique mais impossible à deviner.
+- Recherche : le texte saisi est toujours affiché comme du texte ; les brouillons ne sont jamais exposés.
 
 ## Statuts de commande
 

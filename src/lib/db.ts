@@ -73,6 +73,9 @@ const SCHEMA = [
   `ALTER TABLE products ADD COLUMN IF NOT EXISTS published_at TIMESTAMPTZ`,
   `UPDATE products SET published_at = created_at WHERE published_at IS NULL AND active`,
   `ALTER TABLE orders ADD COLUMN IF NOT EXISTS in_stock BOOLEAN NOT NULL DEFAULT FALSE`,
+  // Purchase price in Ariary for stock already in Tana; RMB price becomes optional.
+  `ALTER TABLE products ADD COLUMN IF NOT EXISTS cost_ar INTEGER`,
+  `ALTER TABLE products ALTER COLUMN price_rmb DROP NOT NULL`,
   `CREATE TABLE IF NOT EXISTS fb_posts (
     id SERIAL PRIMARY KEY,
     fb_post_id TEXT,

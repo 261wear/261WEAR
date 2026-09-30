@@ -2,19 +2,31 @@
 
 import { useFormAction } from "@/components/useFormAction";
 import Link from "next/link";
-import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
 import { placeOrder } from "@/app/actions";
 import { Button } from "./ui/Button";
 import { FormMessage } from "./ui/FormMessage";
 import { WhatsAppIcon } from "./WhatsAppIcon";
 
-export function OrderForm({ productId, sizes }: { productId: number; sizes: string[] }) {
+export function OrderForm({ productId, sizes, price }: { productId: number; sizes: string[]; price: number }) {
   const [state, onSubmit, pending] = useFormAction(placeOrder, undefined);
   const [size, setSize] = useState("");
+  const router = useRouter();
+  // Price, stock or sizes changed on the server: reload the page data so the
+  // customer sees the new price before confirming again.
+  useEffect(() => {
+    if (state?.refresh) router.refresh();
+  }, [state, router]);
   return (
     <form onSubmit={onSubmit} className="space-y-5" aria-busy={pending}>
       <fieldset disabled={pending} className="contents">
       <input type="hidden" name="productId" value={productId} />
+      <input type="hidden" name="expectedPrice" value={price} />
+      {/* Honeypot, invisible for people */}
+      <div aria-hidden="true" className="absolute -left-[9999px] h-0 w-0 overflow-hidden">
+        <label>Site web <input type="text" name="website" tabIndex={-1} autoComplete="off" /></label>
+      </div>
       {sizes.length > 0 && (
         <div>
           <div className="flex items-center justify-between">

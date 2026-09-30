@@ -1,6 +1,7 @@
 // Bulk import helpers, shared by the browser (preview) and the server (re-validation).
 
-import { type ProductStatus } from "./product-status";
+import { productIssues, type ProductCore } from "./product-rules";
+import { isProductStatus, type ProductStatus } from "./product-status";
 
 export type ImportRow = {
   line: number;
@@ -9,6 +10,7 @@ export type ImportRow = {
   category: string;
   description: string;
   price_rmb: number | null;
+  cost_ar: number | null;
   weight_kg: number | null;
   margin_pct: number | null;
   price_override: number | null;
@@ -80,6 +82,7 @@ type Field =
   | "category"
   | "description"
   | "price_rmb"
+  | "cost_ar"
   | "weight_kg"
   | "margin_pct"
   | "price_override"
@@ -94,6 +97,7 @@ const ALIASES: Record<Field, string[]> = {
   category: ["categorie", "category", "type"],
   description: ["description", "desc", "caracteristiques", "details"],
   price_rmb: ["prix_rmb", "prixrmb", "rmb", "prix", "prix_fournisseur", "cny", "yuan", "price", "price_rmb", "price_cny", "cost", "unit_price"],
+  cost_ar: ["prix_achat_ar", "prix_achat", "prix_achat_mga", "cout_ar", "achat_ar", "cost_ar", "purchase_price", "cout"],
   weight_kg: ["poids_kg", "poids", "weight", "weight_kg", "kg"],
   margin_pct: ["marge", "marge_pct", "margin", "margin_pct"],
   price_override: ["prix_force", "prix_ar", "prix_vente", "prix_mga"],
@@ -118,11 +122,11 @@ export function parseStatus(value: string): ProductStatus | null | undefined {
   return undefined;
 }
 
-export const TEMPLATE_HEADERS = ["ref", "nom", "categorie", "description", "prix_rmb", "poids_kg", "marge", "prix_force", "pointures", "fournisseur", "ref_fournisseur", "statut"];
+export const TEMPLATE_HEADERS = ["ref", "nom", "categorie", "description", "statut", "prix_rmb", "prix_achat_ar", "poids_kg", "marge", "prix_force", "pointures", "fournisseur", "ref_fournisseur"];
 
 export const TEMPLATE_EXAMPLE = [
-  ["AR261", "Air Runner 261 Black", "Sneakers", "Mesh respirant, semelle cousue", "150", "1,2", "", "", "39 40 41 42 43 44", "Putian Shoes Co", "PT-8821", "sur commande"],
-  ["CT-HIGH-W", "Court High White", "Sneakers", "Cuir synthétique premium", "185", "1,4", "40", "", "40 41 42 43", "Guangzhou Kicks", "GZ-114", "en stock"],
+  ["AR261", "Air Runner 261 Black", "Sneakers", "Mesh respirant, semelle cousue", "sur commande", "150", "", "1,2", "", "", "39 40 41 42 43 44", "Putian Shoes Co", "PT-8821"],
+  ["CT-HIGH-W", "Court High White", "Sneakers", "Cuir synthétique premium", "en stock", "", "210000", "", "40", "", "40 41 42 43", "Guangzhou Kicks", "GZ-114"],
 ];
 
 function key(header: string) {
@@ -147,60 +151,112 @@ export function mapColumns(headers: string[]) {
 }
 
 function parseNumber(v: string): number | null | typeof NaN {
+  if (!v.trim()) return null;
   const cleaned = v.replace(/[^\d,.-]/g, "").replace(",", ".");
-  if (!cleaned) return null;
+  if (!cleaned) return NaN; // something was written, but no number in it
   const n = Number(cleaned);
   return Number.isFinite(n) ? n : NaN;
 }
 
 function parseSizes(v: string) {
   return v
+    .replace(/\b(\d{2}),(5)\b/g, "$1.$2") // half sizes written the French way: 42,5
     .split(/[,;/|\s]+/)
     .map((s) => s.trim())
-    .filter(Boolean)
-    .slice(0, 30);
+    .filter(Boolean);
 }
 
-// Validates one row; used as-is by the server on the posted rows.
+// Ariary amounts: "180 000", "180.000", "180,000 Ar", "180 000,00" → 180000.
+function parseAr(v: string): number | null {
+  const t = v.trim().replace(/[.,]\d{1,2}$/, "");
+  if (!t) return null;
+  const digits = t.replace(/[^\d-]/g, "");
+  if (!digits || digits === "-") return NaN;
+  const n = Number(digits);
+  return Number.isFinite(n) ? n : NaN;
+}
+
+// Format checks of one row (what the file says). Required fields depend on
+// whether the reference already exists: see resolveRow.
 export function validateRow(r: Omit<ImportRow, "errors">): ImportRow {
   const errors: string[] = [];
-  const ref = normalizeRef(r.ref ?? "");
+  const ref = normalizeRef(String(r.ref ?? ""));
   if (!ref) errors.push("Référence manquante");
   else if (!isValidRef(ref)) errors.push("Référence invalide (lettres, chiffres, - _ . ; 40 max)");
-  const name = String(r.name ?? "").trim().slice(0, 120);
-  if (!name) errors.push("Nom manquant");
-  const numOk = (n: unknown) => n === null || (typeof n === "number" && Number.isFinite(n));
-  if (!(typeof r.price_rmb === "number" && r.price_rmb > 0)) errors.push("Prix RMB manquant ou invalide");
-  if (!numOk(r.weight_kg) || (r.weight_kg !== null && r.weight_kg <= 0)) errors.push("Poids invalide");
-  if (!numOk(r.margin_pct)) errors.push("Marge invalide");
-  if (!numOk(r.price_override)) errors.push("Prix forcé invalide");
-  if (r.status != null && !["sur_commande", "en_stock", "epuise", "brouillon"].includes(r.status)) errors.push("Statut invalide");
+  // NaN = a value was given but is not a number: report it once, then drop it.
+  const num = (n: unknown, label: string) => {
+    if (n === null || n === undefined) return null;
+    if (typeof n === "number" && Number.isFinite(n)) return n;
+    errors.push(`${label} : valeur illisible`);
+    return null;
+  };
+  const status = r.status == null ? null : isProductStatus(r.status) ? r.status : (errors.push("Statut invalide"), null);
   return {
-    line: r.line,
+    line: Number(r.line) || 0,
     ref,
-    name,
+    name: String(r.name ?? "").trim().slice(0, 120),
     category: String(r.category ?? "").trim().slice(0, 60),
     description: String(r.description ?? "").trim().slice(0, 3000),
-    price_rmb: r.price_rmb,
-    weight_kg: r.weight_kg,
-    margin_pct: r.margin_pct,
-    price_override: r.price_override === null ? null : Math.round(r.price_override),
-    sizes: (Array.isArray(r.sizes) ? r.sizes : []).map(String).slice(0, 30),
+    price_rmb: num(r.price_rmb, "Prix RMB"),
+    cost_ar: (() => {
+      const n = num(r.cost_ar, "Prix d'achat Ar");
+      return n === null ? null : Math.round(n);
+    })(),
+    weight_kg: num(r.weight_kg, "Poids"),
+    margin_pct: num(r.margin_pct, "Marge"),
+    price_override: (() => {
+      const n = num(r.price_override, "Prix forcé");
+      return n === null ? null : Math.round(n);
+    })(),
+    sizes: (Array.isArray(r.sizes) ? r.sizes : []).map(String).map((x) => x.trim()).filter(Boolean),
     supplier: String(r.supplier ?? "").trim().slice(0, 80),
     supplier_ref: String(r.supplier_ref ?? "").trim().slice(0, 60),
-    status: r.status ?? null,
+    status,
     errors,
   };
+}
+
+// What the import needs to know about a product that already has this reference.
+export type ImportExisting = ProductCore & { category: string; description: string };
+
+export type ResolvedRow = { product: ImportExisting; isNew: boolean; errors: string[] };
+
+// Merges a row into the existing product: an empty cell keeps the current
+// value, so a file with only "ref;statut" is enough to update availability.
+// The merged product is then checked with the same rules as the product form.
+export function resolveRow(row: ImportRow, existing: ImportExisting | undefined, defaultStatus: ProductStatus): ResolvedRow {
+  const price_rmb = row.price_rmb ?? existing?.price_rmb ?? null;
+  const cost_ar = row.cost_ar ?? existing?.cost_ar ?? null;
+  // New product without a status: between the two sellable statuses, follow the
+  // price given (only a price in Ar = stock in Tana, only RMB = to order).
+  let fallback = defaultStatus;
+  if (defaultStatus === "sur_commande" && price_rmb === null && cost_ar !== null) fallback = "en_stock";
+  if (defaultStatus === "en_stock" && cost_ar === null && price_rmb !== null) fallback = "sur_commande";
+  const product: ImportExisting = {
+    name: row.name || existing?.name || "",
+    category: row.category || existing?.category || "",
+    description: row.description || existing?.description || "",
+    status: row.status ?? existing?.status ?? fallback,
+    price_rmb,
+    cost_ar,
+    weight_kg: row.weight_kg ?? existing?.weight_kg ?? null,
+    margin_pct: row.margin_pct ?? existing?.margin_pct ?? null,
+    price_override: row.price_override ?? existing?.price_override ?? null,
+    sizes: row.sizes.length ? row.sizes : (existing?.sizes ?? []),
+  };
+  const errors = row.errors.length ? row.errors : productIssues(product);
+  return { product, isNew: !existing, errors };
 }
 
 export function rowsFromText(text: string): { rows: ImportRow[]; missingColumns: string[] } {
   const table = parseTable(text);
   if (table.length < 2) return { rows: [], missingColumns: [] };
   const map = mapColumns(table[0]);
-  const missingColumns = (["ref", "name", "price_rmb"] as Field[]).filter((f) => map[f] === undefined);
+  const missingColumns = (["ref"] as Field[]).filter((f) => map[f] === undefined);
   if (missingColumns.length) return { rows: [], missingColumns };
   const cell = (row: string[], f: Field) => (map[f] === undefined ? "" : (row[map[f]!] ?? "").trim());
-  const rows = table.slice(1, MAX_IMPORT_ROWS + 1).map((row, i) =>
+  const body = table.slice(1, MAX_IMPORT_ROWS + 1);
+  const rows = body.map((row, i) =>
     validateRow({
       line: i + 2,
       ref: cell(row, "ref"),
@@ -208,9 +264,10 @@ export function rowsFromText(text: string): { rows: ImportRow[]; missingColumns:
       category: cell(row, "category"),
       description: cell(row, "description"),
       price_rmb: parseNumber(cell(row, "price_rmb")),
+      cost_ar: parseAr(cell(row, "cost_ar")),
       weight_kg: parseNumber(cell(row, "weight_kg")),
       margin_pct: parseNumber(cell(row, "margin_pct")),
-      price_override: parseNumber(cell(row, "price_override")),
+      price_override: parseAr(cell(row, "price_override")),
       sizes: parseSizes(cell(row, "sizes")),
       supplier: cell(row, "supplier"),
       supplier_ref: cell(row, "supplier_ref"),
@@ -218,7 +275,7 @@ export function rowsFromText(text: string): { rows: ImportRow[]; missingColumns:
     }),
   );
   // Unknown status words are reported, not silently ignored.
-  table.slice(1, MAX_IMPORT_ROWS + 1).forEach((row, i) => {
+  body.forEach((row, i) => {
     const raw = cell(row, "status");
     if (raw && parseStatus(raw) === undefined) rows[i].errors.push(`Statut inconnu « ${raw} » (sur commande, en stock, épuisé, brouillon)`);
   });

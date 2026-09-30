@@ -9,7 +9,7 @@ import { setOrderStatus } from "@/app/admin/actions";
 import { getOrder } from "@/lib/orders";
 import { getProduct } from "@/lib/products";
 import { getSupplier } from "@/lib/suppliers";
-import { CANCELLED, STATUSES, displayPhone, orderNumber, stepsFor, waLink } from "@/lib/orders-shared";
+import { CANCELLED, displayPhone, orderNumber, stepsFor, waLink } from "@/lib/orders-shared";
 import { formatAr } from "@/lib/pricing";
 import { StatusBadge } from "../../StatusBadge";
 import { OrderEditor } from "./OrderEditor";
@@ -118,7 +118,7 @@ export default async function AdminOrderPage(props: PageProps<"/admin/commandes/
             <form action={setOrderStatus} className="mt-3 flex flex-wrap gap-2">
               <input type="hidden" name="id" value={order.id} />
               <select key={order.status} name="status" defaultValue={order.status} className="input w-auto flex-1">
-                {STATUSES.map((s) => (
+                {steps.map((s) => (
                   <option key={s.id} value={s.id}>{s.label}</option>
                 ))}
                 <option value={CANCELLED.id}>{CANCELLED.label}</option>

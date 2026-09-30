@@ -33,7 +33,7 @@ export default async function SupplierPage(props: PageProps<"/admin/fournisseurs
                       </span>
                     </span>
                     <span className="text-right text-xs">
-                      {p.price_rmb} ¥<span className="block text-muted">{formatAr(p.pricing.price)}</span>
+                      {p.price_rmb != null ? `${p.price_rmb} ¥` : "—"}<span className="block text-muted">{formatAr(p.pricing.price)}</span>
                     </span>
                   </Link>
                 </li>

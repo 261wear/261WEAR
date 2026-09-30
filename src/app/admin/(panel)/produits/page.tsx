@@ -5,6 +5,7 @@ import { Img } from "@/components/ui/Img";
 import { LinkPending } from "@/components/ui/LinkPending";
 import { formatAr } from "@/lib/pricing";
 import { freshness, isProductStatus, PRODUCT_STATUSES } from "@/lib/product-status";
+import { productIssues } from "@/lib/product-rules";
 import { listProducts } from "@/lib/products";
 import { scoreFields, tokenize } from "@/lib/search";
 import { getSettings } from "@/lib/settings";
@@ -74,7 +75,7 @@ export default async function AdminProductsPage(props: PageProps<"/admin/produit
           <thead className="border-b border-black/10 text-xs text-muted uppercase">
             <tr>
               <th className="p-3">Produit</th>
-              <th className="p-3">Prix RMB</th>
+              <th className="p-3">Base de prix</th>
               <th className="p-3">Coût de revient</th>
               <th className="p-3">Prix de vente</th>
               <th className="p-3">Marge</th>
@@ -96,11 +97,20 @@ export default async function AdminProductsPage(props: PageProps<"/admin/produit
                       <span className="block text-xs text-muted">
                         {[p.ref, p.category, p.sizes.join(", ")].filter(Boolean).join(" · ")}
                         {!p.images.length && <span className="ml-1 font-semibold text-amber-700">· sans photo</span>}
+                        {productIssues(p).length > 0 && (
+                          <span className="block font-semibold text-red-700" title={productIssues(p).join(" · ")}>⚠ à compléter : {productIssues(p).join(" · ")}</span>
+                        )}
                       </span>
                     </span>
                   </Link>
                 </td>
-                <td className="p-3">{p.price_rmb} ¥</td>
+                <td className="p-3 text-xs whitespace-nowrap">
+                  {p.pricing.basis === "ar" ? (
+                    <span title="Disponible de suite : prix d'achat à Tana">Achat {formatAr(p.cost_ar!)}</span>
+                  ) : (
+                    <span title="Sur commande : prix fournisseur + transport">{p.price_rmb} ¥</span>
+                  )}
+                </td>
                 <td className="p-3">{formatAr(p.pricing.cost)}</td>
                 <td className="p-3 font-semibold">
                   {formatAr(p.pricing.price)}

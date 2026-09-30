@@ -4,10 +4,12 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { checkPassword, endSession, requireAdmin, startSession } from "@/lib/auth";
 import { FB_MAX_PHOTOS, facebookConfigured, logPost, publishPhotoPost } from "@/lib/facebook";
+import { rateLimit } from "@/lib/rate-limit";
 import { createOrder, getOrder, updateOrder } from "@/lib/orders";
-import { ALL_STATUS_IDS, normalizePhone } from "@/lib/orders-shared";
+import { ALL_STATUS_IDS, normalizePhone, stepsFor } from "@/lib/orders-shared";
 import { depositFor } from "@/lib/pricing";
-import { isValidRef, MAX_IMPORT_ROWS, normalizeRef, validateRow, type ImportRow } from "@/lib/import";
+import { isValidRef, MAX_IMPORT_ROWS, normalizeRef, resolveRow, validateRow, type ImportRow } from "@/lib/import";
+import { isAllowedImageUrl, MAX_IMAGES, productIssues } from "@/lib/product-rules";
 import { isProductStatus, type ProductStatus } from "@/lib/product-status";
 import {
   createProduct,
@@ -36,6 +38,14 @@ function str(form: FormData, key: string, max = 2000) {
   return String(form.get(key) ?? "").trim().slice(0, max);
 }
 
+// Ariary amounts: "210 000", "210.000" or "210 000,00" → 210000.
+function numAr(form: FormData, key: string): number | null {
+  const raw = str(form, key).replace(/[.,]\d{1,2}$/, "").replace(/[\s.,]/g, "");
+  if (!raw) return null;
+  const n = Number(raw);
+  return Number.isFinite(n) ? Math.round(n) : NaN;
+}
+
 function num(form: FormData, key: string): number | null {
   const raw = str(form, key).replace(/\s/g, "").replace(",", ".");
   if (!raw) return null;
@@ -46,7 +56,11 @@ function num(form: FormData, key: string): number | null {
 // ---------- Session ----------
 
 export async function login(_prev: FormState, form: FormData): Promise<FormState> {
-  if (!checkPassword(str(form, "password", 200))) return { error: "Mot de passe incorrect." };
+  if (!(await rateLimit("login", 10, 15 * 60 * 1000))) return { error: "Trop de tentatives. Réessaie dans 15 minutes." };
+  if (!checkPassword(str(form, "password", 200))) {
+    await new Promise((r) => setTimeout(r, 600)); // slows down password guessing
+    return { error: "Mot de passe incorrect." };
+  }
   await startSession();
   redirect("/admin");
 }
@@ -61,17 +75,16 @@ export async function logout() {
 export async function saveProduct(_prev: FormState, form: FormData): Promise<FormState> {
   await requireAdmin();
   const id = Number(form.get("id")) || null;
-  const priceRmb = num(form, "price_rmb");
-  const weight = num(form, "weight_kg");
-  const margin = num(form, "margin_pct");
-  const override = num(form, "price_override");
+  if (id && !(await getProduct(id))) return { error: "Ce produit n'existe plus." };
 
-  let images: string[] = [];
+  let images: unknown = [];
   try {
     images = JSON.parse(str(form, "images", 20000) || "[]");
   } catch {
     return { error: "Images invalides." };
   }
+  if (!Array.isArray(images) || !images.every(isAllowedImageUrl)) return { error: "Adresse d'image invalide (https:// uniquement)." };
+  if (images.length > MAX_IMAGES) return { error: `${MAX_IMAGES} photos maximum.` };
 
   const ref = normalizeRef(str(form, "ref", 60));
   if (ref && !isValidRef(ref)) return { error: "Référence invalide (lettres, chiffres, - _ .)." };
@@ -83,27 +96,25 @@ export async function saveProduct(_prev: FormState, form: FormData): Promise<For
   const supplierId = Number(form.get("supplier_id")) || null;
   if (supplierId && !(await getSupplier(supplierId))) return { error: "Fournisseur introuvable." };
 
+  const status = form.get("status");
   const input: ProductInput = {
     ref: ref || null,
     supplier_id: supplierId,
     supplier_ref: str(form, "supplier_ref", 60),
-    name: str(form, "name", 120),
+    name: str(form, "name", 200),
     category: str(form, "category", 60),
     description: str(form, "description", 3000),
-    price_rmb: priceRmb ?? NaN,
-    weight_kg: weight,
-    margin_pct: margin,
-    price_override: override ? Math.round(override) : null,
-    sizes: str(form, "sizes", 300).split(/[,;\s]+/).map((s) => s.trim()).filter(Boolean),
-    images: images.filter((u) => typeof u === "string").slice(0, 12),
-    status: isProductStatus(form.get("status")) ? (form.get("status") as ProductStatus) : "brouillon",
+    price_rmb: num(form, "price_rmb"),
+    cost_ar: numAr(form, "cost_ar"),
+    weight_kg: num(form, "weight_kg"),
+    margin_pct: num(form, "margin_pct"),
+    price_override: numAr(form, "price_override"),
+    sizes: [...new Set(str(form, "sizes", 400).replace(/\b(\d{2}),(5)\b/g, "$1.$2").split(/[,;\s]+/).map((x) => x.trim()).filter(Boolean))],
+    images: images as string[],
+    status: isProductStatus(status) ? status : "brouillon",
   };
-
-  if (!input.name) return { error: "Le nom est obligatoire." };
-  if (!(input.price_rmb > 0)) return { error: "Le prix en RMB doit être un nombre positif." };
-  if (weight !== null && !(weight > 0)) return { error: "Poids invalide." };
-  if (margin !== null && Number.isNaN(margin)) return { error: "Marge invalide." };
-  if (override !== null && Number.isNaN(override)) return { error: "Prix forcé invalide." };
+  const issues = productIssues(input);
+  if (issues.length) return { error: issues.join(" · ") };
 
   if (id) await updateProduct(id, input);
   else await createProduct(input);
@@ -111,13 +122,17 @@ export async function saveProduct(_prev: FormState, form: FormData): Promise<For
   redirect("/admin/produits");
 }
 
-export async function setProductStatus(form: FormData) {
+// Quick status switch from the product list. Same rules as the form.
+export async function setProductStatus(form: FormData): Promise<{ error?: string }> {
   await requireAdmin();
   const status = form.get("status");
-  const id = Number(form.get("id"));
-  if (!Number.isInteger(id) || !isProductStatus(status)) return;
-  await setProductsStatus([id], status);
+  const product = await getProduct(Number(form.get("id")));
+  if (!product || !isProductStatus(status)) return { error: "Produit ou statut invalide." };
+  const issues = productIssues({ ...product, status });
+  if (issues.length) return { error: issues.join(" · ") };
+  await setProductsStatus([product.id], status);
   revalidatePath("/", "layout");
+  return {};
 }
 
 export async function removeProduct(form: FormData) {
@@ -137,7 +152,8 @@ export type ImportResult = {
 };
 
 // Step 1: product sheets. Rows are matched on their reference: an existing
-// reference is updated (photos and online status kept), a new one is created.
+// reference is updated (empty cells keep the current value, photos are kept),
+// a new one is created. Every row is re-validated here with the shared rules.
 export async function importProducts(rows: ImportRow[], defaultStatus: ProductStatus): Promise<ImportResult> {
   await requireAdmin();
   const result: ImportResult = { created: 0, updated: 0, suppliersCreated: [], skipped: [] };
@@ -147,9 +163,13 @@ export async function importProducts(rows: ImportRow[], defaultStatus: ProductSt
   const knownSuppliers = new Set((await listSupplierOptions()).map((o) => o.name.toLowerCase()));
   for (const raw of rows.slice(0, MAX_IMPORT_ROWS)) {
     const row = validateRow(raw);
-    if (!row.errors.length && seen.has(row.ref)) row.errors.push("Référence en double");
-    if (row.errors.length) {
-      result.skipped.push({ line: row.line, ref: row.ref, errors: row.errors });
+    const existingId = row.ref && isValidRef(row.ref) ? await getProductIdByRef(row.ref) : null;
+    const existing = existingId ? await getProduct(existingId) : null;
+    const resolved = resolveRow(row, existing ?? undefined, defaultStatus);
+    const errors = [...resolved.errors];
+    if (!errors.length && seen.has(row.ref)) errors.push("Référence en double");
+    if (errors.length) {
+      result.skipped.push({ line: row.line, ref: row.ref, errors });
       continue;
     }
     seen.add(row.ref);
@@ -158,31 +178,30 @@ export async function importProducts(rows: ImportRow[], defaultStatus: ProductSt
       knownSuppliers.add(row.supplier.toLowerCase());
       result.suppliersCreated.push(row.supplier);
     }
+    const p = resolved.product;
     const fields = {
       ref: row.ref,
-      name: row.name,
-      category: row.category,
-      description: row.description,
-      price_rmb: row.price_rmb!,
-      weight_kg: row.weight_kg,
-      margin_pct: row.margin_pct,
-      price_override: row.price_override,
-      sizes: row.sizes,
+      name: p.name,
+      category: p.category,
+      description: p.description,
+      price_rmb: p.price_rmb,
+      cost_ar: p.cost_ar,
+      weight_kg: p.weight_kg,
+      margin_pct: p.margin_pct,
+      price_override: p.price_override,
+      sizes: p.sizes,
+      status: p.status,
     };
-    const existingId = await getProductIdByRef(row.ref);
-    const existing = existingId ? await getProduct(existingId) : null;
     if (existing) {
-      // Empty supplier columns keep what the product already has.
       await updateProduct(existing.id, {
         ...fields,
         supplier_id: supplierId ?? existing.supplier_id,
         supplier_ref: row.supplier_ref || existing.supplier_ref,
         images: existing.images,
-        status: row.status ?? existing.status,
       });
       result.updated++;
     } else {
-      await createProduct({ ...fields, supplier_id: supplierId, supplier_ref: row.supplier_ref, images: [], status: row.status ?? defaultStatus });
+      await createProduct({ ...fields, supplier_id: supplierId, supplier_ref: row.supplier_ref, images: [] });
       result.created++;
     }
   }
@@ -195,8 +214,8 @@ export async function attachProductImages(productId: number, urls: string[], rep
   await requireAdmin();
   const product = await getProduct(productId);
   if (!product || !Array.isArray(urls)) return;
-  const clean = urls.filter((u) => typeof u === "string" && u);
-  const images = [...(replace ? [] : product.images), ...clean].slice(0, 12);
+  const clean = urls.filter(isAllowedImageUrl);
+  const images = [...(replace ? [] : product.images), ...clean].slice(0, MAX_IMAGES);
   await setProductImages(product.id, images);
   revalidatePath("/", "layout");
 }
@@ -204,9 +223,13 @@ export async function attachProductImages(productId: number, urls: string[], rep
 export async function publishProducts(ids: number[]) {
   await requireAdmin();
   // Only drafts are published; products already online keep their availability.
-  const drafts: number[] = [];
-  for (const id of ids.filter(Number.isInteger)) if ((await getProduct(id))?.status === "brouillon") drafts.push(id);
-  await setProductsStatus(drafts, "sur_commande");
+  // A draft goes "sur commande" if it has a RMB price, else "disponible de suite".
+  for (const id of (Array.isArray(ids) ? ids : []).filter(Number.isInteger)) {
+    const p = await getProduct(id);
+    if (p?.status !== "brouillon") continue;
+    const status = p.price_rmb != null ? "sur_commande" : "en_stock";
+    if (!productIssues({ ...p, status }).length) await setProductsStatus([p.id], status);
+  }
   revalidatePath("/", "layout");
 }
 
@@ -249,7 +272,7 @@ export async function markOrdered(form: FormData) {
     .filter(Number.isInteger);
   for (const id of ids) {
     const order = await getOrder(id);
-    if (!order || order.status !== "paiement_recu") continue;
+    if (!order || order.status !== "paiement_recu" || order.in_stock) continue;
     // No note: history notes are shown to the customer, supplier names must not be.
     const history = [...order.history, { status: "commande_fournisseur", at: new Date().toISOString() }];
     await updateOrder(order.id, { status: "commande_fournisseur", history });
@@ -315,6 +338,9 @@ export async function setOrderStatus(form: FormData) {
   const order = await getOrder(Number(form.get("id")));
   const status = str(form, "status", 40);
   if (!order || !ALL_STATUS_IDS.includes(status)) return;
+  // A "disponible de suite" order never goes through the China steps.
+  const allowed = [...stepsFor(order.in_stock).map((s) => s.id), "annule"] as string[];
+  if (!allowed.includes(status) || status === order.status) return;
   const note = str(form, "note", 200);
   const history = [...order.history, { status, at: new Date().toISOString(), ...(note ? { note } : {}) }];
   await updateOrder(order.id, { status, history });
@@ -325,8 +351,9 @@ export async function saveOrderDetails(_prev: FormState, form: FormData): Promis
   await requireAdmin();
   const order = await getOrder(Number(form.get("id")));
   if (!order) return { error: "Commande introuvable." };
-  const paid = num(form, "amount_paid");
+  const paid = numAr(form, "amount_paid");
   if (paid === null || Number.isNaN(paid) || paid < 0) return { error: "Montant payé invalide." };
+  if (paid > order.total) return { error: `Le montant reçu dépasse le total de la commande (${order.total.toLocaleString("fr-FR")} Ar).` };
   await updateOrder(order.id, {
     amount_paid: Math.round(paid),
     tracking_ref: str(form, "tracking_ref", 100),
@@ -339,7 +366,7 @@ export async function saveOrderDetails(_prev: FormState, form: FormData): Promis
 export async function addProof(orderId: number, url: string) {
   await requireAdmin();
   const order = await getOrder(orderId);
-  if (!order || typeof url !== "string" || !url) return;
+  if (!order || !isAllowedImageUrl(url) || order.proofs.length >= 20) return;
   await updateOrder(order.id, { proofs: [...order.proofs, url] });
   revalidatePath(`/admin/commandes/${order.id}`);
 }
@@ -408,7 +435,14 @@ export async function updateSettings(_prev: FormState, form: FormData): Promise<
     values[key] = n;
   }
   if (!values.rmbRate) return { error: "Le taux RMB doit être supérieur à 0." };
-  if (values.depositPct! > 100) return { error: "L'acompte ne peut pas dépasser 100 %." };
+  if (!(values.depositPct! >= 1 && values.depositPct! <= 100)) return { error: "L'acompte doit être entre 1 et 100 %." };
+  if (values.marginPct! > 500) return { error: "Marge par défaut trop élevée (500 % max)." };
+  if (!(values.defaultWeightKg! >= 0.1 && values.defaultWeightKg! <= 20)) return { error: "Poids par défaut invalide (0,1 à 20 kg)." };
+  if (values.deliveryMinDays! > values.deliveryMaxDays!) return { error: "Sur commande : le délai minimum dépasse le maximum." };
+  if (values.stockDeliveryMinDays! > values.stockDeliveryMaxDays!) return { error: "Disponible de suite : le délai minimum dépasse le maximum." };
+  for (const k of ["deliveryMinDays", "deliveryMaxDays", "stockDeliveryMinDays", "stockDeliveryMaxDays", "badgeDays", "roundTo", "fixedFees", "transportPerKg"] as const) {
+    values[k] = Math.round(values[k]!);
+  }
   const urls: Partial<Settings> = {};
   for (const key of ["facebookUrl", "instagramUrl", "tiktokUrl"] as const) {
     const v = str(form, key, 300);

@@ -4,16 +4,14 @@ import { useState } from "react";
 import { ProductSheetsStep } from "./ProductSheetsStep";
 import { PhotosStep } from "./PhotosStep";
 import type { PricingSettings } from "@/lib/pricing";
-import type { ProductStatus } from "@/lib/product-status";
+import type { ImportExisting } from "@/lib/import";
 
-export type ProductSummary = {
+export type ProductSummary = ImportExisting & {
   id: number;
   ref: string | null;
-  name: string;
   images: number;
   active: boolean;
-  status: ProductStatus;
-  price_rmb: number;
+  price: number; // current selling price, to show price changes in the preview
 };
 
 export function ImportWizard({

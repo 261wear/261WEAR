@@ -4,8 +4,9 @@ import { useState, useTransition } from "react";
 import { importProducts, type ImportResult } from "@/app/admin/actions";
 import { Button } from "@/components/ui/Button";
 import { FormMessage } from "@/components/ui/FormMessage";
-import { rowsFromText, TEMPLATE_EXAMPLE, TEMPLATE_HEADERS, type ImportRow } from "@/lib/import";
+import { resolveRow, rowsFromText, TEMPLATE_EXAMPLE, TEMPLATE_HEADERS, type ImportRow, type ResolvedRow } from "@/lib/import";
 import { computePrice, formatAr, type PricingSettings } from "@/lib/pricing";
+import { productWarnings } from "@/lib/product-rules";
 import { PRODUCT_STATUSES, productStatus, STATUS_BADGE, type ProductStatus } from "@/lib/product-status";
 import type { ProductSummary } from "./ImportWizard";
 
@@ -42,10 +43,11 @@ export function ProductSheetsStep({
 
   const { rows, missingColumns } = rowsFromText(text);
   const byRef = new Map(products.filter((p) => p.ref).map((p) => [p.ref!, p]));
-  const existingRefs = new Set(byRef.keys());
-  const valid = rows.filter((r) => !r.errors.length);
+  // Same merge + rules as the server: what you see is what will be saved.
+  const resolved = rows.map((r) => ({ row: r, ...resolveRow(r, byRef.get(r.ref), defaultStatus) }));
+  const valid = resolved.filter((r) => !r.errors.length).map((r) => r.row);
   const invalid = rows.length - valid.length;
-  const toUpdate = valid.filter((r) => existingRefs.has(r.ref)).length;
+  const toUpdate = resolved.filter((r) => !r.errors.length && !r.isNew).length;
 
   async function onFile(file: File | undefined) {
     if (!file) return;
@@ -86,12 +88,14 @@ export function ProductSheetsStep({
         <div className="text-sm">
           <h2 className="text-base font-semibold">1. Prépare ton fichier</h2>
           <p className="mt-1 text-black/70">
-            Colonnes obligatoires : <b>ref</b>, <b>nom</b>, <b>prix_rmb</b>. Facultatives : categorie, description, poids_kg, marge,
-            prix_force, pointures (ex. « 39 40 41 42 »), fournisseur, ref_fournisseur. Vide = valeur par défaut des paramètres.
+            <b>Nouveau produit</b> : <b>ref</b>, <b>nom</b> et un prix : <b>prix_rmb</b> (sur commande) ou <b>prix_achat_ar</b>{" "}
+            (disponible de suite, transport compris). Facultatives : statut, categorie, description, poids_kg, marge, prix_force,
+            pointures (ex. « 39 40 41 42 »), fournisseur, ref_fournisseur. Poids / marge vides = valeurs des paramètres.
             Un fournisseur inconnu est créé automatiquement.
           </p>
           <p className="mt-1 text-black/70">
-            La <b>ref</b> sert à retrouver le produit : réimporter une ref existante <b>met à jour</b> la fiche (photos conservées), sans doublon.
+            <b>Produit existant</b> (même ref) : la fiche est <b>mise à jour</b>, sans doublon, photos conservées ; une cellule vide
+            garde la valeur actuelle. Un fichier « ref ; statut » suffit pour changer la disponibilité de tout le catalogue.
           </p>
         </div>
         <button type="button" onClick={downloadTemplate} className="btn-ghost whitespace-nowrap">↓ Télécharger le modèle</button>
@@ -138,7 +142,7 @@ export function ProductSheetsStep({
                   <th className="p-2.5">Ligne</th>
                   <th className="p-2.5">Réf.</th>
                   <th className="p-2.5">Nom</th>
-                  <th className="p-2.5">Prix RMB</th>
+                  <th className="p-2.5">Base de prix</th>
                   <th className="p-2.5">Prix de vente</th>
                   <th className="p-2.5">Pointures</th>
                   <th className="p-2.5">Fournisseur</th>
@@ -147,8 +151,8 @@ export function ProductSheetsStep({
                 </tr>
               </thead>
               <tbody>
-                {rows.map((r) => (
-                  <PreviewRow key={r.line} row={r} settings={settings} existing={byRef.get(r.ref)} defaultStatus={defaultStatus} />
+                {resolved.map((r) => (
+                  <PreviewRow key={r.row.line} row={r.row} resolved={r} settings={settings} existing={byRef.get(r.row.ref)} />
                 ))}
               </tbody>
             </table>
@@ -201,43 +205,55 @@ export function ProductSheetsStep({
 
 function PreviewRow({
   row,
+  resolved,
   settings,
   existing,
-  defaultStatus,
 }: {
   row: ImportRow;
+  resolved: ResolvedRow;
   settings: PricingSettings;
   existing?: ProductSummary;
-  defaultStatus: ProductStatus;
 }) {
-  const ok = !row.errors.length;
-  const exists = Boolean(existing);
-  const status = row.status ?? existing?.status ?? defaultStatus;
+  const ok = !resolved.errors.length;
+  const p = resolved.product;
+  const pricing = ok ? computePrice(settings, p) : null;
+  const warnings = ok ? productWarnings(p, settings) : [];
   const changes: string[] = [];
-  if (existing && row.price_rmb != null && row.price_rmb !== existing.price_rmb) changes.push(`prix ${existing.price_rmb} → ${row.price_rmb} ¥`);
-  if (existing && row.status && row.status !== existing.status) changes.push(`${productStatus(existing.status).short} → ${productStatus(row.status).short}`);
-  const price = ok ? computePrice(settings, { price_rmb: row.price_rmb!, weight_kg: row.weight_kg, margin_pct: row.margin_pct, price_override: row.price_override }).price : null;
+  if (existing && pricing) {
+    if (p.name !== existing.name) changes.push("nom");
+    if (p.status !== existing.status) changes.push(`${productStatus(existing.status).short} → ${productStatus(p.status).short}`);
+    if (p.price_rmb !== existing.price_rmb) changes.push(`RMB ${existing.price_rmb ?? "—"} → ${p.price_rmb ?? "—"} ¥`);
+    if (p.cost_ar !== existing.cost_ar) changes.push(`achat ${existing.cost_ar != null ? formatAr(existing.cost_ar) : "—"} → ${p.cost_ar != null ? formatAr(p.cost_ar) : "—"}`);
+    if (pricing.price !== existing.price) changes.push(`prix de vente ${formatAr(existing.price)} → ${formatAr(pricing.price)}`);
+    if (p.sizes.join(" ") !== existing.sizes.join(" ")) changes.push("pointures");
+    if (p.category !== existing.category || p.description !== existing.description) changes.push("infos");
+  }
   return (
     <tr className={`border-b border-black/5 align-top last:border-0 ${ok ? "" : "bg-red-50/60"}`}>
       <td className="p-2.5 text-muted">{row.line}</td>
       <td className="p-2.5 font-mono text-xs font-semibold">{row.ref || "—"}</td>
       <td className="p-2.5">
-        {row.name || "—"}
-        {row.category && <span className="block text-xs text-muted">{row.category}</span>}
+        {p.name || "—"}
+        {p.category && <span className="block text-xs text-muted">{p.category}</span>}
       </td>
-      <td className="p-2.5">{row.price_rmb != null && !Number.isNaN(row.price_rmb) ? `${row.price_rmb} ¥` : "—"}</td>
-      <td className="p-2.5 font-semibold">{price != null ? formatAr(price) : "—"}</td>
-      <td className="p-2.5 text-xs">{row.sizes.join(" ") || "—"}</td>
+      <td className="p-2.5 text-xs whitespace-nowrap">
+        {pricing ? (pricing.basis === "ar" ? `Achat ${formatAr(p.cost_ar!)}` : `${p.price_rmb} ¥ + transport`) : "—"}
+      </td>
+      <td className="p-2.5 font-semibold whitespace-nowrap">
+        {pricing ? formatAr(pricing.price) : "—"}
+        {warnings.map((w) => <span key={w} className="mt-1 block text-xs font-normal text-amber-700">⚠ {w}</span>)}
+      </td>
+      <td className="p-2.5 text-xs">{p.sizes.join(" ") || "—"}</td>
       <td className="p-2.5 text-xs">
         {row.supplier || "—"}
         {row.supplier_ref && <span className="block font-mono text-muted">{row.supplier_ref}</span>}
       </td>
       <td className="p-2.5 text-xs">
-        <span className={`inline-block rounded-full px-2 py-0.5 font-semibold whitespace-nowrap ${STATUS_BADGE[status]}`}>{productStatus(status).short}</span>
+        <span className={`inline-block rounded-full px-2 py-0.5 font-semibold whitespace-nowrap ${STATUS_BADGE[p.status]}`}>{productStatus(p.status).short}</span>
       </td>
       <td className="p-2.5 text-xs">
         {ok ? (
-          exists ? (
+          existing ? (
             <span>
               <span className="inline-flex items-center gap-1 rounded-md bg-sky-600 px-2 py-0.5 font-bold whitespace-nowrap text-white">↻ Mise à jour</span>
               <span className="mt-1 block text-sky-800">{changes.length ? changes.join(" · ") : "infos inchangées"}</span>
@@ -246,7 +262,7 @@ function PreviewRow({
             <span className="inline-flex items-center gap-1 rounded-md bg-emerald-600 px-2 py-0.5 font-bold whitespace-nowrap text-white">✦ Nouveau</span>
           )
         ) : (
-          <span className="text-red-700">{row.errors.join(" · ")}</span>
+          <span className="text-red-700">{resolved.errors.join(" · ")}</span>
         )}
       </td>
     </tr>

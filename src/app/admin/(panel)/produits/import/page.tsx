@@ -20,7 +20,23 @@ export default async function ImportPage(props: PageProps<"/admin/produits/impor
       <ImportWizard
         initialStep={etape === "2" ? 2 : 1}
         settings={settings}
-        products={products.map((p) => ({ id: p.id, ref: p.ref, name: p.name, images: p.images.length, active: p.active, status: p.status, price_rmb: p.price_rmb }))}
+        products={products.map((p) => ({
+          id: p.id,
+          ref: p.ref,
+          images: p.images.length,
+          active: p.active,
+          price: p.pricing.price,
+          name: p.name,
+          category: p.category,
+          description: p.description,
+          status: p.status,
+          price_rmb: p.price_rmb,
+          cost_ar: p.cost_ar,
+          weight_kg: p.weight_kg,
+          margin_pct: p.margin_pct,
+          price_override: p.price_override,
+          sizes: p.sizes,
+        }))}
       />
     </>
   );
