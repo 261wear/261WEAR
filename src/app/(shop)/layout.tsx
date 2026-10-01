@@ -41,13 +41,13 @@ export default async function ShopLayout({ children }: LayoutProps<"/">) {
             <Logo className="text-white" />
             <p className="mt-3 text-sm">Représente le 261. Chaussures premium sur commande ou disponibles de suite, livrées à Tana.</p>
           </div>
-          <nav aria-label="Boutique" className="flex flex-col gap-2 text-sm">
+          <nav aria-label="Boutique" className="flex flex-col text-sm [&_a]:py-1.5">
             <p className="mb-1 text-xs font-semibold tracking-wide text-white uppercase">Boutique</p>
             <Link href="/recherche?tri=nouveautes" className="hover:text-white">Nouveautés</Link>
             <Link href="/recherche?dispo=en_stock" className="hover:text-white">Disponible de suite</Link>
             <Link href="/recherche" className="hover:text-white">Tout le catalogue</Link>
           </nav>
-          <nav aria-label="Aide" className="flex flex-col gap-2 text-sm">
+          <nav aria-label="Aide" className="flex flex-col text-sm [&_a]:py-1.5">
             <p className="mb-1 text-xs font-semibold tracking-wide text-white uppercase">Aide</p>
             <Link href="/suivi" className="hover:text-white">Suivre ma commande</Link>
             <Link href="/guide-des-tailles" className="hover:text-white">Guide des tailles</Link>

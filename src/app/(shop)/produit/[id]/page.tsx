@@ -45,7 +45,7 @@ export default async function ProductPage(props: PageProps<"/produit/[id]">) {
 
   return (
     <div className="mx-auto max-w-6xl px-4 pt-4 pb-16">
-      <nav aria-label="Fil d'Ariane" className="mb-4 text-sm text-muted">
+      <nav aria-label="Fil d'Ariane" className="mb-2 text-sm text-muted [&_a]:inline-block [&_a]:py-2">
         <ol className="flex flex-wrap items-center gap-1.5">
           <li><Link href="/" className="hover:text-ink">Accueil</Link></li>
           <li aria-hidden="true">/</li>

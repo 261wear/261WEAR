@@ -157,7 +157,7 @@ export default async function SearchPage(props: PageProps<"/recherche">) {
       <div className="mt-6 grid gap-8 lg:grid-cols-[240px_1fr]">
         <aside>
           <details className="card group p-4 lg:hidden">
-            <summary className="flex cursor-pointer list-none items-center justify-between font-semibold">
+            <summary className="-m-4 flex cursor-pointer list-none items-center justify-between p-4 font-semibold">
               Filtres {filterCount > 0 && `(${filterCount})`}
               <span className="transition group-open:rotate-180" aria-hidden="true">▾</span>
             </summary>
