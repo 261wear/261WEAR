@@ -17,17 +17,17 @@ export default async function ShopLayout({ children }: LayoutProps<"/">) {
         Sur commande en {settings.deliveryMinDays}–{settings.deliveryMaxDays} j · Disponible de suite en {settings.stockDeliveryMinDays}–{settings.stockDeliveryMaxDays} j à Tana
       </div>
       <header className="sticky top-0 z-30 border-b border-white/10 bg-ink text-white">
-        <div className="mx-auto flex max-w-6xl flex-wrap items-center gap-x-6 gap-y-3 px-4 py-3">
+        <div className="mx-auto flex max-w-6xl flex-wrap items-center gap-x-6 gap-y-2 px-4 py-2.5">
           <Logo />
           <div className="order-last w-full md:order-none md:w-auto md:flex-1">
             <Suspense fallback={<div className="h-11 rounded-full bg-white" aria-hidden="true" />}>
               <SearchBox popular={popular} />
             </Suspense>
           </div>
-          <nav className="ml-auto flex items-center gap-5 text-sm font-medium md:ml-0">
-            <Link href="/recherche" className="hover:text-accent">Catalogue</Link>
-            <Link href="/suivi" className="hover:text-accent">Suivi</Link>
-            <Link href="/guide-des-tailles" className="hidden hover:text-accent lg:block">Tailles</Link>
+          <nav aria-label="Principal" className="ml-auto flex items-center gap-1 text-sm font-medium md:ml-0">
+            <Link href="/recherche" className="rounded-full px-3 py-2 hover:text-accent">Catalogue</Link>
+            <Link href="/suivi" className="rounded-full px-3 py-2 hover:text-accent">Suivi</Link>
+            <Link href="/guide-des-tailles" className="hidden rounded-full px-3 py-2 hover:text-accent lg:block">Tailles</Link>
           </nav>
         </div>
       </header>

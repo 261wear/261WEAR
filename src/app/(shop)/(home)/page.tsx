@@ -1,14 +1,17 @@
 import Link from "next/link";
 import { ProductCard } from "@/components/ProductCard";
-import { shopProducts } from "@/lib/catalog";
+import { popularCategories, shopProducts } from "@/lib/catalog";
 import { getSettings } from "@/lib/settings";
 
 // The home page shows the latest pairs; the full catalogue is paginated in /recherche.
 const HOME_DROP = 12;
 
 export default async function Home() {
-  const [products, settings] = await Promise.all([shopProducts(), getSettings()]);
-  const inStock = products.filter((p) => p.status === "en_stock");
+  const [products, settings, categories] = await Promise.all([shopProducts(), getSettings(), popularCategories()]);
+  const inStock = products.filter((p) => p.status === "en_stock").slice(0, 4);
+  // Pairs already shown in "Dispo de suite" are not repeated in the drop.
+  const shown = new Set(inStock.map((p) => p.id));
+  const drop = products.filter((p) => !shown.has(p.id)).slice(0, HOME_DROP);
   const steps = [
     ["01", "Choisis ta paire", "Sélectionne ton modèle et ta pointure, puis valide sur WhatsApp."],
     ["02", "Paie l'acompte", `${settings.depositPct} % par Mobile Money. Envoie la capture sur WhatsApp.`],
@@ -49,17 +52,31 @@ export default async function Home() {
         </div>
       </section>
 
+      {categories.length > 0 && (
+        <nav aria-label="Catégories" className="mx-auto max-w-6xl px-4 pt-8">
+          <ul className="-mx-4 flex gap-2 overflow-x-auto px-4 pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+            {categories.map((c) => (
+              <li key={c.value} className="shrink-0">
+                <Link href={`/recherche?cat=${encodeURIComponent(c.value)}`} className="flex items-center gap-2 rounded-full border border-black/10 bg-white px-4 py-2.5 text-sm font-semibold transition hover:border-ink">
+                  {c.value} <span className="text-xs font-normal text-muted">{c.count}</span>
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </nav>
+      )}
+
       {inStock.length > 0 && (
-        <section className="mx-auto max-w-6xl px-4 pt-16">
+        <section className="mx-auto max-w-6xl px-4 pt-10">
           <div className="flex items-end justify-between gap-4">
             <h2 className="font-display text-4xl sm:text-5xl">
               <span className="text-emerald-700">⚡</span> Dispo de suite
             </h2>
-            <Link href="/recherche?dispo=en_stock" className="text-sm font-semibold underline">Tout voir</Link>
+            <Link href="/recherche?dispo=en_stock" className="shrink-0 py-2 text-sm font-semibold whitespace-nowrap underline">Tout voir</Link>
           </div>
           <p className="mt-1 text-sm text-muted">Déjà à Tana · livrée en {settings.stockDeliveryMinDays} à {settings.stockDeliveryMaxDays} jours.</p>
           <div className="mt-6 grid grid-cols-2 gap-x-4 gap-y-8 md:grid-cols-3 lg:grid-cols-4">
-            {inStock.slice(0, 4).map((p) => (
+            {inStock.map((p) => (
               <ProductCard key={p.id} product={p} />
             ))}
           </div>
@@ -69,11 +86,11 @@ export default async function Home() {
       <section id="drop" className="mx-auto max-w-6xl scroll-mt-20 px-4 py-16">
         <div className="flex items-end justify-between gap-4">
           <h2 className="font-display text-4xl sm:text-5xl">Le drop</h2>
-          <Link href="/recherche" className="text-sm font-semibold underline">Tout le catalogue ({products.length})</Link>
+          <Link href="/recherche" className="py-2 text-sm font-semibold underline">Tout le catalogue ({products.length})</Link>
         </div>
         {products.length ? (
           <div className="mt-8 grid grid-cols-2 gap-x-4 gap-y-8 md:grid-cols-3 lg:grid-cols-4">
-            {products.slice(0, HOME_DROP).map((p, i) => (
+            {drop.map((p, i) => (
               <ProductCard key={p.id} product={p} priority={i < 4} />
             ))}
           </div>

@@ -11,6 +11,8 @@ export function ProductCard({ product, query = "", priority = false }: { product
   return (
     <Link href={`/produit/${product.id}`} className="group block">
       <div className="relative aspect-square overflow-hidden rounded-2xl bg-white">
+        {/* Brand placeholder under the photo while it loads (slow mobile networks). */}
+        <span aria-hidden="true" className="font-display absolute inset-0 flex items-center justify-center text-4xl text-black/5">261</span>
         {product.images[0] ? (
           <Img
             src={thumbUrl(product.images[0])}
@@ -18,11 +20,9 @@ export function ProductCard({ product, query = "", priority = false }: { product
             alt={product.name}
             loading={priority ? "eager" : "lazy"}
             fetchPriority={priority ? "high" : "auto"}
-            className={`h-full w-full object-cover transition duration-500 group-hover:scale-105 ${soldOut ? "opacity-50 grayscale" : ""}`}
+            className={`relative h-full w-full object-cover transition duration-500 group-hover:scale-105 ${soldOut ? "opacity-50 grayscale" : ""}`}
           />
-        ) : (
-          <div className="font-display flex h-full items-center justify-center text-4xl text-black/10">261</div>
-        )}
+        ) : null}
         <div className="absolute top-2 left-2 flex flex-col items-start gap-1">
           <FreshBadge fresh={product.fresh} />
         </div>

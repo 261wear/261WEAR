@@ -151,7 +151,8 @@ export function Composer({
             return (
               <div key={p.id} className={`rounded-xl border p-3 transition ${on ? "border-ink bg-paper/60" : "border-black/10"}`}>
                 <label className="flex cursor-pointer items-center gap-3">
-                  <input type="checkbox" checked={on} onChange={() => toggleProduct(p)} className="h-4 w-4" />
+                  <input type="checkbox" checked={on} onChange={() => toggleProduct(p)} className="h-5 w-5 shrink-0" />
+                  {!on && p.images[0] && <Img src={thumbUrl(p.images[0])} fallback={p.images[0]} alt="" loading="lazy" className="h-11 w-11 shrink-0 rounded-md object-cover" />}
                   <span className="min-w-0 flex-1">
                     <span className="block truncate font-semibold">{p.name}</span>
                     <span className="text-xs text-muted">
@@ -195,7 +196,7 @@ export function Composer({
         </div>
       </div>
 
-      <div className="space-y-4 lg:sticky lg:top-4 lg:self-start">
+      <div className="space-y-4 lg:sticky lg:top-20 lg:self-start">
         <div className="card space-y-4 p-5">
           <h2 className="font-semibold">2. Texte et publication</h2>
           <div>

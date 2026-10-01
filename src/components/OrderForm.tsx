@@ -19,8 +19,8 @@ export function OrderForm({ productId, sizes, price }: { productId: number; size
     if (state?.refresh) router.refresh();
   }, [state, router]);
   return (
-    <form onSubmit={onSubmit} className="space-y-5" aria-busy={pending}>
-      <fieldset disabled={pending} className="contents">
+    <form id="commander" onSubmit={onSubmit} className="scroll-mt-24" aria-busy={pending}>
+      <fieldset disabled={pending} className="min-w-0 space-y-5">
       <input type="hidden" name="productId" value={productId} />
       <input type="hidden" name="expectedPrice" value={price} />
       {/* Honeypot, invisible for people */}
@@ -31,7 +31,7 @@ export function OrderForm({ productId, sizes, price }: { productId: number; size
         <div>
           <div className="flex items-center justify-between">
             <span className="label">Pointure (EU)</span>
-            <Link href="/guide-des-tailles" className="text-xs underline">Guide des tailles</Link>
+            <Link href="/guide-des-tailles" className="py-2 text-xs underline">Guide des tailles</Link>
           </div>
           <div className="flex flex-wrap gap-2">
             {sizes.map((s) => (

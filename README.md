@@ -162,6 +162,19 @@ Sans configuration, l'écran permet de copier le texte et de télécharger les p
 - **Cache catalogue** : la boutique garde le catalogue 15 s en mémoire, vidé immédiatement à chaque modification
   dans le back-office. Index SQL sur statut, date de publication et date de commande.
 
+## Ergonomie
+
+- **Boutique** : catégories en raccourci sur l'accueil (sans doublon entre « Dispo de suite » et « Le drop »), fil
+  d'Ariane et « Dans la même catégorie » sur la fiche produit, barre « Choisir ma pointure » fixée en bas de l'écran
+  sur mobile, logo « 261 » en attendant le chargement des photos.
+- **Back-office sur mobile** : menu sur une ligne qui défile avec la rubrique active en surbrillance, produits et
+  commandes affichés en cartes (plus de tableau écrasé), logistique en lignes empilées, colis en route regroupés par
+  fournisseur (retards en premier, 50 affichés).
+- **Commande manuelle** : produit cherché par nom ou référence (flèches + Entrée) au lieu d'une liste de milliers
+  de modèles.
+- **Fiche produit (back-office)** : bouton « Enregistrer » toujours visible, boutons photo plus grands, photo
+  principale signalée.
+
 ## Sécurité
 
 - Back-office : chaque action vérifie la session (une action rejouée sans session est sans effet) ; connexion limitée

@@ -66,8 +66,8 @@ export default async function OrderPage(props: PageProps<"/commande/[token]">) {
         <div className="min-w-0 flex-1 text-sm">
           <p className="text-base font-semibold">{order.product_name}</p>
           {order.size && <p>Pointure {order.size}</p>}
-          <p className="mt-2">Total : <b>{formatAr(order.total)}</b></p>
-          <p>Déjà payé : <b>{formatAr(order.amount_paid)}</b> · Reste : <b>{formatAr(remaining)}</b></p>
+          <p className="mt-2">Total : <b className="whitespace-nowrap">{formatAr(order.total)}</b></p>
+          <p>Déjà payé : <b className="whitespace-nowrap">{formatAr(order.amount_paid)}</b> · Reste : <b className="whitespace-nowrap">{formatAr(remaining)}</b></p>
         </div>
       </div>
 

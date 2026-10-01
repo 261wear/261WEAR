@@ -28,7 +28,7 @@ export function StatusSelect({ id, status, name }: { id: number; status: Product
               if (res.error) setError(res.error);
             });
           }}
-          className={`cursor-pointer rounded-full border-0 py-1 pr-7 pl-2.5 text-xs font-semibold disabled:opacity-60 ${STATUS_BADGE[status]}`}
+          className={`cursor-pointer rounded-full border-0 py-2 pr-7 md:py-1 pl-2.5 text-xs font-semibold disabled:opacity-60 ${STATUS_BADGE[status]}`}
         >
           {PRODUCT_STATUSES.map((s) => <option key={s.id} value={s.id} className="bg-white text-ink">{s.short}</option>)}
         </select>

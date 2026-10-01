@@ -77,7 +77,7 @@ export default async function OrdersPage(props: PageProps<"/admin">) {
         {tab(undefined, "Toutes", total)}
         {ALL_STATUS_IDS.map((id) => tab(id, statusLabel(id), counts[id] ?? 0))}
       </div>
-      <div className="card mt-4 overflow-x-auto">
+      <div className="card mt-4 hidden overflow-x-auto md:block">
         <table className="w-full min-w-[720px] text-left text-sm">
           <thead className="border-b border-black/10 text-xs text-muted uppercase">
             <tr>
@@ -121,6 +121,32 @@ export default async function OrdersPage(props: PageProps<"/admin">) {
           </tbody>
         </table>
       </div>
+      {/* Mobile: one tappable card per order. */}
+      <ul className="mt-4 space-y-2 md:hidden">
+        {pageData.items.map((o) => (
+          <li key={o.id}>
+            <Link href={`/admin/commandes/${o.id}`} className="card block p-4 active:bg-paper">
+              <span className="flex items-center justify-between gap-2">
+                <b>{orderNumber(o.id)}</b>
+                <StatusBadge status={o.status} />
+              </span>
+              <span className="mt-1 block font-semibold"><Highlight text={o.customer_name} query={q} /> <span className="text-xs font-normal text-muted">{displayPhone(o.phone)}</span></span>
+              <span className="block truncate text-sm">
+                <Highlight text={o.product_name} query={q} />
+                {o.size && <span className="text-muted"> · {o.size}</span>}
+                {o.in_stock && <span className="ml-1 text-xs font-semibold text-emerald-700">⚡ stock</span>}
+              </span>
+              <span className="mt-2 flex items-center justify-between text-sm">
+                <span>
+                  {formatAr(o.total)} · <span className={o.amount_paid >= o.deposit ? "text-green-700" : "text-red-700"}>payé {formatAr(o.amount_paid)}</span>
+                </span>
+                <span className="text-xs text-muted">{o.created_at.toLocaleDateString("fr-FR", { timeZone: "Indian/Antananarivo" })}</span>
+              </span>
+            </Link>
+          </li>
+        ))}
+        {!pageData.items.length && <li className="card p-8 text-center text-muted">{q ? `Aucune commande pour « ${q} ».` : "Aucune commande."}</li>}
+      </ul>
       {pageData.total > 0 && (
         <p className="mt-3 text-center text-xs text-muted">
           {pageData.from}–{pageData.to} sur {pageData.total} commande{pageData.total > 1 ? "s" : ""}

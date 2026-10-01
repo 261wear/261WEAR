@@ -107,7 +107,7 @@ export function ProductTable({ rows, allIds, query, emptyText }: { rows: Row[]; 
         </div>
       )}
 
-      <div className="card mt-4 overflow-x-auto">
+      <div className="card mt-4 hidden overflow-x-auto md:block">
         <table className="w-full min-w-[860px] text-left text-sm">
           <thead className="border-b border-black/10 text-xs text-muted uppercase">
             <tr>
@@ -173,6 +173,50 @@ export function ProductTable({ rows, allIds, query, emptyText }: { rows: Row[]; 
             ))}
           </tbody>
         </table>
+      </div>
+
+      {/* Mobile: one card per product instead of a wide table. */}
+      <div className="mt-4 md:hidden">
+        <label className="mb-2 flex items-center gap-2 px-1 text-sm text-muted">
+          <input type="checkbox" checked={allOnPage} onChange={togglePage} className="h-5 w-5" />
+          Sélectionner la page
+        </label>
+        {!rows.length && <p className="card p-8 text-center text-muted">{emptyText}</p>}
+        <ul className="space-y-2">
+          {rows.map((p) => (
+            <li key={p.id} className={`card flex gap-3 p-3 ${selected.has(p.id) ? "border-ink bg-accent/15" : ""}`}>
+              <input type="checkbox" checked={selected.has(p.id)} onChange={() => toggle(p.id)} aria-label={`Sélectionner ${p.name}`} className="mt-1 h-5 w-5 shrink-0" />
+              <div className="min-w-0 flex-1">
+                <Link href={`/admin/produits/${p.id}`} className="flex gap-3">
+                  {p.image ? (
+                    <Img src={thumbUrl(p.image)} fallback={p.image} alt="" loading="lazy" className="h-16 w-16 shrink-0 rounded-lg object-cover" />
+                  ) : (
+                    <span className="flex h-16 w-16 shrink-0 items-center justify-center rounded-lg bg-paper text-[10px] font-semibold text-amber-700">Sans photo</span>
+                  )}
+                  <span className="min-w-0">
+                    <span className="flex flex-wrap items-center gap-1.5">
+                      <span className="font-semibold"><Highlight text={p.name} query={query} /></span>
+                      <FreshBadge fresh={p.fresh} className="!text-[10px]" />
+                    </span>
+                    <span className="block truncate text-xs text-muted">{p.meta}</span>
+                    <span className="mt-1 block text-sm">
+                      <b>{formatAr(p.price)}</b>
+                      <span className={`ml-2 text-xs ${p.profit > 0 ? "text-green-700" : "text-red-700"}`}>marge {formatAr(p.profit)}</span>
+                    </span>
+                    <span className="block text-xs text-muted">{p.basis}</span>
+                  </span>
+                </Link>
+                {p.issues.length > 0 && <p className="mt-1 text-xs font-semibold text-red-700">⚠ à compléter : {p.issues.join(" · ")}</p>}
+                <div className="mt-2 flex items-center gap-3">
+                  <StatusSelect id={p.id} status={p.status} name={p.name} />
+                  {p.photos > 0 && (
+                    <Link href={`/admin/facebook?produits=${p.id}`} className="py-2 text-xs font-semibold text-[#1877F2]">Facebook →</Link>
+                  )}
+                </div>
+              </div>
+            </li>
+          ))}
+        </ul>
       </div>
     </>
   );

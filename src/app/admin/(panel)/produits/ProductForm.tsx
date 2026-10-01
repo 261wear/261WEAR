@@ -162,10 +162,11 @@ export function ProductForm({
             {images.map((src, i) => (
               <div key={src} className="relative">
                 <Img src={thumbUrl(src)} fallback={src} alt="" className="aspect-square w-full rounded-lg border border-black/10 object-cover" />
-                <div className="absolute inset-x-1 bottom-1 flex justify-between">
-                  <button type="button" onClick={() => move(i, -1)} className="rounded bg-black/70 px-1.5 text-xs text-white">←</button>
-                  <button type="button" onClick={() => setImages(images.filter((u) => u !== src))} className="rounded bg-red-600 px-1.5 text-xs text-white">✕</button>
-                  <button type="button" onClick={() => move(i, 1)} className="rounded bg-black/70 px-1.5 text-xs text-white">→</button>
+                {i === 0 && <span className="absolute top-1.5 left-1.5 rounded-full bg-accent px-2 py-0.5 text-[10px] font-bold text-ink">Principale</span>}
+                <div className="absolute inset-x-1.5 bottom-1.5 flex justify-between gap-1">
+                  <button type="button" onClick={() => move(i, -1)} disabled={i === 0} aria-label={`Déplacer la photo ${i + 1} vers la gauche`} className="flex h-8 w-8 items-center justify-center rounded-full bg-black/70 text-sm text-white disabled:invisible">←</button>
+                  <button type="button" onClick={() => setImages(images.filter((u) => u !== src))} aria-label={`Retirer la photo ${i + 1}`} className="flex h-8 w-8 items-center justify-center rounded-full bg-red-600 text-sm text-white">✕</button>
+                  <button type="button" onClick={() => move(i, 1)} disabled={i === images.length - 1} aria-label={`Déplacer la photo ${i + 1} vers la droite`} className="flex h-8 w-8 items-center justify-center rounded-full bg-black/70 text-sm text-white disabled:invisible">→</button>
                 </div>
               </div>
             ))}
@@ -189,6 +190,8 @@ export function ProductForm({
         </div>
 
         <FormMessage error={state?.error} />
+        {/* Stays in reach at the bottom of the screen on long forms. */}
+        <div className="sticky bottom-0 z-10 -mx-4 bg-paper/95 px-4 pt-2 pb-[max(1rem,env(safe-area-inset-bottom))] backdrop-blur sm:mx-0 sm:px-0">
         <Button
           type="submit"
           pending={pending}
@@ -199,10 +202,11 @@ export function ProductForm({
         >
           {uploads.pending ? "Envoi des photos en cours…" : product ? "Enregistrer les modifications" : "Ajouter le produit"}
         </Button>
+        </div>
       </form>
 
       <aside className="space-y-4">
-        <div className="card space-y-4 p-5 lg:sticky lg:top-4">
+        <div className="card space-y-4 p-5 lg:sticky lg:top-20">
           <h2 className="font-semibold">Prix</h2>
           <div>
             <label className="label" htmlFor="price_rmb">

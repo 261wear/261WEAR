@@ -80,10 +80,10 @@ export default async function AdminOrderPage(props: PageProps<"/admin/commandes/
                   "non renseigné"
                 )}
               </p>
-              <p className="mt-2">Total {formatAr(order.total)} · Acompte {formatAr(order.deposit)}</p>
+              <p className="mt-2">Total <span className="whitespace-nowrap">{formatAr(order.total)}</span> · Acompte <span className="whitespace-nowrap">{formatAr(order.deposit)}</span></p>
               <p>
-                Payé <b className={order.amount_paid >= order.deposit ? "text-green-700" : "text-red-700"}>{formatAr(order.amount_paid)}</b>
-                {" · "}Reste à encaisser <b>{formatAr(remaining)}</b>
+                Payé <b className={`whitespace-nowrap ${order.amount_paid >= order.deposit ? "text-green-700" : "text-red-700"}`}>{formatAr(order.amount_paid)}</b>
+                {" · "}Reste à encaisser <b className="whitespace-nowrap">{formatAr(remaining)}</b>
               </p>
             </div>
           </div>
@@ -116,16 +116,16 @@ export default async function AdminOrderPage(props: PageProps<"/admin/commandes/
                 <SubmitButton pendingLabel="Mise à jour…" className="btn-accent w-full">Passer à : {next.label} →</SubmitButton>
               </form>
             )}
-            <form action={setOrderStatus} className="mt-3 flex flex-wrap gap-2">
+            <form action={setOrderStatus} className="mt-3 grid gap-2">
               <input type="hidden" name="id" value={order.id} />
-              <select key={order.status} name="status" defaultValue={order.status} className="input w-auto flex-1">
+              <select key={order.status} name="status" defaultValue={order.status} aria-label="Nouveau statut" className="input">
                 {steps.map((s) => (
                   <option key={s.id} value={s.id}>{s.label}</option>
                 ))}
                 <option value={CANCELLED.id}>{CANCELLED.label}</option>
               </select>
-              <input name="note" placeholder="Note visible par le client (facultatif)" className="input flex-[2]" />
-              <SubmitButton pendingLabel="Mise à jour…">Appliquer</SubmitButton>
+              <input name="note" aria-label="Note visible par le client" placeholder="Note visible par le client (facultatif)" className="input" />
+              <SubmitButton pendingLabel="Mise à jour…" className="btn-dark justify-self-start">Appliquer</SubmitButton>
             </form>
             <p className="mt-2 text-xs text-muted">Après chaque changement, clique sur « Prévenir le client » pour lui envoyer la mise à jour.</p>
             <div className="mt-6">

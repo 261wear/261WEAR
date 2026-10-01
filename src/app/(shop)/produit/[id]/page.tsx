@@ -1,7 +1,11 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
+import Link from "next/link";
 import { Gallery } from "@/components/Gallery";
 import { OrderForm } from "@/components/OrderForm";
+import { ProductCard } from "@/components/ProductCard";
+import { StickyBuyBar } from "@/components/StickyBuyBar";
+import { shopProducts } from "@/lib/catalog";
 import { FreshBadge, StatusBadge } from "@/components/ProductBadges";
 import { WhatsAppIcon } from "@/components/WhatsAppIcon";
 import { waLink } from "@/lib/orders-shared";
@@ -27,11 +31,30 @@ export default async function ProductPage(props: PageProps<"/produit/[id]">) {
   const deposit = depositFor(price, settings.depositPct);
   const inStock = product.status === "en_stock";
   const soldOut = product.status === "epuise";
+  const similar = (await shopProducts())
+    .filter((p) => p.id !== product.id && p.status !== "epuise" && p.category === product.category)
+    .slice(0, 4);
   const [dMin, dMax] = inStock ? [settings.stockDeliveryMinDays, settings.stockDeliveryMaxDays] : [settings.deliveryMinDays, settings.deliveryMaxDays];
 
   return (
-    <div className="mx-auto grid max-w-6xl gap-10 px-4 py-10 md:grid-cols-2">
-      <Gallery images={product.images} alt={product.name} />
+    <div className="mx-auto max-w-6xl px-4 pt-4 pb-16">
+      <nav aria-label="Fil d'Ariane" className="mb-4 text-sm text-muted">
+        <ol className="flex flex-wrap items-center gap-1.5">
+          <li><Link href="/" className="hover:text-ink">Accueil</Link></li>
+          <li aria-hidden="true">/</li>
+          <li><Link href="/recherche" className="hover:text-ink">Catalogue</Link></li>
+          {product.category && (
+            <>
+              <li aria-hidden="true">/</li>
+              <li><Link href={`/recherche?cat=${encodeURIComponent(product.category)}`} className="hover:text-ink">{product.category}</Link></li>
+            </>
+          )}
+        </ol>
+      </nav>
+      <div className="grid gap-10 md:grid-cols-2">
+      <div className="md:sticky md:top-24 md:self-start">
+        <Gallery images={product.images} alt={product.name} />
+      </div>
       <div>
         <div className="flex flex-wrap items-center gap-2">
           {product.category && <p className="text-sm font-semibold tracking-wide text-muted uppercase">{product.category}</p>}
@@ -69,10 +92,26 @@ export default async function ProductPage(props: PageProps<"/produit/[id]">) {
               </a>
             </div>
           ) : (
-            <OrderForm productId={product.id} sizes={product.sizes} price={price} />
+            <>
+              <OrderForm productId={product.id} sizes={product.sizes} price={price} />
+              <StickyBuyBar price={formatAr(price)} label={product.name} />
+            </>
           )}
         </div>
       </div>
+      </div>
+
+      {similar.length > 0 && (
+        <section className="mt-16" aria-labelledby="similar-title">
+          <div className="flex items-end justify-between gap-4">
+            <h2 id="similar-title" className="font-display text-3xl sm:text-4xl">Dans la même catégorie</h2>
+            <Link href={`/recherche?cat=${encodeURIComponent(product.category)}`} className="shrink-0 py-2 text-sm font-semibold whitespace-nowrap underline">Tout voir</Link>
+          </div>
+          <div className="mt-6 grid grid-cols-2 gap-x-4 gap-y-8 md:grid-cols-4">
+            {similar.map((p) => <ProductCard key={p.id} product={p} />)}
+          </div>
+        </section>
+      )}
     </div>
   );
 }

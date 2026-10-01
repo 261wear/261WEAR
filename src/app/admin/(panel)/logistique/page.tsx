@@ -24,6 +24,11 @@ function aggregate(lines: LogisticsLine[]): Item[] {
   return [...map.values()];
 }
 
+// Order numbers listed per line before "+N" (a popular model can gather dozens).
+const MAX_LINKS = 4;
+// Lines shown per supplier in transit; the rest is in the orders list.
+const MAX_TRANSIT = 50;
+
 function daysSince(d: Date) {
   return Math.floor((Date.now() - d.getTime()) / 86400000);
 }
@@ -85,30 +90,28 @@ export default async function LogisticsPage() {
                   <span className="block text-xs text-muted">≈ {weight.toFixed(1).replace(".", ",")} kg · transport ≈ {Math.round(weight * settings.transportPerKg).toLocaleString("fr-FR")} Ar</span>
                 </p>
               </header>
-              <table className="w-full text-left text-sm">
-                <tbody>
-                  {items.map((it) => (
-                    <tr key={it.key} className="border-b border-black/5 last:border-0">
-                      <td className="w-14 p-3">
-                        {it.line.productImage ? <Img src={thumbUrl(it.line.productImage)} fallback={it.line.productImage} alt="" className="h-10 w-10 rounded-md object-cover" /> : <span className="block h-10 w-10 rounded-md bg-paper" />}
-                      </td>
-                      <td className="p-3">
-                        <span className="font-semibold">{it.line.productName}</span>
-                        <span className="block text-xs text-muted">
+              <ul>
+                {items.map((it) => (
+                  <li key={it.key} className="flex items-start gap-3 border-b border-black/5 p-3 text-sm last:border-0">
+                    {it.line.productImage ? <Img src={thumbUrl(it.line.productImage)} fallback={it.line.productImage} alt="" className="h-12 w-12 shrink-0 rounded-md object-cover" /> : <span className="block h-12 w-12 shrink-0 rounded-md bg-paper" />}
+                    <div className="min-w-0 flex-1 sm:flex sm:items-center sm:gap-4">
+                      <div className="min-w-0 sm:flex-1">
+                        <p className="font-semibold">{it.line.productName}</p>
+                        <p className="text-xs text-muted">
                           {[it.line.ref, it.line.supplierRef && `réf. fourn. ${it.line.supplierRef}`].filter(Boolean).join(" · ")}
-                        </span>
-                      </td>
-                      <td className="p-3">Pointure <b>{it.line.size || "—"}</b></td>
-                      <td className="p-3">× <b>{it.qty}</b></td>
-                      <td className="p-3 text-right text-xs text-muted">
-                        {it.orders.map((id) => (
-                          <Link key={id} href={`/admin/commandes/${id}`} className="ml-1 underline">{orderNumber(id)}</Link>
+                        </p>
+                      </div>
+                      <p className="mt-1 sm:mt-0 sm:w-40">Pointure <b>{it.line.size || "—"}</b> · × <b>{it.qty}</b></p>
+                      <p className="mt-1 text-xs text-muted sm:mt-0 sm:w-48 sm:text-right">
+                        {it.orders.slice(0, MAX_LINKS).map((id) => (
+                          <Link key={id} href={`/admin/commandes/${id}`} className="mr-1 inline-block py-1 underline sm:mr-0 sm:ml-1">{orderNumber(id)}</Link>
                         ))}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+                        {it.orders.length > MAX_LINKS && <span className="ml-1">+{it.orders.length - MAX_LINKS}</span>}
+                      </p>
+                    </div>
+                  </li>
+                ))}
+              </ul>
               <footer className="flex flex-wrap items-center justify-end gap-2 border-t border-black/10 bg-paper/60 p-3">
                 <CopyButton text={wechatText(bucket, items)} label="Copier la commande pour WeChat" />
                 <form action={markOrdered}>
@@ -126,33 +129,48 @@ export default async function LogisticsPage() {
       <h2 className="mt-10 text-lg font-semibold">En cours d&apos;acheminement</h2>
       {!inTransit.length && <p className="card mt-3 p-6 text-sm text-muted">Aucun colis en route.</p>}
       <div className="mt-3 space-y-4">
-        {inTransit.map((bucket) => (
-          <section key={bucket.supplier?.id ?? "none"} className="card overflow-x-auto">
-            <header className="border-b border-black/10 p-4 font-semibold">
-              {bucket.supplier?.name ?? "Sans fournisseur"}
-              {bucket.supplier?.lead_days != null && <span className="ml-2 text-xs font-normal text-muted">délai habituel {bucket.supplier.lead_days} j</span>}
-            </header>
-            <table className="w-full min-w-[640px] text-left text-sm">
-              <tbody>
-                {bucket.lines.map((l) => {
-                  const days = daysSince(l.since);
-                  const late = l.status === "commande_fournisseur" && bucket.supplier?.lead_days != null && days > bucket.supplier.lead_days;
-                  return (
-                    <tr key={l.orderId} className="border-b border-black/5 last:border-0">
-                      <td className="p-3"><Link href={`/admin/commandes/${l.orderId}`} className="font-semibold underline">{orderNumber(l.orderId)}</Link></td>
-                      <td className="p-3">{l.productName} <span className="text-muted">· {l.size}</span></td>
-                      <td className="p-3">{l.customerName}</td>
-                      <td className="p-3"><StatusBadge status={l.status} /></td>
-                      <td className={`p-3 text-right text-xs ${late ? "font-semibold text-red-700" : "text-muted"}`}>
-                        {statusLabel(l.status).split(" ")[0]} depuis {days} j{late ? " · en retard" : ""}
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </section>
-        ))}
+        {inTransit.map((bucket) => {
+          const lead = bucket.supplier?.lead_days ?? null;
+          const lines = bucket.lines
+            .map((l) => {
+              const days = daysSince(l.since);
+              return { ...l, days, late: l.status === "commande_fournisseur" && lead != null && days > lead };
+            })
+            .sort((a, b) => Number(b.late) - Number(a.late) || b.days - a.days);
+          const late = lines.filter((l) => l.late).length;
+          return (
+            <details key={bucket.supplier?.id ?? "none"} open={late > 0 || inTransit.length === 1} className="card group overflow-hidden">
+              <summary className="flex cursor-pointer list-none items-center justify-between gap-3 p-4 [&::-webkit-details-marker]:hidden">
+                <span className="font-semibold">
+                  {bucket.supplier?.name ?? "Sans fournisseur"}
+                  {lead != null && <span className="ml-2 text-xs font-normal text-muted">délai habituel {lead} j</span>}
+                </span>
+                <span className="flex items-center gap-2 text-sm">
+                  {late > 0 && <span className="rounded-full bg-red-100 px-2.5 py-0.5 text-xs font-semibold text-red-800">{late} en retard</span>}
+                  <span className="text-muted">{lines.length} colis</span>
+                  <span aria-hidden="true" className="transition group-open:rotate-180">▾</span>
+                </span>
+              </summary>
+              <ul className="border-t border-black/10">
+                {lines.slice(0, MAX_TRANSIT).map((l) => (
+                  <li key={l.orderId} className="flex flex-wrap items-center gap-x-3 gap-y-1 border-b border-black/5 p-3 text-sm last:border-0">
+                    <Link href={`/admin/commandes/${l.orderId}`} className="font-semibold underline">{orderNumber(l.orderId)}</Link>
+                    <span className="min-w-0 flex-1">{l.productName} <span className="text-muted">· {l.size}</span> <span className="text-muted">· {l.customerName}</span></span>
+                    <StatusBadge status={l.status} />
+                    <span className={`w-full text-xs sm:w-auto sm:text-right ${l.late ? "font-semibold text-red-700" : "text-muted"}`}>
+                      {statusLabel(l.status).split(" ")[0]} depuis {l.days} j{l.late ? " · en retard" : ""}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+              {lines.length > MAX_TRANSIT && (
+                <p className="border-t border-black/10 p-3 text-center text-sm">
+                  {lines.length - MAX_TRANSIT} autres colis · <Link href="/admin" className="font-semibold underline">Voir dans Commandes</Link>
+                </p>
+              )}
+            </details>
+          );
+        })}
       </div>
     </>
   );
