@@ -37,10 +37,16 @@ export const DEFAULT_SETTINGS: Settings = {
   tiktokUrl: "https://www.tiktok.com/@261wear",
 };
 
+export function parseSettings(value: string | null | undefined): Settings {
+  if (!value) return DEFAULT_SETTINGS;
+  return { ...DEFAULT_SETTINGS, ...JSON.parse(value) };
+}
+
+// Always read from the database: back-office and order validation. The shop
+// pages use shopSettings() (lib/catalog), which is cached.
 export async function getSettings(): Promise<Settings> {
   const row = await queryOne(`SELECT value FROM settings WHERE key = 'main'`);
-  if (!row) return DEFAULT_SETTINGS;
-  return { ...DEFAULT_SETTINGS, ...JSON.parse(row.value) };
+  return parseSettings(row?.value);
 }
 
 export async function saveSettings(s: Settings) {

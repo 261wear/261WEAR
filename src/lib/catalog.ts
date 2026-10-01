@@ -1,9 +1,12 @@
 import "server-only";
-import { query } from "./db";
+import { cache } from "react";
+import { unstable_cache } from "next/cache";
+import { queryStatic, type Row } from "./db";
+import { computePrice } from "./pricing";
 import { freshness, type Freshness, type ProductStatus } from "./product-status";
-import { listProducts, type PricedProduct } from "./products";
+import { toProduct, type PricedProduct } from "./products";
 import { scoreFields, tokenize } from "./search";
-import { getSettings } from "./settings";
+import { parseSettings, type Settings } from "./settings";
 
 export type ShopProduct = PricedProduct & { fresh: Freshness };
 
@@ -24,23 +27,83 @@ export type CatalogQuery = {
   tri?: string;
 };
 
-// The public catalogue is read on every search keystroke: keep it in memory a
-// few seconds. Every back-office write clears it (invalidateCatalog), so the
-// instance that made the change is always up to date.
-const CACHE_MS = 15_000;
+// Everything the shop shows comes from this snapshot of the database, kept in
+// the Next.js cache: visitors and crawlers never reach the database, which can
+// stay asleep. It is read again at most once an hour, and at once after any
+// back-office change (refreshShop in admin/actions clears SHOP_TAG).
+export const SHOP_TAG = "shop";
+const HOUR = 3600;
+
+// Next.js silently refuses cache entries above 2 MB, and the read would then
+// hit the database on every visit. The catalogue is stored in slices that stay
+// well under that, even with long descriptions.
+const SLICE = 150;
+
+const snapshot = { tags: [SHOP_TAG], revalidate: HOUR };
+
+const readSettings = unstable_cache(
+  async () => ((await queryStatic(`SELECT value FROM settings WHERE key = 'main'`))[0]?.value as string | undefined) ?? null,
+  ["shop-settings"],
+  snapshot,
+);
+
+const readCount = unstable_cache(
+  async () => Number((await queryStatic(`SELECT COUNT(*)::int AS n FROM products WHERE status <> 'brouillon'`))[0].n),
+  ["shop-count"],
+  snapshot,
+);
+
+const readSlice = unstable_cache(
+  (offset: number) =>
+    queryStatic(
+      `SELECT * FROM products WHERE status <> 'brouillon'
+       ORDER BY (status = 'epuise'), COALESCE(published_at, created_at) DESC, id DESC
+       LIMIT ${SLICE} OFFSET $1`,
+      [offset],
+    ),
+  ["shop-products"],
+  snapshot,
+);
+
+// Shop settings (delivery times, WhatsApp, deposit…), from the snapshot.
+export const shopSettings = cache(async (): Promise<Settings> => parseSettings(await readSettings()));
+
+async function loadCatalog(): Promise<ShopProduct[]> {
+  const [count, settings] = await Promise.all([readCount(), shopSettings()]);
+  const offsets = Array.from({ length: Math.ceil(count / SLICE) }, (_, i) => i * SLICE);
+  const rows = (await Promise.all(offsets.map((o) => readSlice(o)))).flat();
+  // Slices refreshed at different moments can overlap: keep each product once.
+  const unique = [...new Map(rows.map((r: Row) => [r.id, r])).values()];
+  // Prices and badges are computed on the way out, not stored: they follow the
+  // settings and the current date.
+  return unique.map((r) => {
+    const p = toProduct(r);
+    return { ...p, pricing: computePrice(settings, p), fresh: freshness(p, settings.badgeDays) };
+  });
+}
+
+// For pages: one read per render.
+export const shopProducts = cache(loadCatalog);
+
+// A published product, or null (drafts are not in the snapshot).
+export async function shopProduct(id: number) {
+  return (await shopProducts()).find((p) => p.id === id) ?? null;
+}
+
+// The search runs on every keystroke: on top of the snapshot, the catalogue
+// stays in memory for a minute so the Next.js cache is not read each time.
+// Only the search uses it; cached pages always read the snapshot itself.
+const MEMORY_MS = 60_000;
 const globalCache = globalThis as unknown as { __catalog?: { at: number; data: Promise<ShopProduct[]> } };
 
 export function invalidateCatalog() {
   globalCache.__catalog = undefined;
 }
 
-export async function shopProducts(): Promise<ShopProduct[]> {
+function searchableProducts(): Promise<ShopProduct[]> {
   const hit = globalCache.__catalog;
-  if (hit && Date.now() - hit.at < CACHE_MS) return hit.data;
-  const data = (async () => {
-    const [products, settings] = await Promise.all([listProducts({ onlyActive: true }), getSettings()]);
-    return products.map((p) => ({ ...p, fresh: freshness(p, settings.badgeDays) }));
-  })();
+  if (hit && Date.now() - hit.at < MEMORY_MS) return hit.data;
+  const data = loadCatalog();
   globalCache.__catalog = { at: Date.now(), data };
   data.catch(() => invalidateCatalog());
   return data;
@@ -63,7 +126,7 @@ function countBy<T extends string>(items: ShopProduct[], key: (p: ShopProduct) =
 }
 
 export async function searchCatalog(query: CatalogQuery) {
-  const all = await shopProducts();
+  const all = await searchableProducts();
   const tokens = tokenize(query.q ?? "");
 
   let approximate = false;
@@ -124,11 +187,9 @@ export async function suggest(q: string) {
   };
 }
 
-// Shown in the header on every page: counted by the database, not in memory.
+// Shown in the header on every page: counted on the snapshot, no database read.
 export async function popularCategories() {
-  const rows = await query(
-    `SELECT category AS value, COUNT(*)::int AS count FROM products
-     WHERE status <> 'brouillon' AND category <> '' GROUP BY category ORDER BY count DESC, category LIMIT 6`,
-  );
-  return rows.map((r) => ({ value: String(r.value), count: Number(r.count) }));
+  return countBy(await shopProducts(), (p) => [p.category])
+    .sort((a, b) => b.count - a.count || a.value.localeCompare(b.value))
+    .slice(0, 6);
 }

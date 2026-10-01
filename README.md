@@ -159,8 +159,15 @@ Sans configuration, l'écran permet de copier le texte et de télécharger les p
   le statut en une fois (chaque produit est vérifié : un produit incomplet est refusé et listé) ou les publier sur
   Facebook.
 - **Filtre fournisseur** : depuis la fiche d'un fournisseur, « Voir tous ses produits » ouvre la liste filtrée.
-- **Cache catalogue** : la boutique garde le catalogue 15 s en mémoire, vidé immédiatement à chaque modification
-  dans le back-office. Index SQL sur statut, date de publication et date de commande.
+- **Cache boutique** : le catalogue et les réglages sont lus en base une fois par heure au plus (cache Next.js),
+  et relus immédiatement après chaque modification dans le back-office. L'accueil et les fiches produit sont servis
+  depuis le cache : un visiteur ou un robot ne réveille pas la base. La recherche garde en plus le catalogue 60 s en
+  mémoire. Les commandes et le back-office lisent toujours la base en direct. Index SQL sur statut, date de
+  publication et date de commande.
+- **Robots** : `/recherche` (combinaisons de filtres sans fin), `/admin`, `/api` et `/commande` sont fermés aux
+  robots ; les fiches produit sont listées dans `/sitemap.xml`.
+- **Audience** : Vercel Web Analytics (pages vues, sans cookie), à activer dans Vercel → projet → Analytics. Le
+  back-office n'est pas compté et le jeton des liens de commande n'est jamais transmis.
 
 ## Ergonomie
 

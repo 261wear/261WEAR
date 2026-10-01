@@ -7,7 +7,7 @@ import { WhatsAppIcon } from "@/components/WhatsAppIcon";
 import { getOrderByToken, paidAt } from "@/lib/orders";
 import { orderNumber, waLink } from "@/lib/orders-shared";
 import { formatAr } from "@/lib/pricing";
-import { getSettings } from "@/lib/settings";
+import { shopSettings } from "@/lib/catalog";
 
 export const metadata: Metadata = { title: "Ma commande", robots: { index: false } };
 
@@ -21,7 +21,7 @@ function addDays(d: Date, days: number) {
 
 export default async function OrderPage(props: PageProps<"/commande/[token]">) {
   const [{ token }, search] = await Promise.all([props.params, props.searchParams]);
-  const [order, settings] = await Promise.all([getOrderByToken(token), getSettings()]);
+  const [order, settings] = await Promise.all([getOrderByToken(token), shopSettings()]);
   if (!order) notFound();
 
   const number = orderNumber(order.id);

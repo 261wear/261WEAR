@@ -5,17 +5,24 @@ import { Gallery } from "@/components/Gallery";
 import { OrderForm } from "@/components/OrderForm";
 import { ProductCard } from "@/components/ProductCard";
 import { StickyBuyBar } from "@/components/StickyBuyBar";
-import { shopProducts } from "@/lib/catalog";
+import { shopProduct, shopProducts, shopSettings } from "@/lib/catalog";
 import { FreshBadge, StatusBadge } from "@/components/ProductBadges";
 import { WhatsAppIcon } from "@/components/WhatsAppIcon";
 import { waLink } from "@/lib/orders-shared";
 import { depositFor, formatAr } from "@/lib/pricing";
 import { freshness } from "@/lib/product-status";
-import { getProduct } from "@/lib/products";
-import { getSettings } from "@/lib/settings";
+
+// Product pages are rendered on first visit, then served from the cache until
+// the catalogue changes (or one hour, for the date-based badges). Nothing is
+// generated at build time.
+export const revalidate = 3600;
+
+export function generateStaticParams() {
+  return [];
+}
 
 export async function generateMetadata(props: PageProps<"/produit/[id]">): Promise<Metadata> {
-  const product = await getProduct(Number((await props.params).id));
+  const product = await shopProduct(Number((await props.params).id));
   if (!product || !product.active) return {};
   return {
     title: product.name,
@@ -25,7 +32,7 @@ export async function generateMetadata(props: PageProps<"/produit/[id]">): Promi
 }
 
 export default async function ProductPage(props: PageProps<"/produit/[id]">) {
-  const [product, settings] = await Promise.all([getProduct(Number((await props.params).id)), getSettings()]);
+  const [product, settings] = await Promise.all([shopProduct(Number((await props.params).id)), shopSettings()]);
   if (!product || !product.active) notFound();
   const price = product.pricing.price;
   const deposit = depositFor(price, settings.depositPct);

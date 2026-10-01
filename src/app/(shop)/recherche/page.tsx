@@ -4,11 +4,10 @@ import { Pagination } from "@/components/Pagination";
 import { ProductCard } from "@/components/ProductCard";
 import { pageParam, paginate } from "@/lib/pagination";
 import { WhatsAppIcon } from "@/components/WhatsAppIcon";
-import { searchCatalog, SORTS, type CatalogQuery } from "@/lib/catalog";
+import { searchCatalog, shopSettings, SORTS, type CatalogQuery } from "@/lib/catalog";
 import { waLink } from "@/lib/orders-shared";
 import { formatAr } from "@/lib/pricing";
 import { isProductStatus, productStatus } from "@/lib/product-status";
-import { getSettings } from "@/lib/settings";
 import { SortSelect } from "./SortSelect";
 
 type Params = Record<string, string>;
@@ -54,7 +53,7 @@ export default async function SearchPage(props: PageProps<"/recherche">) {
     max: num(current.max),
     tri: SORTS.some((s) => s.id === current.tri) ? current.tri : undefined,
   };
-  const [{ results, facets, approximate, tri, total }, settings] = await Promise.all([searchCatalog(query), getSettings()]);
+  const [{ results, facets, approximate, tri, total }, settings] = await Promise.all([searchCatalog(query), shopSettings()]);
   const pageData = paginate(results, pageParam(sp.page), PAGE_SIZE);
   const q = current.q ?? "";
 

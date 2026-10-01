@@ -4,12 +4,15 @@ import { FloatingWhatsApp } from "@/components/FloatingWhatsApp";
 import { Logo } from "@/components/Logo";
 import { SearchBox } from "@/components/SearchBox";
 import { SocialLinks } from "@/components/SocialLinks";
-import { popularCategories } from "@/lib/catalog";
+import { popularCategories, shopSettings } from "@/lib/catalog";
 import { waLink } from "@/lib/orders-shared";
-import { getSettings } from "@/lib/settings";
+
+// Shop pages without visitor-specific data are served from the cache: rebuilt
+// after a back-office change, and at least once an hour.
+export const revalidate = 3600;
 
 export default async function ShopLayout({ children }: LayoutProps<"/">) {
-  const [settings, popular] = await Promise.all([getSettings(), popularCategories()]);
+  const [settings, popular] = await Promise.all([shopSettings(), popularCategories()]);
   const wa = waLink(settings.whatsapp, "Bonjour 261 WEAR ! J'ai une question :");
   return (
     <>

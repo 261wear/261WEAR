@@ -118,8 +118,27 @@ async function createDriver(): Promise<QueryFn> {
     const db = new PGlite(dir);
     query = async (text, params = []) => (await db.query<Row>(text, params)).rows;
   }
-  for (const statement of SCHEMA) await query(statement);
+  await migrate(query);
   return query;
+}
+
+// Every cold start used to replay the whole schema: ~25 round trips that wake
+// the database for nothing. The number of statements already applied is kept in
+// "settings"; when it matches, one read is enough.
+async function migrate(query: QueryFn) {
+  const version = String(SCHEMA.length);
+  try {
+    const rows = await query(`SELECT value FROM settings WHERE key = 'schema'`);
+    if (rows[0]?.value === version) return;
+  } catch {
+    // First start: the settings table does not exist yet.
+  }
+  for (const statement of SCHEMA) await query(statement);
+  await query(
+    `INSERT INTO settings (key, value) VALUES ('schema', $1)
+     ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value`,
+    [version],
+  );
 }
 
 function driver() {
@@ -132,10 +151,16 @@ function driver() {
   return globalForDb.__db;
 }
 
-export async function query(text: string, params: unknown[] = []) {
-  await connection();
+// For reads kept in the Next.js cache (lib/catalog): they run outside a request,
+// where connection() is not allowed.
+export async function queryStatic(text: string, params: unknown[] = []) {
   const run = await driver();
   return run(text, params);
+}
+
+export async function query(text: string, params: unknown[] = []) {
+  await connection();
+  return queryStatic(text, params);
 }
 
 export async function queryOne(text: string, params: unknown[] = []) {

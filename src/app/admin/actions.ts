@@ -1,10 +1,10 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
+import { revalidatePath, updateTag } from "next/cache";
 import { redirect } from "next/navigation";
 import { checkPassword, endSession, requireAdmin, startSession } from "@/lib/auth";
 import { FB_MAX_PHOTOS, facebookConfigured, logPost, publishPhotoPost } from "@/lib/facebook";
-import { invalidateCatalog } from "@/lib/catalog";
+import { invalidateCatalog, SHOP_TAG } from "@/lib/catalog";
 import { rateLimit } from "@/lib/rate-limit";
 import { createOrder, getOrder, updateOrder } from "@/lib/orders";
 import { ALL_STATUS_IDS, isDbId, normalizePhone, stepsFor } from "@/lib/orders-shared";
@@ -36,8 +36,10 @@ import {
 
 export type FormState = { error?: string; ok?: string } | undefined;
 
-// Any change visible in the shop: clear the catalogue cache and re-render.
+// Any change visible in the shop: drop the cached snapshot (the next visit
+// reads the database again) and re-render the cached pages.
 function refreshShop() {
+  updateTag(SHOP_TAG);
   invalidateCatalog();
   revalidatePath("/", "layout");
 }

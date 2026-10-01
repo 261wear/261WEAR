@@ -29,7 +29,7 @@ export type Product = {
 
 export type PricedProduct = Product & { pricing: PriceBreakdown };
 
-function toProduct(r: Row): Product {
+export function toProduct(r: Row): Product {
   return {
     id: r.id,
     ref: r.ref ?? null,

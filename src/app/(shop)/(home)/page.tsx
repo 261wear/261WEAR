@@ -1,13 +1,12 @@
 import Link from "next/link";
 import { ProductCard } from "@/components/ProductCard";
-import { popularCategories, shopProducts } from "@/lib/catalog";
-import { getSettings } from "@/lib/settings";
+import { popularCategories, shopProducts, shopSettings } from "@/lib/catalog";
 
 // The home page shows the latest pairs; the full catalogue is paginated in /recherche.
 const HOME_DROP = 12;
 
 export default async function Home() {
-  const [products, settings, categories] = await Promise.all([shopProducts(), getSettings(), popularCategories()]);
+  const [products, settings, categories] = await Promise.all([shopProducts(), shopSettings(), popularCategories()]);
   const inStock = products.filter((p) => p.status === "en_stock").slice(0, 4);
   // Pairs already shown in "Dispo de suite" are not repeated in the drop.
   const shown = new Set(inStock.map((p) => p.id));

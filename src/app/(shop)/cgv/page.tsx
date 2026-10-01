@@ -1,10 +1,10 @@
 import type { Metadata } from "next";
-import { getSettings } from "@/lib/settings";
+import { shopSettings } from "@/lib/catalog";
 
 export const metadata: Metadata = { title: "Conditions générales de vente" };
 
 export default async function CgvPage() {
-  const s = await getSettings();
+  const s = await shopSettings();
   const sections: [string, string][] = [
     [
       "1. Objet",
