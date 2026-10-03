@@ -1,6 +1,6 @@
 // Bulk import helpers, shared by the browser (preview) and the server (re-validation).
 
-import { productIssues, type ProductCore } from "./product-rules";
+import { isAllowedImageUrl, MAX_IMAGES, productIssues, type ProductCore } from "./product-rules";
 import { isProductStatus, type ProductStatus } from "./product-status";
 
 export type ImportRow = {
@@ -18,6 +18,7 @@ export type ImportRow = {
   supplier: string;
   supplier_ref: string;
   status: ProductStatus | null; // null = keep current / use the default
+  images: string[]; // photo links (https), e.g. a supplier catalogue; empty = keep current
   errors: string[];
 };
 
@@ -89,7 +90,8 @@ type Field =
   | "sizes"
   | "supplier"
   | "supplier_ref"
-  | "status";
+  | "status"
+  | "images";
 
 const ALIASES: Record<Field, string[]> = {
   ref: ["ref", "reference", "sku", "code", "article", "item", "item_no", "model_no"],
@@ -105,6 +107,7 @@ const ALIASES: Record<Field, string[]> = {
   supplier: ["fournisseur", "supplier", "vendor", "usine", "factory"],
   supplier_ref: ["ref_fournisseur", "reference_fournisseur", "supplier_ref", "supplier_sku", "vendor_sku"],
   status: ["statut", "status", "disponibilite", "dispo", "availability", "etat"],
+  images: ["photos", "images", "liens_photos", "image_urls", "photo_urls"],
 };
 
 const STATUS_WORDS: [ProductStatus, string[]][] = [
@@ -166,6 +169,11 @@ function parseSizes(v: string) {
     .filter(Boolean);
 }
 
+// Photo links separated by spaces, "|" or new lines; only https links are kept.
+function parseImages(v: string) {
+  return v.split(/[\s|]+/).filter(Boolean);
+}
+
 // Ariary amounts: "180 000", "180.000", "180,000 Ar", "180 000,00" → 180000.
 function parseAr(v: string): number | null {
   const t = v.trim().replace(/[.,]\d{1,2}$/, "");
@@ -212,6 +220,11 @@ export function validateRow(r: Omit<ImportRow, "errors">): ImportRow {
     supplier: String(r.supplier ?? "").trim().slice(0, 80),
     supplier_ref: String(r.supplier_ref ?? "").trim().slice(0, 60),
     status,
+    images: (Array.isArray(r.images) ? r.images : [])
+      .map(String)
+      .filter(isAllowedImageUrl)
+      .filter((u, i, all) => all.indexOf(u) === i)
+      .slice(0, MAX_IMAGES),
     errors,
   };
 }
@@ -272,6 +285,7 @@ export function rowsFromText(text: string): { rows: ImportRow[]; missingColumns:
       supplier: cell(row, "supplier"),
       supplier_ref: cell(row, "supplier_ref"),
       status: parseStatus(cell(row, "status")) ?? null,
+      images: parseImages(cell(row, "images")),
     }),
   );
   // Unknown status words are reported, not silently ignored.

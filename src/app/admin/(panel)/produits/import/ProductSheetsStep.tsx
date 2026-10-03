@@ -99,11 +99,12 @@ export function ProductSheetsStep({
           </ul>
           <p className="mt-1 text-black/70">
             Facultatives : statut, categorie, description, marge (vide = paramètres), prix_force, pointures (ex. « 39 40 41 42 »),
-            fournisseur, ref_fournisseur. Un fournisseur inconnu est créé automatiquement.
+            fournisseur, ref_fournisseur, photos (liens https séparés par des espaces, 12 max). Un fournisseur inconnu est créé
+            automatiquement.
           </p>
           <p className="mt-1 text-black/70">
-            <b>Produit existant</b> (même ref) : la fiche est <b>mise à jour</b>, sans doublon, photos conservées ; une cellule vide
-            garde la valeur actuelle. Un fichier « ref ; statut » suffit pour changer la disponibilité de tout le catalogue.
+            <b>Produit existant</b> (même ref) : la fiche est <b>mise à jour</b>, sans doublon ; une cellule vide garde la valeur
+            actuelle. Ses photos sont conservées : la colonne photos ne remplace que des liens, jamais les photos que tu as envoyées. Un fichier « ref ; statut » suffit pour changer la disponibilité de tout le catalogue.
           </p>
         </div>
         <button type="button" onClick={downloadTemplate} className="btn-ghost whitespace-nowrap">↓ Télécharger le modèle</button>
@@ -241,6 +242,7 @@ function PreviewRow({
     if (pricing.price !== existing.price) changes.push(`prix de vente ${formatAr(existing.price)} → ${formatAr(pricing.price)}`);
     if (p.sizes.join(" ") !== existing.sizes.join(" ")) changes.push("pointures");
     if (p.category !== existing.category || p.description !== existing.description) changes.push("infos");
+    if (row.images.length) changes.push("liens photos");
   }
   return (
     <tr className={`border-b border-black/5 align-top last:border-0 ${ok ? "" : "bg-red-50/60"}`}>
@@ -249,6 +251,7 @@ function PreviewRow({
       <td className="p-2.5">
         {p.name || "—"}
         {p.category && <span className="block text-xs text-muted">{p.category}</span>}
+        {row.images.length > 0 && <span className="block text-xs text-muted">{row.images.length} photo{row.images.length > 1 ? "s" : ""} en lien</span>}
       </td>
       <td className="p-2.5 text-xs whitespace-nowrap">
         {pricing ? (pricing.basis === "ar" ? `Achat ${formatAr(p.cost_ar!)}` : `${p.price_rmb} ¥ + transport`) : "—"}

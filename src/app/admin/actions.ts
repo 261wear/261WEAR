@@ -8,6 +8,7 @@ import { invalidateCatalog, SHOP_TAG } from "@/lib/catalog";
 import { rateLimit } from "@/lib/rate-limit";
 import { createOrder, getOrder, updateOrder } from "@/lib/orders";
 import { ALL_STATUS_IDS, isDbId, normalizePhone, stepsFor } from "@/lib/orders-shared";
+import { isOwnUpload } from "@/lib/images";
 import { depositFor } from "@/lib/pricing";
 import { isValidRef, MAX_IMPORT_ROWS, normalizeRef, resolveRow, validateRow, type ImportRow } from "@/lib/import";
 import { isAllowedImageUrl, MAX_IMAGES, priceIssues, productIssues } from "@/lib/product-rules";
@@ -232,11 +233,12 @@ export async function importProducts(rows: ImportRow[], defaultStatus: ProductSt
         ...fields,
         supplier_id: supplierId ?? existing.supplier_id,
         supplier_ref: row.supplier_ref || existing.supplier_ref,
-        images: existing.images,
+        // Links from the file refresh the photos, unless some were uploaded by hand.
+        images: row.images.length && !existing.images.some(isOwnUpload) ? row.images : existing.images,
       });
       result.updated++;
     } else {
-      await createProduct({ ...fields, supplier_id: supplierId, supplier_ref: row.supplier_ref, images: [] });
+      await createProduct({ ...fields, supplier_id: supplierId, supplier_ref: row.supplier_ref, images: row.images });
       result.created++;
     }
   }
