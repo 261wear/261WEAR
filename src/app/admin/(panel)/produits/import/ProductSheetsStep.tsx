@@ -11,6 +11,9 @@ import { PRODUCT_STATUSES, productStatus, STATUS_BADGE, type ProductStatus } fro
 import type { ProductSummary } from "./ImportWizard";
 
 const CHUNK = 50;
+// A catalogue of thousands of lines: the preview shows the lines in error first,
+// then the first ones, so the page stays fast. Every valid line is imported.
+const PREVIEW_ROWS = 200;
 
 function downloadTemplate() {
   const esc = (v: string) => (/[;"\n]/.test(v) ? `"${v.replace(/"/g, '""')}"` : v);
@@ -51,6 +54,7 @@ export function ProductSheetsStep({
   const valid = resolved.filter((r) => !r.errors.length).map((r) => r.row);
   const invalid = rows.length - valid.length;
   const toUpdate = resolved.filter((r) => !r.errors.length && !r.isNew).length;
+  const preview = [...resolved.filter((r) => r.errors.length), ...resolved.filter((r) => !r.errors.length)].slice(0, PREVIEW_ROWS);
 
   async function onFile(file: File | undefined) {
     if (!file) return;
@@ -149,6 +153,7 @@ export function ProductSheetsStep({
             <span className="text-green-700">{valid.length - toUpdate} nouvelle{valid.length - toUpdate > 1 ? "s" : ""}</span>
             <span className="text-sky-700">{toUpdate} mise{toUpdate > 1 ? "s" : ""} à jour</span>
             {invalid > 0 && <span className="font-semibold text-red-700">{invalid} en erreur (ignorée{invalid > 1 ? "s" : ""})</span>}
+            {rows.length > PREVIEW_ROWS && <span className="text-muted">Aperçu : {PREVIEW_ROWS} lignes{invalid ? ", erreurs en premier" : ""}</span>}
           </div>
           <div className="max-h-[420px] overflow-auto">
             <table className="w-full min-w-[760px] text-left text-sm">
@@ -166,7 +171,7 @@ export function ProductSheetsStep({
                 </tr>
               </thead>
               <tbody>
-                {resolved.map((r) => (
+                {preview.map((r) => (
                   <PreviewRow key={r.row.line} row={r.row} resolved={r} settings={settings} existing={byRef.get(r.row.ref)} />
                 ))}
               </tbody>

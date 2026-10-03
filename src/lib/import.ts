@@ -22,7 +22,10 @@ export type ImportRow = {
   errors: string[];
 };
 
-export const MAX_IMPORT_ROWS = 500;
+// A whole supplier catalogue fits in one file; the browser sends it to the
+// server in small batches, each capped at MAX_IMPORT_BATCH.
+export const MAX_IMPORT_ROWS = 10_000;
+export const MAX_IMPORT_BATCH = 500;
 
 const REF_RE = /^[A-Z0-9][A-Z0-9._-]{0,39}$/;
 

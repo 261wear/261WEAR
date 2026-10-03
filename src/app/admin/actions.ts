@@ -10,7 +10,7 @@ import { createOrder, getOrder, updateOrder } from "@/lib/orders";
 import { ALL_STATUS_IDS, isDbId, normalizePhone, stepsFor } from "@/lib/orders-shared";
 import { isOwnUpload } from "@/lib/images";
 import { depositFor } from "@/lib/pricing";
-import { isValidRef, MAX_IMPORT_ROWS, normalizeRef, resolveRow, validateRow, type ImportRow } from "@/lib/import";
+import { isValidRef, MAX_IMPORT_BATCH, normalizeRef, resolveRow, validateRow, type ImportRow } from "@/lib/import";
 import { isAllowedImageUrl, MAX_IMAGES, priceIssues, productIssues } from "@/lib/product-rules";
 import { isProductStatus, type ProductStatus } from "@/lib/product-status";
 import {
@@ -196,10 +196,10 @@ export async function importProducts(rows: ImportRow[], defaultStatus: ProductSt
   const suppliers = new Map<string, number>();
   const knownSuppliers = new Set((await listSupplierOptions()).map((o) => o.name.toLowerCase()));
   // Loaded once for the whole batch: only the products it names, not the whole catalogue.
-  const refs = [...new Set(rows.slice(0, MAX_IMPORT_ROWS).map((r) => normalizeRef(String(r?.ref ?? ""))).filter(Boolean))];
+  const refs = [...new Set(rows.slice(0, MAX_IMPORT_BATCH).map((r) => normalizeRef(String(r?.ref ?? ""))).filter(Boolean))];
   const [catalog, settings] = await Promise.all([listProductsByRefs(refs), getSettings()]);
   const byRef = new Map(catalog.filter((p) => p.ref).map((p) => [p.ref!, p]));
-  for (const raw of rows.slice(0, MAX_IMPORT_ROWS)) {
+  for (const raw of rows.slice(0, MAX_IMPORT_BATCH)) {
     const row = validateRow(raw);
     const existing = byRef.get(row.ref);
     const resolved = resolveRow(row, existing, defaultStatus);
