@@ -104,18 +104,21 @@ export default async function Home() {
         )}
       </section>
 
-      <section className="border-y border-black/10 bg-white">
+      {/* Same look as the "Comment commander" carousel on the social networks. */}
+      <section className="bg-accent text-ink">
         <div className="mx-auto max-w-6xl px-4 py-16">
-          <h2 className="font-display text-4xl sm:text-5xl">Comment ça marche</h2>
-          <div className="mt-10 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+          <h2 className="font-display text-5xl leading-[0.9] sm:text-7xl">Comment<br />commander</h2>
+          <ol className="mt-10 grid border-t-[3px] border-ink sm:grid-cols-2 sm:border-t-0 lg:grid-cols-4">
             {steps.map(([n, title, body]) => (
-              <div key={n}>
-                <p className="font-display text-5xl text-black/15">{n}</p>
-                <h3 className="mt-2 text-lg font-semibold">{title}</h3>
-                <p className="mt-1 text-sm text-black/60">{body}</p>
-              </div>
+              <li key={n} className="flex gap-5 border-b-[3px] border-ink py-5 sm:flex-col sm:gap-2 sm:border-t-[3px] sm:border-b-0 sm:pr-6 lg:border-b-[3px]">
+                <span className="font-display w-14 shrink-0 text-5xl leading-none">{n}</span>
+                <span>
+                  <span className="block text-lg font-bold">{title}</span>
+                  <span className="mt-1 block text-sm text-ink/75">{body}</span>
+                </span>
+              </li>
             ))}
-          </div>
+          </ol>
         </div>
       </section>
     </>

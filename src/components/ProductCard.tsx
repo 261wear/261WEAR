@@ -8,9 +8,11 @@ import { Img } from "./ui/Img";
 
 export function ProductCard({ product, query = "", priority = false }: { product: ShopProduct; query?: string; priority?: boolean }) {
   const soldOut = product.status === "epuise";
+  // "Néon" frame from the brand moodboard: pairs already in Tana glow citron.
+  const neon = product.status === "en_stock";
   return (
     <Link href={`/produit/${product.id}`} className="group block">
-      <div className="relative aspect-square overflow-hidden rounded-2xl bg-white">
+      <div className={`relative aspect-square overflow-hidden rounded-2xl bg-white ${neon ? "ring-4 ring-accent shadow-[0_0_24px_rgba(198,255,61,0.55)]" : ""}`}>
         {/* Brand placeholder under the photo while it loads (slow mobile networks). */}
         <span aria-hidden="true" className="font-display absolute inset-0 flex items-center justify-center text-4xl text-black/5">261</span>
         {product.images[0] ? (

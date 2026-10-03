@@ -55,8 +55,12 @@ export default async function OrderPage(props: PageProps<"/commande/[token]">) {
         </div>
       )}
       <div className="flex flex-wrap items-end justify-between gap-2">
-        <h1 className="font-display text-4xl">Commande {number}</h1>
-        <p className="text-sm text-muted">Garde ce lien pour suivre ton colis.</p>
+        <h1 className="font-display flex items-center gap-3 text-4xl">
+          Commande {number}
+          {/* "Polaroïd" stamp from the brand moodboard. */}
+          {delivered && <span className="inline-block rotate-3 bg-ink px-3 py-1 text-2xl text-white">Livrée</span>}
+        </h1>
+        <p className="text-sm text-muted">{delivered ? "Partage ta photo avec #261Family !" : "Garde ce lien pour suivre ton colis."}</p>
       </div>
 
       <div className="card mt-6 flex gap-4 p-4">

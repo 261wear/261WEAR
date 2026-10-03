@@ -13,12 +13,16 @@ export function Img({
 }: React.ImgHTMLAttributes<HTMLImageElement> & { src?: string; fallback?: string }) {
   const ref = useRef<HTMLImageElement>(null);
   const [loaded, setLoaded] = useState(false);
+  // No working source left: hide the browser's broken-image icon and alt text
+  // so the placeholder behind (the "261" mark on cards) shows instead.
+  const [failed, setFailed] = useState(false);
   const [current, setCurrent] = useState(src);
   const [prevSrc, setPrevSrc] = useState(src);
   if (src !== prevSrc) {
     setPrevSrc(src);
     setCurrent(src);
     setLoaded(false);
+    setFailed(false);
   }
   useEffect(() => {
     // The image may have finished before React hydrated: its load/error event
@@ -28,7 +32,7 @@ export function Img({
     const frame = requestAnimationFrame(() => {
       if (img.naturalWidth > 0) setLoaded(true);
       else if (fallback && current !== fallback) setCurrent(fallback);
-      else setLoaded(true);
+      else setFailed(true);
     });
     return () => cancelAnimationFrame(frame);
   }, [current, fallback]);
@@ -42,9 +46,9 @@ export function Img({
       onLoad={() => setLoaded(true)}
       onError={() => {
         if (fallback && current !== fallback) setCurrent(fallback);
-        else setLoaded(true);
+        else setFailed(true);
       }}
-      className={`${loaded ? "" : "bg-black/[0.07] motion-safe:animate-pulse"} ${className}`}
+      className={`${failed ? "invisible" : loaded ? "" : "bg-black/[0.07] motion-safe:animate-pulse"} ${className}`}
       {...rest}
     />
   );

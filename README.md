@@ -182,6 +182,16 @@ Sans configuration, l'écran permet de copier le texte et de télécharger les p
 - **Fiche produit (back-office)** : bouton « Enregistrer » toujours visible, boutons photo plus grands, photo
   principale signalée.
 
+## Identité visuelle
+
+- **Logo** : logotype « 261° WEAR » en Anton, le « ° » en citron `#C6FF3D` sur fond noir `#0B0B0C`.
+- **Icônes** : `src/app/favicon.ico`, `icon.png` (rond noir « 261° »), `apple-icon.png`, `public/icon-192.png` et
+  `icon-512.png` (manifeste « Ajouter à l'écran d'accueil », `src/app/manifest.ts`).
+- **Image de partage** : `src/app/opengraph-image.png` (1200 × 630), affichée quand un lien du site est partagé sur
+  Facebook ou WhatsApp ; une fiche produit partage sa propre photo.
+- **Cadres du moodboard sur le site** : Néon (contour citron) sur les paires « Dispo de suite », section « Comment
+  commander » au style du carrousel, tampon « #261Family » en pied de page, tampon « Livrée » sur le suivi.
+
 ## Sécurité
 
 - Back-office : chaque action vérifie la session (une action rejouée sans session est sans effet) ; connexion limitée

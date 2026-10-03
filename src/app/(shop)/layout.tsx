@@ -62,9 +62,10 @@ export default async function ShopLayout({ children }: LayoutProps<"/">) {
               whatsappHref={wa}
             />
             <p className="mt-3 text-sm">Drops, nouveautés et retours en stock en avant-première.</p>
+            <p className="font-display mt-5 inline-block -rotate-3 rounded-lg bg-accent px-3 py-1.5 text-xl leading-none text-ink">#261Family</p>
           </div>
         </div>
-        <p className="border-t border-white/10 py-5 text-center text-xs">© {new Date().getFullYear()} 261 WEAR · Antananarivo, Madagascar</p>
+        <p className="border-t border-white/10 py-5 text-center text-xs">© {new Date().getFullYear()} 261° WEAR · Antananarivo, Madagascar</p>
       </footer>
       <FloatingWhatsApp href={wa} />
     </>
