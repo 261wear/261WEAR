@@ -1,12 +1,12 @@
 import { thumbUrl } from "@/lib/images";
 import Link from "next/link";
-import type { ShopProduct } from "@/lib/catalog";
+import type { CardProduct } from "@/lib/card";
 import { formatAr } from "@/lib/pricing";
 import { Highlight } from "./Highlight";
 import { FreshBadge, StatusBadge } from "./ProductBadges";
 import { Img } from "./ui/Img";
 
-export function ProductCard({ product, query = "", priority = false }: { product: ShopProduct; query?: string; priority?: boolean }) {
+export function ProductCard({ product, query = "", priority = false }: { product: CardProduct; query?: string; priority?: boolean }) {
   const soldOut = product.status === "epuise";
   // "Néon" frame from the brand moodboard: pairs already in Tana glow citron.
   const neon = product.status === "en_stock";
@@ -22,7 +22,7 @@ export function ProductCard({ product, query = "", priority = false }: { product
             alt={product.name}
             loading={priority ? "eager" : "lazy"}
             fetchPriority={priority ? "high" : "auto"}
-            className={`relative h-full w-full object-cover transition duration-500 group-hover:scale-105 ${soldOut ? "opacity-50 grayscale" : ""}`}
+            className={`relative h-full w-full object-contain transition duration-500 group-hover:scale-105 ${soldOut ? "opacity-50 grayscale" : ""}`}
           />
         ) : null}
         <div className="absolute top-2 left-2 flex flex-col items-start gap-1">

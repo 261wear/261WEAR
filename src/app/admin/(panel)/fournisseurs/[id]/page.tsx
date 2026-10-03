@@ -5,14 +5,14 @@ import { removeSupplier } from "@/app/admin/actions";
 import { SubmitButton } from "@/components/ui/Button";
 import { Img } from "@/components/ui/Img";
 import { formatAr } from "@/lib/pricing";
-import { listProducts } from "@/lib/products";
+import { listProductsLight } from "@/lib/products";
 import { getSupplier } from "@/lib/suppliers";
 import { SupplierForm } from "../SupplierForm";
 
 export default async function SupplierPage(props: PageProps<"/admin/fournisseurs/[id]">) {
   const supplier = await getSupplier(Number((await props.params).id));
   if (!supplier) notFound();
-  const products = (await listProducts({ onlyActive: false })).filter((p) => p.supplier_id === supplier.id);
+  const products = (await listProductsLight()).filter((p) => p.supplier_id === supplier.id);
   return (
     <>
       <Link href="/admin/fournisseurs" className="text-sm text-muted hover:text-ink">← Fournisseurs</Link>

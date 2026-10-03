@@ -1,18 +1,15 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { Pagination } from "@/components/Pagination";
-import { ProductCard } from "@/components/ProductCard";
-import { pageParam, paginate } from "@/lib/pagination";
 import { WhatsAppIcon } from "@/components/WhatsAppIcon";
-import { searchCatalog, shopSettings, SORTS, type CatalogQuery } from "@/lib/catalog";
+import { parseCatalogParams, searchCatalog, shopSettings, SORTS } from "@/lib/catalog";
+import { CATALOG_SLICE, toCard } from "@/lib/card";
 import { waLink } from "@/lib/orders-shared";
 import { formatAr } from "@/lib/pricing";
-import { isProductStatus, productStatus } from "@/lib/product-status";
+import { productStatus } from "@/lib/product-status";
+import { CatalogGrid } from "./CatalogGrid";
 import { SortSelect } from "./SortSelect";
 
 type Params = Record<string, string>;
-
-const PAGE_SIZE = 24;
 
 export async function generateMetadata(props: PageProps<"/recherche">): Promise<Metadata> {
   const { q } = await props.searchParams;
@@ -41,20 +38,8 @@ function FacetLink({ active, to, label, count }: { active: boolean; to: string; 
 
 export default async function SearchPage(props: PageProps<"/recherche">) {
   const sp = await props.searchParams;
-  const one = (k: string) => (typeof sp[k] === "string" ? (sp[k] as string).slice(0, 80) : "");
-  const current: Params = Object.fromEntries(["q", "cat", "taille", "dispo", "min", "max", "tri"].map((k) => [k, one(k)]).filter(([, v]) => v));
-  const num = (v: string) => (v && Number.isFinite(Number(v)) ? Number(v) : undefined);
-  const query: CatalogQuery = {
-    q: current.q,
-    cat: current.cat,
-    taille: current.taille,
-    dispo: isProductStatus(current.dispo) && productStatus(current.dispo).isPublic ? current.dispo : undefined,
-    min: num(current.min),
-    max: num(current.max),
-    tri: SORTS.some((s) => s.id === current.tri) ? current.tri : undefined,
-  };
+  const { current, query } = parseCatalogParams((k) => (typeof sp[k] === "string" ? (sp[k] as string) : ""));
   const [{ results, facets, approximate, tri, total }, settings] = await Promise.all([searchCatalog(query), shopSettings()]);
-  const pageData = paginate(results, pageParam(sp.page), PAGE_SIZE);
   const q = current.q ?? "";
 
   const chips = [
@@ -131,7 +116,6 @@ export default async function SearchPage(props: PageProps<"/recherche">) {
           <p className="mt-1 text-sm text-muted" aria-live="polite">
             {results.length} résultat{results.length > 1 ? "s" : ""}
             {!q && !filterCount ? "" : ` sur ${total} modèles`}
-            {pageData.pageCount > 1 && ` · ${pageData.from}–${pageData.to} affichés`}
           </p>
         </div>
         <SortSelect value={tri} options={[...SORTS]} hrefFor={sortHrefs} />
@@ -154,7 +138,7 @@ export default async function SearchPage(props: PageProps<"/recherche">) {
         </div>
       )}
 
-      <div className="mt-6 grid gap-8 lg:grid-cols-[240px_1fr]">
+      <div className="mt-6 grid grid-cols-1 gap-8 lg:grid-cols-[240px_1fr]">
         <aside>
           <details className="card group p-4 lg:hidden">
             <summary className="-m-4 flex cursor-pointer list-none items-center justify-between p-4 font-semibold">
@@ -167,15 +151,15 @@ export default async function SearchPage(props: PageProps<"/recherche">) {
         </aside>
 
         <section aria-label="Résultats">
-          {results.length > 0 ? (
-            <div className="grid grid-cols-2 gap-x-4 gap-y-8 md:grid-cols-3">
-              {pageData.items.map((p, i) => (
-                <ProductCard key={p.id} product={p} query={q} priority={i < 4} />
-              ))}
-            </div>
-          ) : null}
           {results.length > 0 && (
-            <Pagination page={pageData.page} pageCount={pageData.pageCount} hrefFor={(n) => href(current, { page: n > 1 ? String(n) : "" })} label="Pages de résultats" />
+            // New filters = new list: the key restarts the grid from the first slice.
+            <CatalogGrid
+              key={new URLSearchParams(current).toString()}
+              initial={results.slice(0, CATALOG_SLICE).map(toCard)}
+              total={results.length}
+              params={new URLSearchParams(current).toString()}
+              query={q}
+            />
           )}
           {results.length === 0 && (
             <div className="card p-8 text-center">

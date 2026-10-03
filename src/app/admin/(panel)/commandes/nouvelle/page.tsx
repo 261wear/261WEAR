@@ -1,9 +1,9 @@
 import Link from "next/link";
-import { listProducts } from "@/lib/products";
+import { listProductsLight } from "@/lib/products";
 import { ManualOrderForm } from "./ManualOrderForm";
 
 export default async function NewOrderPage() {
-  const products = await listProducts({ onlyActive: false });
+  const products = await listProductsLight();
   return (
     <>
       <Link href="/admin" className="text-sm text-muted hover:text-ink">← Commandes</Link>

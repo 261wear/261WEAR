@@ -18,7 +18,8 @@ import {
   deleteProduct,
   getProduct,
   getProductIdByRef,
-  listProducts,
+  listProductsByIds,
+  listProductsByRefs,
   setProductImages,
   setProductsStatus,
   updateProduct,
@@ -154,11 +155,10 @@ export async function bulkSetStatus(ids: number[], status: ProductStatus): Promi
   await requireAdmin();
   const result: BulkResult = { updated: 0, failed: [] };
   if (!isProductStatus(status) || !Array.isArray(ids)) return result;
-  const wanted = new Set(ids.filter(isDbId).slice(0, 10_000));
-  const [catalog, settings] = await Promise.all([listProducts({ onlyActive: false }), getSettings()]);
+  const wanted = [...new Set(ids.filter(isDbId))].slice(0, 10_000);
+  const [catalog, settings] = await Promise.all([listProductsByIds(wanted), getSettings()]);
   const ok: number[] = [];
   for (const p of catalog) {
-    if (!wanted.has(p.id)) continue;
     const issues = [...productIssues({ ...p, status }), ...priceIssues({ ...p, status }, settings)];
     if (issues.length) result.failed.push({ id: p.id, name: p.name, error: issues[0] });
     else ok.push(p.id);
@@ -195,8 +195,9 @@ export async function importProducts(rows: ImportRow[], defaultStatus: ProductSt
   const seen = new Set<string>();
   const suppliers = new Map<string, number>();
   const knownSuppliers = new Set((await listSupplierOptions()).map((o) => o.name.toLowerCase()));
-  // Loaded once for the whole batch (one query instead of several per row).
-  const [catalog, settings] = await Promise.all([listProducts({ onlyActive: false }), getSettings()]);
+  // Loaded once for the whole batch: only the products it names, not the whole catalogue.
+  const refs = [...new Set(rows.slice(0, MAX_IMPORT_ROWS).map((r) => normalizeRef(String(r?.ref ?? ""))).filter(Boolean))];
+  const [catalog, settings] = await Promise.all([listProductsByRefs(refs), getSettings()]);
   const byRef = new Map(catalog.filter((p) => p.ref).map((p) => [p.ref!, p]));
   for (const raw of rows.slice(0, MAX_IMPORT_ROWS)) {
     const row = validateRow(raw);

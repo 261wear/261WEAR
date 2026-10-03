@@ -2,15 +2,16 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { Gallery } from "@/components/Gallery";
-import { OrderForm } from "@/components/OrderForm";
 import { ProductCard } from "@/components/ProductCard";
 import { StickyBuyBar } from "@/components/StickyBuyBar";
+import { WhatsAppOrder } from "@/components/WhatsAppOrder";
 import { shopProduct, shopProducts, shopSettings } from "@/lib/catalog";
 import { FreshBadge, StatusBadge } from "@/components/ProductBadges";
 import { WhatsAppIcon } from "@/components/WhatsAppIcon";
 import { waLink } from "@/lib/orders-shared";
 import { depositFor, formatAr } from "@/lib/pricing";
 import { freshness } from "@/lib/product-status";
+import { siteUrl } from "@/lib/site";
 
 // Product pages are rendered on first visit, then served from the cache until
 // the catalogue changes (or one hour, for the date-based badges). Nothing is
@@ -44,7 +45,7 @@ export default async function ProductPage(props: PageProps<"/produit/[id]">) {
   const [dMin, dMax] = inStock ? [settings.stockDeliveryMinDays, settings.stockDeliveryMaxDays] : [settings.deliveryMinDays, settings.deliveryMaxDays];
 
   return (
-    <div className="mx-auto max-w-6xl px-4 pt-4 pb-16">
+    <div className="mx-auto max-w-6xl px-4 pt-2 pb-28 md:pt-4 md:pb-16">
       <nav aria-label="Fil d'Ariane" className="mb-2 text-sm text-muted [&_a]:inline-block [&_a]:py-2">
         <ol className="flex flex-wrap items-center gap-1.5">
           <li><Link href="/" className="hover:text-ink">Accueil</Link></li>
@@ -58,18 +59,20 @@ export default async function ProductPage(props: PageProps<"/produit/[id]">) {
           )}
         </ol>
       </nav>
-      <div className="grid gap-10 md:grid-cols-2">
-      <div className="md:sticky md:top-24 md:self-start">
+      {/* grid-cols-1 (minmax(0, 1fr)): without it the column takes the photo's natural width and the page overflows on phones. */}
+      <div className="grid grid-cols-1 gap-6 md:grid-cols-2 md:gap-10">
+      {/* Full width on phones: the photo is what sells the pair. */}
+      <div className="-mx-4 md:sticky md:top-24 md:mx-0 md:self-start">
         <Gallery images={product.images} alt={product.name} />
       </div>
-      <div>
+      <div className="min-w-0">
         <div className="flex flex-wrap items-center gap-2">
           {product.category && <p className="text-sm font-semibold tracking-wide text-muted uppercase">{product.category}</p>}
           <FreshBadge fresh={freshness(product, settings.badgeDays)} />
           <StatusBadge status={product.status} />
         </div>
-        <h1 className="font-display mt-1 text-4xl sm:text-5xl">{product.name}</h1>
-        <p className={`mt-4 text-3xl font-bold ${soldOut ? "text-black/40 line-through" : ""}`}>{formatAr(price)}</p>
+        <h1 className="font-display mt-1 text-3xl leading-tight [overflow-wrap:anywhere] sm:text-5xl">{product.name}</h1>
+        <p className={`mt-3 text-3xl font-bold ${soldOut ? "text-black/40 line-through" : ""}`}>{formatAr(price)}</p>
         {!soldOut && (
           <p className="mt-1 text-sm text-black/60">
             Livrée à Tana · Acompte {formatAr(deposit)} ({settings.depositPct} %) à la commande, le reste à la livraison.
@@ -83,8 +86,7 @@ export default async function ProductPage(props: PageProps<"/produit/[id]">) {
           <div className="p-3"><p className="font-bold">Contrôle qualité</p>photo avant envoi</div>
           <div className="p-3"><p className="font-bold">Suivi</p>en ligne</div>
         </div>
-        {product.description && <p className="mt-6 whitespace-pre-line text-black/80">{product.description}</p>}
-        <div className="mt-8">
+        <div className="mt-6">
           {soldOut ? (
             <div className="card space-y-3 p-5 text-center">
               <p className="font-display text-2xl">Épuisé</p>
@@ -100,11 +102,19 @@ export default async function ProductPage(props: PageProps<"/produit/[id]">) {
             </div>
           ) : (
             <>
-              <OrderForm productId={product.id} sizes={product.sizes} price={price} />
+              <WhatsAppOrder
+                whatsapp={settings.whatsapp}
+                name={product.name}
+                reference={product.ref ?? ""}
+                price={formatAr(price)}
+                url={`${siteUrl()}/produit/${product.id}`}
+                sizes={product.sizes}
+              />
               <StickyBuyBar price={formatAr(price)} label={product.name} />
             </>
           )}
         </div>
+        {product.description && <p className="mt-8 whitespace-pre-line text-black/80">{product.description}</p>}
       </div>
       </div>
 

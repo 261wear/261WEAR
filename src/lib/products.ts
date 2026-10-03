@@ -68,6 +68,35 @@ export async function listProducts({ onlyActive }: { onlyActive: boolean }) {
   return withPrices(rows.map(toProduct));
 }
 
+// Back-office lists with thousands of products: every column but the heavy
+// ones (description, photo list), plus the first photo and the photo count.
+// About 10 times less data read from the database than SELECT *.
+export type ProductListItem = PricedProduct & { photoCount: number };
+
+export async function listProductsLight(): Promise<ProductListItem[]> {
+  const rows = await query(
+    `SELECT id, ref, name, category, '' AS description, price_rmb, cost_ar, weight_kg, margin_pct, price_override,
+            sizes, status, active, supplier_id, supplier_ref, created_at, updated_at, published_at,
+            COALESCE(images::jsonb->>0, '') AS first_image, jsonb_array_length(COALESCE(images, '[]')::jsonb) AS photo_count
+     FROM products ORDER BY created_at DESC, id DESC`,
+  );
+  const priced = await withPrices(
+    rows.map((r) => ({ ...toProduct({ ...r, images: "[]" }), images: r.first_image ? [String(r.first_image)] : [] })),
+  );
+  return priced.map((p, i) => ({ ...p, photoCount: Number(rows[i].photo_count) || 0 }));
+}
+
+// Only the products a batch is about (import, bulk status), not the whole catalogue.
+export async function listProductsByRefs(refs: string[]) {
+  if (!refs.length) return [];
+  return withPrices((await query(`SELECT * FROM products WHERE ref = ANY($1::text[])`, [refs])).map(toProduct));
+}
+
+export async function listProductsByIds(ids: number[]) {
+  if (!ids.length) return [];
+  return withPrices((await query(`SELECT * FROM products WHERE id = ANY($1::int[])`, [ids])).map(toProduct));
+}
+
 export async function getProduct(id: number) {
   if (!isDbId(id)) return null;
   const row = await queryOne(`SELECT * FROM products WHERE id = $1`, [id]);

@@ -3,7 +3,7 @@ import { LinkPending } from "@/components/ui/LinkPending";
 import { formatAr } from "@/lib/pricing";
 import { freshness, isProductStatus, PRODUCT_STATUSES } from "@/lib/product-status";
 import { priceIssues, productIssues } from "@/lib/product-rules";
-import { listProducts } from "@/lib/products";
+import { listProductsLight } from "@/lib/products";
 import { scoreFields, tokenize } from "@/lib/search";
 import { getSettings } from "@/lib/settings";
 import { Pagination } from "@/components/Pagination";
@@ -19,7 +19,7 @@ export default async function AdminProductsPage(props: PageProps<"/admin/produit
   const statut = typeof sp.statut === "string" && isProductStatus(sp.statut) ? sp.statut : "";
   const photo = sp.photo === "sans";
   const supplierId = isDbId(Number(sp.fournisseur)) ? Number(sp.fournisseur) : null;
-  const [all, settings] = await Promise.all([listProducts({ onlyActive: false }), getSettings()]);
+  const [all, settings] = await Promise.all([listProductsLight(), getSettings()]);
 
   const tokens = tokenize(q);
   const matched = all
@@ -35,15 +35,15 @@ export default async function AdminProductsPage(props: PageProps<"/admin/produit
     .filter((x) => x.score > 0 && (!supplierId || x.p.supplier_id === supplierId))
     .sort((a, b) => (tokens.length ? b.score - a.score : 0));
   const counts = Object.fromEntries(PRODUCT_STATUSES.map((s) => [s.id, matched.filter((x) => x.p.status === s.id).length]));
-  const noPhoto = matched.filter((x) => !x.p.images.length).length;
-  const products = matched.map((x) => x.p).filter((p) => (!statut || p.status === statut) && (!photo || !p.images.length));
+  const noPhoto = matched.filter((x) => !x.p.photoCount).length;
+  const products = matched.map((x) => x.p).filter((p) => (!statut || p.status === statut) && (!photo || !p.photoCount));
   const pageData = paginate(products, pageParam(sp.page), PAGE_SIZE);
   const rows: Row[] = pageData.items.map((p) => ({
     id: p.id,
     name: p.name,
     meta: [p.ref, p.category, p.sizes.join(", ")].filter(Boolean).join(" · "),
     image: p.images[0] ?? null,
-    photos: p.images.length,
+    photos: p.photoCount,
     basis: p.pricing.basis === "ar" ? `Achat ${formatAr(p.cost_ar!)}` : `${p.price_rmb} ¥`,
     cost: p.pricing.cost,
     price: p.pricing.price,

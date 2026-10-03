@@ -3,7 +3,7 @@ import { cache } from "react";
 import { unstable_cache } from "next/cache";
 import { queryStatic, type Row } from "./db";
 import { computePrice } from "./pricing";
-import { freshness, type Freshness, type ProductStatus } from "./product-status";
+import { freshness, isProductStatus, productStatus, type Freshness, type ProductStatus } from "./product-status";
 import { toProduct, type PricedProduct } from "./products";
 import { scoreFields, tokenize } from "./search";
 import { parseSettings, type Settings } from "./settings";
@@ -26,6 +26,29 @@ export type CatalogQuery = {
   max?: number;
   tri?: string;
 };
+
+// URL parameters of the catalogue (?q=…&cat=…&tri=…), read the same way by the
+// page and by /api/catalogue, which serves the next slices as the customer scrolls.
+export const CATALOG_PARAMS = ["q", "cat", "taille", "dispo", "min", "max", "tri"] as const;
+
+export function parseCatalogParams(get: (key: string) => string | null | undefined) {
+  const current: Record<string, string> = {};
+  for (const k of CATALOG_PARAMS) {
+    const v = (get(k) ?? "").slice(0, 80);
+    if (v) current[k] = v;
+  }
+  const num = (v?: string) => (v && Number.isFinite(Number(v)) ? Number(v) : undefined);
+  const query: CatalogQuery = {
+    q: current.q,
+    cat: current.cat,
+    taille: current.taille,
+    dispo: isProductStatus(current.dispo) && productStatus(current.dispo).isPublic ? current.dispo : undefined,
+    min: num(current.min),
+    max: num(current.max),
+    tri: SORTS.some((s) => s.id === current.tri) ? current.tri : undefined,
+  };
+  return { current, query };
+}
 
 // Everything the shop shows comes from this snapshot of the database, kept in
 // the Next.js cache: visitors and crawlers never reach the database, which can

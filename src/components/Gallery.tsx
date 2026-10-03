@@ -55,7 +55,7 @@ export function Gallery({ images, alt }: { images: string[]; alt: string }) {
   };
 
   if (!count) {
-    return <div className="font-display flex aspect-square items-center justify-center rounded-2xl bg-white text-6xl text-black/10">261</div>;
+    return <div className="font-display flex aspect-square items-center justify-center bg-white text-6xl text-black/10 md:rounded-2xl">261</div>;
   }
 
   return (
@@ -77,7 +77,7 @@ export function Gallery({ images, alt }: { images: string[]; alt: string }) {
           onTouchStart={release}
           onWheel={release}
           aria-label="Photos du produit, utilise les flèches pour naviguer"
-          className="flex aspect-square snap-x snap-mandatory overflow-x-auto overflow-y-hidden rounded-2xl bg-white [scrollbar-width:none] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink [&::-webkit-scrollbar]:hidden"
+          className="flex aspect-square snap-x snap-mandatory overflow-x-auto overflow-y-hidden bg-white md:rounded-2xl [scrollbar-width:none] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink [&::-webkit-scrollbar]:hidden"
         >
           {images.map((src, i) => (
             <div
@@ -93,7 +93,8 @@ export function Gallery({ images, alt }: { images: string[]; alt: string }) {
                 loading={i === 0 ? "eager" : "lazy"}
                 fetchPriority={i === 0 ? "high" : "auto"}
                 draggable={false}
-                className="h-full w-full object-cover"
+                // Whole pair visible, never cropped: supplier photos are often landscape.
+                className="h-full w-full object-contain"
               />
             </div>
           ))}
@@ -130,7 +131,7 @@ export function Gallery({ images, alt }: { images: string[]; alt: string }) {
       </div>
 
       {count > 1 && (
-        <div className="mt-3 flex gap-2 overflow-x-auto pb-1" role="tablist" aria-label="Choisir une photo">
+        <div className="mt-3 flex gap-2 overflow-x-auto px-4 pb-1 [scrollbar-width:none] md:px-0 [&::-webkit-scrollbar]:hidden" role="tablist" aria-label="Choisir une photo">
           {images.map((src, i) => (
             <button
               key={src}
@@ -141,7 +142,7 @@ export function Gallery({ images, alt }: { images: string[]; alt: string }) {
               aria-selected={i === active}
               className={`aspect-square w-16 shrink-0 overflow-hidden rounded-lg border-2 bg-white transition sm:w-20 ${i === active ? "border-ink" : "border-transparent opacity-70 hover:opacity-100"}`}
             >
-              <Img src={thumbUrl(src)} fallback={src} alt="" loading="lazy" className="h-full w-full object-cover" />
+              <Img src={thumbUrl(src)} fallback={src} alt="" loading="lazy" className="h-full w-full object-contain" />
             </button>
           ))}
         </div>
