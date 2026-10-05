@@ -140,21 +140,22 @@ const readVersion = unstable_cache(async () => String(Date.now()), ["shop-versio
 
 // Kept in the server's memory between requests (product pages, search on every
 // keystroke): on a warm server, rendering a page no longer re-reads the catalogue.
-const memory = globalThis as unknown as { __catalog?: { version: string; data: Promise<ShopProduct[]> } };
+// Only a finished read is kept, never a pending one: a render waiting on a read
+// started by another render can hang (it did, on the Netlify build).
+const memory = globalThis as unknown as { __catalog?: { version: string; data: ShopProduct[] } };
 
 export function invalidateCatalog() {
   memory.__catalog = undefined;
 }
 
 async function currentCatalog(): Promise<ShopProduct[]> {
+  // The build renders each page once: nothing to keep, plain snapshot reads.
+  if (process.env.NEXT_PHASE === "phase-production-build") return loadCatalog();
   const version = await readVersion();
   const hit = memory.__catalog;
   if (hit && hit.version === version) return hit.data;
-  const data = loadCatalog();
+  const data = await loadCatalog();
   memory.__catalog = { version, data };
-  data.catch(() => {
-    if (memory.__catalog?.data === data) invalidateCatalog();
-  });
   return data;
 }
 
