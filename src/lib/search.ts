@@ -1,4 +1,4 @@
-// Small in-memory search engine (the catalogue is a few hundred items at most).
+// Small in-memory search engine (the shop catalogue holds a few thousand items).
 // Accent/case-insensitive, prefix matching, typo tolerance, relevance ranking.
 
 export function normalize(s: string) {
@@ -46,24 +46,47 @@ function tokenScore(token: string, word: string) {
   return 0;
 }
 
-// Returns 0 when a token matches nothing (all tokens must match: "AND" search),
-// unless `any` is true (fallback "OR" search for approximate results).
-export function scoreFields(tokens: string[], fields: SearchField[], any = false) {
-  if (!tokens.length) return 1;
-  const prepared = fields.map((f) => ({ ...f, words: normalize(f.text).split(" ").filter(Boolean), full: normalize(f.text) }));
-  let total = 0;
-  let matched = 0;
-  for (const t of tokens) {
-    let best = 0;
-    for (const f of prepared) {
-      if (f.exact && f.full === t) best = Math.max(best, 2 * f.weight);
-      for (const w of f.words) best = Math.max(best, tokenScore(t, w) * f.weight);
+// Fields normalized once: the shop catalogue keeps them with each product
+// instead of normalizing thousands of descriptions on every keystroke.
+export type PreparedField = { weight: number; exact?: boolean; full: string; words: string[] };
+
+export function prepareFields(fields: SearchField[]): PreparedField[] {
+  return fields.map((f) => {
+    const full = normalize(f.text);
+    return { weight: f.weight, exact: f.exact, full, words: [...new Set(full.split(" ").filter(Boolean))] };
+  });
+}
+
+// Scores items for one query. Token × word scores are remembered: a catalogue
+// has a few thousand distinct words, against hundreds of thousands of occurrences.
+// The function returns 0 when a token matches nothing (all tokens must match:
+// "AND" search), unless `any` is true (fallback "OR" search for approximate results).
+export function createScorer(tokens: string[]) {
+  const memo = tokens.map(() => new Map<string, number>());
+  return (fields: PreparedField[], any = false) => {
+    if (!tokens.length) return 1;
+    let total = 0;
+    let matched = 0;
+    for (let i = 0; i < tokens.length; i++) {
+      let best = 0;
+      for (const f of fields) {
+        if (f.exact && f.full === tokens[i]) best = Math.max(best, 2 * f.weight);
+        for (const w of f.words) {
+          let s = memo[i].get(w);
+          if (s === undefined) memo[i].set(w, (s = tokenScore(tokens[i], w)));
+          best = Math.max(best, s * f.weight);
+        }
+      }
+      if (best > 0) matched++;
+      else if (!any) return 0;
+      total += best;
     }
-    if (best > 0) matched++;
-    else if (!any) return 0;
-    total += best;
-  }
-  return any ? (matched ? total * (matched / tokens.length) : 0) : total;
+    return any ? (matched ? total * (matched / tokens.length) : 0) : total;
+  };
+}
+
+export function scoreFields(tokens: string[], fields: SearchField[], any = false) {
+  return createScorer(tokens)(prepareFields(fields), any);
 }
 
 // Splits `text` into parts, flagging the ones matching a query token (for <mark>).

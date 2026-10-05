@@ -5,7 +5,7 @@ import { queryStatic, type Row } from "./db";
 import { computePrice } from "./pricing";
 import { freshness, isProductStatus, productStatus, type Freshness, type ProductStatus } from "./product-status";
 import { toProduct, type PricedProduct, type Product } from "./products";
-import { scoreFields, tokenize } from "./search";
+import { createScorer, prepareFields, tokenize, type PreparedField } from "./search";
 import { parseSettings, type Settings } from "./settings";
 
 export type ShopProduct = PricedProduct & { fresh: Freshness };
@@ -133,34 +133,49 @@ async function loadCatalog(): Promise<ShopProduct[]> {
   }
 }
 
-// For pages: one read per render.
-export const shopProducts = cache(loadCatalog);
+// Version of the snapshot: a timestamp cached under the same tag, so it changes
+// with any back-office change and with the daily refresh. Checking it is one
+// small cache read; the catalogue itself (several MB) is read only when it changed.
+const readVersion = unstable_cache(async () => String(Date.now()), ["shop-version"], snapshot);
+
+// Kept in the server's memory between requests (product pages, search on every
+// keystroke): on a warm server, rendering a page no longer re-reads the catalogue.
+const memory = globalThis as unknown as { __catalog?: { version: string; data: Promise<ShopProduct[]> } };
+
+export function invalidateCatalog() {
+  memory.__catalog = undefined;
+}
+
+async function currentCatalog(): Promise<ShopProduct[]> {
+  const version = await readVersion();
+  const hit = memory.__catalog;
+  if (hit && hit.version === version) return hit.data;
+  const data = loadCatalog();
+  memory.__catalog = { version, data };
+  data.catch(() => {
+    if (memory.__catalog?.data === data) invalidateCatalog();
+  });
+  return data;
+}
+
+// For pages and the search.
+export const shopProducts = cache(currentCatalog);
 
 // A published product, or null (drafts are not in the snapshot).
 export async function shopProduct(id: number) {
   return (await shopProducts()).find((p) => p.id === id) ?? null;
 }
 
-// The search runs on every keystroke: on top of the snapshot, the catalogue
-// stays in memory for a minute so the Next.js cache is not read each time.
-// Only the search uses it; cached pages always read the snapshot itself.
-const MEMORY_MS = 60_000;
-const globalCache = globalThis as unknown as { __catalog?: { at: number; data: Promise<ShopProduct[]> } };
+// Normalized once per product and kept as long as the catalogue stays in memory.
+const preparedCache = new WeakMap<ShopProduct, PreparedField[]>();
 
-export function invalidateCatalog() {
-  globalCache.__catalog = undefined;
+function fields(p: ShopProduct) {
+  let prepared = preparedCache.get(p);
+  if (!prepared) preparedCache.set(p, (prepared = prepareFields(searchFields(p))));
+  return prepared;
 }
 
-function searchableProducts(): Promise<ShopProduct[]> {
-  const hit = globalCache.__catalog;
-  if (hit && Date.now() - hit.at < MEMORY_MS) return hit.data;
-  const data = loadCatalog();
-  globalCache.__catalog = { at: Date.now(), data };
-  data.catch(() => invalidateCatalog());
-  return data;
-}
-
-function fields(p: PricedProduct) {
+function searchFields(p: PricedProduct) {
   return [
     { text: p.name, weight: 3 },
     { text: p.ref ?? "", weight: 4, exact: true },
@@ -177,14 +192,15 @@ function countBy<T extends string>(items: ShopProduct[], key: (p: ShopProduct) =
 }
 
 export async function searchCatalog(query: CatalogQuery) {
-  const all = await searchableProducts();
+  const all = await shopProducts();
   const tokens = tokenize(query.q ?? "");
 
   let approximate = false;
-  let scored = all.map((p) => ({ p, score: scoreFields(tokens, fields(p)) })).filter((x) => x.score > 0);
+  const score = createScorer(tokens);
+  let scored = all.map((p) => ({ p, score: score(fields(p)) })).filter((x) => x.score > 0);
   if (tokens.length && !scored.length) {
     approximate = true;
-    scored = all.map((p) => ({ p, score: scoreFields(tokens, fields(p), true) })).filter((x) => x.score > 0);
+    scored = all.map((p) => ({ p, score: score(fields(p), true) })).filter((x) => x.score > 0);
   }
   const matched = scored.map((x) => x.p);
 

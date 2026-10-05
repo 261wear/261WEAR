@@ -14,9 +14,9 @@ import { freshness } from "@/lib/product-status";
 import { siteUrl } from "@/lib/site";
 
 // Product pages are rendered on first visit, then served from the cache until
-// the catalogue changes (or one hour, for the date-based badges). Nothing is
+// the catalogue changes (or one day, for the date-based badges). Nothing is
 // generated at build time.
-export const revalidate = 3600;
+export const revalidate = 86400;
 
 export function generateStaticParams() {
   return [];

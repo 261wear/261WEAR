@@ -8,8 +8,8 @@ import { popularCategories, shopSettings } from "@/lib/catalog";
 import { waLink } from "@/lib/orders-shared";
 
 // Shop pages without visitor-specific data are served from the cache: rebuilt
-// after a back-office change, and at least once an hour.
-export const revalidate = 3600;
+// after a back-office change, and once a day (date-based badges count in days).
+export const revalidate = 86400;
 
 export default async function ShopLayout({ children }: LayoutProps<"/">) {
   const [settings, popular] = await Promise.all([shopSettings(), popularCategories()]);
