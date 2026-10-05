@@ -97,17 +97,29 @@ const globalForDb = globalThis as unknown as {
   __db?: Promise<QueryFn>;
 };
 
+// The Supabase integration adds its own markers to the URL (?supa=…), which
+// Postgres would take for unknown settings: only the SSL mode is kept.
+function cleanUrl(url: string) {
+  const u = new URL(url);
+  const ssl = u.searchParams.get("sslmode");
+  u.search = "";
+  if (ssl) u.searchParams.set("sslmode", ssl);
+  return u.toString();
+}
+
 async function createDriver(): Promise<QueryFn> {
   const url = process.env.DATABASE_URL || process.env.POSTGRES_URL;
   let query: QueryFn;
   if (url) {
-    const { neon } = await import("@neondatabase/serverless");
-    const sql = neon(url);
-    query = (text, params = []) => sql.query(text, params) as Promise<Row[]>;
+    // Any Postgres (Supabase, Neon…). On Supabase, use the pooler URL (port
+    // 6543): it runs in transaction mode, which does not keep prepared statements.
+    const { default: postgres } = await import("postgres");
+    const sql = postgres(cleanUrl(url), { prepare: false, max: 4, idle_timeout: 20, connect_timeout: 15 });
+    query = (text, params = []) => sql.unsafe(text, params as never[]) as unknown as Promise<Row[]>;
   } else {
     if (process.env.VERCEL) {
       throw new Error(
-        "DATABASE_URL manquant : ajoutez une base Neon Postgres dans Vercel (Storage).",
+        "DATABASE_URL manquant : ajoutez l'URL Postgres de Supabase (pooler, port 6543) dans les variables d'environnement.",
       );
     }
     // Local development: embedded Postgres stored on disk.

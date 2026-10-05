@@ -223,7 +223,7 @@ En local, la base de données (PGlite) et les images sont stockées dans `.data/
 ## Mise en ligne sur Vercel
 
 1. Importer le dépôt GitHub dans Vercel.
-2. **Storage → Neon (Postgres)** : créer une base et la connecter au projet (ajoute `DATABASE_URL`).
+2. **Base Supabase (Postgres)** : créer un projet sur supabase.com, puis copier l'URL de connexion **Transaction pooler** (port 6543) dans `DATABASE_URL`. Les tables se créent seules au premier lancement.
 3. **Storage → Blob** : créer un store et le connecter (ajoute `BLOB_READ_WRITE_TOKEN`) — pour les photos.
 4. **Settings → Environment Variables** : ajouter `ADMIN_PASSWORD` (mot de passe du back-office, long et secret).
 5. Redéployer, puis aller sur `/admin/parametres` pour régler le numéro WhatsApp, les infos de paiement et le taux.
@@ -232,11 +232,11 @@ Les tables sont créées automatiquement au premier chargement.
 
 | Variable | Rôle |
 | --- | --- |
-| `DATABASE_URL` | Base Postgres (Neon). Absente en local → PGlite dans `.data/`. |
+| `DATABASE_URL` | Base Postgres (Supabase, URL du pooler port 6543). Absente en local → PGlite dans `.data/`. |
 | `BLOB_READ_WRITE_TOKEN` | Stockage des photos (Vercel Blob). Absent en local → `.data/uploads/`. |
 | `ADMIN_PASSWORD` | Mot de passe du back-office (obligatoire en production). |
 | `ADMIN_SECRET` | Optionnel : clé de signature des sessions (sinon dérivée du mot de passe). |
 
 ## Stack
 
-Next.js 16 (App Router, Server Actions), Tailwind CSS 4, Neon Postgres / PGlite, Vercel Blob.
+Next.js 16 (App Router, Server Actions), Tailwind CSS 4, Postgres (Supabase) / PGlite, Vercel Blob.
