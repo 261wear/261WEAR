@@ -146,7 +146,19 @@ async function migrate(query: QueryFn) {
   } catch {
     // First start: the settings table does not exist yet.
   }
-  for (const statement of SCHEMA) await query(statement);
+  // Two servers starting together on an empty database (build workers, cold
+  // starts) race on CREATE … IF NOT EXISTS, and Postgres rejects the loser with
+  // a duplicate error. Every statement can be replayed: wait, then start over.
+  for (let attempt = 1; ; attempt++) {
+    try {
+      for (const statement of SCHEMA) await query(statement);
+      break;
+    } catch (err) {
+      const code = (err as { code?: string }).code;
+      if (attempt >= 5 || !["23505", "42P07", "42710", "40P01"].includes(code ?? "")) throw err;
+      await new Promise((r) => setTimeout(r, 300 * attempt));
+    }
+  }
   await query(
     `INSERT INTO settings (key, value) VALUES ('schema', $1)
      ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value`,
