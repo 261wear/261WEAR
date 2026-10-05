@@ -4,7 +4,7 @@ import { unstable_cache } from "next/cache";
 import { queryStatic, type Row } from "./db";
 import { computePrice } from "./pricing";
 import { freshness, isProductStatus, productStatus, type Freshness, type ProductStatus } from "./product-status";
-import { toProduct, type PricedProduct } from "./products";
+import { toProduct, type PricedProduct, type Product } from "./products";
 import { scoreFields, tokenize } from "./search";
 import { parseSettings, type Settings } from "./settings";
 
@@ -70,39 +70,65 @@ const readSettings = unstable_cache(
   snapshot,
 );
 
-const readCount = unstable_cache(
-  async () => Number((await queryStatic(`SELECT COUNT(*)::int AS n FROM products WHERE status <> 'brouillon'`))[0].n),
-  ["shop-count"],
+const readMaxId = unstable_cache(
+  async () => Number((await queryStatic(`SELECT COALESCE(MAX(id), 0)::int AS n FROM products`))[0].n),
+  ["shop-max-id"],
   snapshot,
 );
 
+// Slices are id ranges read through the primary key: no sort and no OFFSET in
+// the database. Sorting thousands of full rows (descriptions, photo lists) in
+// ~30 parallel queries ran the small Neon instance out of memory, and the
+// failed reads, never cached, were retried by every visitor.
 const readSlice = unstable_cache(
-  (offset: number) =>
-    queryStatic(
-      `SELECT * FROM products WHERE status <> 'brouillon'
-       ORDER BY (status = 'epuise'), COALESCE(published_at, created_at) DESC, id DESC
-       LIMIT ${SLICE} OFFSET $1`,
-      [offset],
-    ),
-  ["shop-products"],
+  (start: number) =>
+    queryStatic(`SELECT * FROM products WHERE id >= $1 AND id < $2 AND status <> 'brouillon'`, [start, start + SLICE]),
+  ["shop-slice"],
   snapshot,
 );
+
+// A few slices at a time, so a cold cache does not hit the database all at once.
+const PARALLEL = 4;
 
 // Shop settings (delivery times, WhatsApp, deposit…), from the snapshot.
 export const shopSettings = cache(async (): Promise<Settings> => parseSettings(await readSettings()));
 
-async function loadCatalog(): Promise<ShopProduct[]> {
-  const [count, settings] = await Promise.all([readCount(), shopSettings()]);
-  const offsets = Array.from({ length: Math.ceil(count / SLICE) }, (_, i) => i * SLICE);
-  const rows = (await Promise.all(offsets.map((o) => readSlice(o)))).flat();
-  // Slices refreshed at different moments can overlap: keep each product once.
-  const unique = [...new Map(rows.map((r: Row) => [r.id, r])).values()];
+const newest = (p: Product) => (p.published_at ?? p.created_at).getTime();
+
+async function readCatalog(): Promise<ShopProduct[]> {
+  const [maxId, settings] = await Promise.all([readMaxId(), shopSettings()]);
+  const starts = Array.from({ length: Math.ceil(maxId / SLICE) }, (_, i) => 1 + i * SLICE);
+  const rows: Row[] = [];
+  for (let i = 0; i < starts.length; i += PARALLEL) {
+    rows.push(...(await Promise.all(starts.slice(i, i + PARALLEL).map((s) => readSlice(s)))).flat());
+  }
   // Prices and badges are computed on the way out, not stored: they follow the
   // settings and the current date.
-  return unique.map((r) => {
-    const p = toProduct(r);
-    return { ...p, pricing: computePrice(settings, p), fresh: freshness(p, settings.badgeDays) };
-  });
+  return rows
+    .map((r) => {
+      const p = toProduct(r);
+      return { ...p, pricing: computePrice(settings, p), fresh: freshness(p, settings.badgeDays) };
+    })
+    // Sold-out last, then newest first.
+    .sort((a, b) => Number(a.status === "epuise") - Number(b.status === "epuise") || newest(b) - newest(a) || b.id - a.id);
+}
+
+// Last catalogue read successfully by this server instance: if the database is
+// unreachable (quota, outage), the shop keeps showing it instead of an error.
+const lastGood = globalThis as unknown as { __lastCatalog?: ShopProduct[] };
+
+async function loadCatalog(): Promise<ShopProduct[]> {
+  try {
+    const data = await readCatalog();
+    lastGood.__lastCatalog = data;
+    return data;
+  } catch (err) {
+    if (lastGood.__lastCatalog) {
+      console.error("Catalogue: database unreachable, serving the last copy", err);
+      return lastGood.__lastCatalog;
+    }
+    throw err;
+  }
 }
 
 // For pages: one read per render.
@@ -180,7 +206,6 @@ export async function searchCatalog(query: CatalogQuery) {
   });
 
   const tri = query.tri ?? (tokens.length ? "pertinence" : "nouveautes");
-  const newest = (p: ShopProduct) => (p.published_at ?? p.created_at).getTime();
   results = [...results].sort((a, b) => {
     // Sold-out items always come last.
     const soldOut = Number(a.p.status === "epuise") - Number(b.p.status === "epuise");

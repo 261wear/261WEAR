@@ -99,10 +99,11 @@ export function SearchBox({ popular, initialQuery = "" }: { popular: { value: st
       setLoading(true);
       try {
         const res = await fetch(`/api/search?q=${encodeURIComponent(query)}`, { signal: ctrl.signal });
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
         setData(await res.json());
         setActive(-1);
       } catch {
-        // Aborted or offline: keep the previous suggestions.
+        // Aborted, offline or server error: keep the previous suggestions.
       } finally {
         if (!ctrl.signal.aborted) setLoading(false);
       }
