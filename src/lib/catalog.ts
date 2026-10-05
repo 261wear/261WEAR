@@ -52,17 +52,19 @@ export function parseCatalogParams(get: (key: string) => string | null | undefin
 
 // Everything the shop shows comes from this snapshot of the database, kept in
 // the Next.js cache: visitors and crawlers never reach the database, which can
-// stay asleep. It is read again at most once an hour, and at once after any
-// back-office change (refreshShop in admin/actions clears SHOP_TAG).
+// stay asleep. It is read again once a day, and at once after any back-office
+// change (refreshShop in admin/actions clears SHOP_TAG). Every change goes
+// through the back-office, so a shorter delay would only re-read the same data:
+// a full read is several MB of database egress, capped on the free plan.
 export const SHOP_TAG = "shop";
-const HOUR = 3600;
+const DAY = 86400;
 
 // Next.js silently refuses cache entries above 2 MB, and the read would then
 // hit the database on every visit. The catalogue is stored in slices that stay
 // well under that, even with long descriptions.
 const SLICE = 150;
 
-const snapshot = { tags: [SHOP_TAG], revalidate: HOUR };
+const snapshot = { tags: [SHOP_TAG], revalidate: DAY };
 
 const readSettings = unstable_cache(
   async () => ((await queryStatic(`SELECT value FROM settings WHERE key = 'main'`))[0]?.value as string | undefined) ?? null,
