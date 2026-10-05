@@ -1,5 +1,6 @@
 import "server-only";
 import { connection } from "next/server";
+import { hosted } from "./site";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export type Row = Record<string, any>;
@@ -117,7 +118,7 @@ async function createDriver(): Promise<QueryFn> {
     const sql = postgres(cleanUrl(url), { prepare: false, max: 4, idle_timeout: 20, connect_timeout: 15 });
     query = (text, params = []) => sql.unsafe(text, params as never[]) as unknown as Promise<Row[]>;
   } else {
-    if (process.env.VERCEL) {
+    if (hosted) {
       throw new Error(
         "DATABASE_URL manquant : ajoutez l'URL Postgres de Supabase (pooler, port 6543) dans les variables d'environnement.",
       );

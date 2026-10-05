@@ -2,6 +2,7 @@ import "server-only";
 import { randomBytes } from "node:crypto";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
+import { hosted } from "./site";
 
 export const LOCAL_UPLOAD_DIR = path.join(process.cwd(), ".data", "uploads");
 
@@ -33,7 +34,45 @@ async function checkedImage(file: File) {
   return { file: new File([file], `image.${ext}`, { type }), ext };
 }
 
+// Supabase Storage: public bucket "photos", created on the first upload.
+const BUCKET = "photos";
+const bucketReady = globalThis as unknown as { __bucket?: Promise<void> };
+
+async function supabase(pathname: string, init: RequestInit) {
+  const key = process.env.SUPABASE_SERVICE_ROLE_KEY!;
+  return fetch(`${process.env.SUPABASE_URL!.replace(/\/$/, "")}/storage/v1/${pathname}`, {
+    ...init,
+    headers: { authorization: `Bearer ${key}`, apikey: key, ...init.headers },
+  });
+}
+
+function ensureBucket() {
+  bucketReady.__bucket ??= supabase("bucket", {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ id: BUCKET, name: BUCKET, public: true }),
+  }).then(async (res) => {
+    // Already there: Supabase answers 400/409 "already exists".
+    if (!res.ok && !/exists/i.test(await res.text())) {
+      bucketReady.__bucket = undefined;
+      throw new Error("Stockage Supabase inaccessible : vérifiez SUPABASE_URL et SUPABASE_SERVICE_ROLE_KEY.");
+    }
+  });
+  return bucketReady.__bucket;
+}
+
 async function store(name: string, folder: string, file: File) {
+  if (process.env.SUPABASE_URL && process.env.SUPABASE_SERVICE_ROLE_KEY) {
+    await ensureBucket();
+    const key = `${folder}/${name}`;
+    const res = await supabase(`object/${BUCKET}/${key}`, {
+      method: "POST",
+      headers: { "content-type": file.type, "cache-control": "max-age=31536000", "x-upsert": "true" },
+      body: file,
+    });
+    if (!res.ok) throw new Error(`Envoi de l'image refusé par Supabase (${res.status}).`);
+    return `${process.env.SUPABASE_URL.replace(/\/$/, "")}/storage/v1/object/public/${BUCKET}/${key}`;
+  }
   if (process.env.BLOB_READ_WRITE_TOKEN) {
     const { put } = await import("@vercel/blob");
     // No random suffix: the thumbnail URL is derived from the image URL (see lib/images).
@@ -45,8 +84,8 @@ async function store(name: string, folder: string, file: File) {
     });
     return blob.url;
   }
-  if (process.env.VERCEL) {
-    throw new Error("Stockage d'images non configuré : ajoutez Vercel Blob (Storage).");
+  if (hosted) {
+    throw new Error("Stockage d'images non configuré : ajoutez SUPABASE_URL et SUPABASE_SERVICE_ROLE_KEY.");
   }
   await mkdir(LOCAL_UPLOAD_DIR, { recursive: true });
   await writeFile(path.join(LOCAL_UPLOAD_DIR, name), Buffer.from(await file.arrayBuffer()));

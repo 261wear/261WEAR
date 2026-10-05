@@ -220,23 +220,28 @@ npm run dev          # http://localhost:3000 — back-office : /admin (mot de pa
 
 En local, la base de données (PGlite) et les images sont stockées dans `.data/`.
 
-## Mise en ligne sur Vercel
+## Mise en ligne (Netlify + Supabase)
 
-1. Importer le dépôt GitHub dans Vercel.
-2. **Base Supabase (Postgres)** : créer un projet sur supabase.com, puis copier l'URL de connexion **Transaction pooler** (port 6543) dans `DATABASE_URL`. Les tables se créent seules au premier lancement.
-3. **Storage → Blob** : créer un store et le connecter (ajoute `BLOB_READ_WRITE_TOKEN`) — pour les photos.
-4. **Settings → Environment Variables** : ajouter `ADMIN_PASSWORD` (mot de passe du back-office, long et secret).
-5. Redéployer, puis aller sur `/admin/parametres` pour régler le numéro WhatsApp, les infos de paiement et le taux.
+1. **Supabase** (supabase.com) : créer un projet (région Europe). Les tables et le dossier des photos se créent seuls au premier lancement.
+   - **Connect → Transaction pooler** : copier l'URL (port 6543) → `DATABASE_URL`.
+   - **Project Settings → API** : copier l'URL du projet → `SUPABASE_URL`, et la clé `service_role` → `SUPABASE_SERVICE_ROLE_KEY`.
+2. **Netlify** (netlify.com) : *Add new project → Import from GitHub*, choisir le dépôt. Next.js est détecté tout seul.
+3. **Site configuration → Environment variables** : ajouter les variables ci-dessous, dont `ADMIN_PASSWORD` (mot de passe du back-office, long et secret).
+4. Redéployer, puis aller sur `/admin/parametres` pour régler le numéro WhatsApp, les infos de paiement et le taux.
 
-Les tables sont créées automatiquement au premier chargement.
+Chaque commit poussé sur GitHub est redéployé automatiquement.
 
 | Variable | Rôle |
 | --- | --- |
 | `DATABASE_URL` | Base Postgres (Supabase, URL du pooler port 6543). Absente en local → PGlite dans `.data/`. |
-| `BLOB_READ_WRITE_TOKEN` | Stockage des photos (Vercel Blob). Absent en local → `.data/uploads/`. |
+| `SUPABASE_URL` | Adresse du projet Supabase, pour les photos envoyées depuis l'admin et les preuves de paiement. |
+| `SUPABASE_SERVICE_ROLE_KEY` | Clé `service_role` de Supabase (secrète). Sans Supabase en local → `.data/uploads/`. |
 | `ADMIN_PASSWORD` | Mot de passe du back-office (obligatoire en production). |
 | `ADMIN_SECRET` | Optionnel : clé de signature des sessions (sinon dérivée du mot de passe). |
+| `SITE_URL` | Optionnel : adresse publique du site (nom de domaine), sinon celle fournie par Netlify. |
+
+Les photos importées depuis les catalogues fournisseurs restent hébergées chez le fournisseur (szwego).
 
 ## Stack
 
-Next.js 16 (App Router, Server Actions), Tailwind CSS 4, Postgres (Supabase) / PGlite, Vercel Blob.
+Next.js 16 (App Router, Server Actions), Tailwind CSS 4, Postgres et Storage Supabase / PGlite, hébergement Netlify.
