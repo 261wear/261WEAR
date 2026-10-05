@@ -10,6 +10,7 @@ const ITEMS = [
   { href: "/admin/fournisseurs", label: "Fournisseurs" },
   { href: "/admin/facebook", label: "Facebook" },
   { href: "/admin/parametres", label: "Paramètres" },
+  { href: "/admin/limites", label: "Limites" },
 ];
 
 // One scrollable row on mobile (no stacked menu), current section highlighted.

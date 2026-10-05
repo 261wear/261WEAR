@@ -13,7 +13,7 @@ import { scoreFields, tokenize } from "@/lib/search";
 type Option = { id: number; name: string; ref: string; image: string | null; price: number; sizes: string[] };
 
 export function ManualOrderForm({ products }: { products: Option[] }) {
-  const [state, onSubmit, pending] = useFormAction(createManualOrder, undefined);
+  const [state, onSubmit, pending, formAction] = useFormAction(createManualOrder, undefined);
   const [productId, setProductId] = useState(0);
   const [q, setQ] = useState("");
   const [cursor, setCursor] = useState(0);
@@ -34,7 +34,7 @@ export function ManualOrderForm({ products }: { products: Option[] }) {
     setQ("");
   };
   return (
-    <form onSubmit={onSubmit} className="card max-w-xl space-y-4 p-6">
+    <form action={formAction} onSubmit={onSubmit} className="card max-w-xl space-y-4 p-6">
       <div>
         <label className="label" htmlFor="product-search">Produit</label>
         <input type="hidden" name="productId" value={productId || ""} />

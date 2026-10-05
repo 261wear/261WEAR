@@ -18,12 +18,12 @@ type Props = {
 };
 
 export function OrderEditor(p: Props) {
-  const [state, onSubmit, pending] = useFormAction(saveOrderDetails, undefined);
+  const [state, onSubmit, pending, formAction] = useFormAction(saveOrderDetails, undefined);
   const uploads = useUploads("proofs", (url) => addProof(p.id, url));
 
   return (
     <div className="space-y-6">
-      <form onSubmit={onSubmit} className="card space-y-4 p-5">
+      <form action={formAction} onSubmit={onSubmit} className="card space-y-4 p-5">
         <h2 className="font-semibold">Paiement & suivi</h2>
         <input type="hidden" name="id" value={p.id} />
         <div>

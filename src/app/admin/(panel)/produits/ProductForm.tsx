@@ -44,7 +44,7 @@ export function ProductForm({
   settings: PricingSettings;
   suppliers: { id: number; name: string }[];
 }) {
-  const [state, onSubmit, pending] = useFormAction(saveProduct, undefined);
+  const [state, onSubmit, pending, formAction] = useFormAction(saveProduct, undefined);
   const [images, setImages] = useState<string[]>(product?.images ?? []);
   const [imageUrl, setImageUrl] = useState("");
   const uploads = useUploads("products", (url) => setImages((prev) => [...prev, url]));
@@ -93,7 +93,7 @@ export function ProductForm({
 
   return (
     <div className="grid gap-6 lg:grid-cols-[1fr_340px]">
-      <form id="product-form" onSubmit={onSubmit} className="space-y-6">
+      <form id="product-form" action={formAction} onSubmit={onSubmit} className="space-y-6">
         {product && <input type="hidden" name="id" value={product.id} />}
         <input type="hidden" name="images" value={JSON.stringify(images)} />
 

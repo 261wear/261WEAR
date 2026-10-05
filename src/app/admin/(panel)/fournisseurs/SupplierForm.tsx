@@ -7,9 +7,9 @@ import { useFormAction } from "@/components/useFormAction";
 import type { Supplier } from "@/lib/suppliers";
 
 export function SupplierForm({ supplier }: { supplier?: Supplier }) {
-  const [state, onSubmit, pending] = useFormAction(saveSupplier, undefined);
+  const [state, onSubmit, pending, formAction] = useFormAction(saveSupplier, undefined);
   return (
-    <form onSubmit={onSubmit} className="card max-w-2xl space-y-4 p-6">
+    <form action={formAction} onSubmit={onSubmit} className="card max-w-2xl space-y-4 p-6">
       {supplier && <input type="hidden" name="id" value={supplier.id} />}
       <div>
         <label className="label" htmlFor="name">Nom</label>

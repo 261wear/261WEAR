@@ -31,9 +31,9 @@ const SOCIALS: [keyof Settings, string, string][] = [
 ];
 
 export function SettingsForm({ settings }: { settings: Settings }) {
-  const [state, onSubmit, pending] = useFormAction(updateSettings, undefined);
+  const [state, onSubmit, pending, formAction] = useFormAction(updateSettings, undefined);
   return (
-    <form onSubmit={onSubmit} className="grid gap-6 lg:grid-cols-2">
+    <form action={formAction} onSubmit={onSubmit} className="grid gap-6 lg:grid-cols-2">
       <div className="card space-y-4 p-5">
         <h2 className="font-semibold">Calcul automatique des prix</h2>
         {PRICING.map(([key, label, help]) => (
