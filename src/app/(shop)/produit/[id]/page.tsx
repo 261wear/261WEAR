@@ -8,6 +8,7 @@ import { WhatsAppOrder } from "@/components/WhatsAppOrder";
 import { shopProduct, shopProducts, shopSettings } from "@/lib/catalog";
 import { FreshBadge, StatusBadge } from "@/components/ProductBadges";
 import { WhatsAppIcon } from "@/components/WhatsAppIcon";
+import { BoltIcon, PinIcon, ShieldIcon, TruckIcon } from "@/components/icons";
 import { waLink } from "@/lib/orders-shared";
 import { depositFor, formatAr } from "@/lib/pricing";
 import { freshness } from "@/lib/product-status";
@@ -72,19 +73,29 @@ export default async function ProductPage(props: PageProps<"/produit/[id]">) {
           <StatusBadge status={product.status} />
         </div>
         <h1 className="font-display mt-1 text-3xl leading-tight [overflow-wrap:anywhere] sm:text-5xl">{product.name}</h1>
-        <p className={`mt-3 text-3xl font-bold ${soldOut ? "text-black/40 line-through" : ""}`}>{formatAr(price)}</p>
+        {/* Moodboard: the price always visible, bold, citron on black. */}
+        <p className={`mt-3 font-bold ${soldOut ? "text-3xl text-black/40 line-through" : "inline-block rounded-lg bg-ink px-3 py-1 text-2xl text-accent sm:text-3xl"}`}>{formatAr(price)}</p>
         {!soldOut && (
           <p className="mt-1 text-sm text-black/60">
             Livrée à Tana · Acompte {formatAr(deposit)} ({settings.depositPct} %) à la commande, le reste à la livraison.
           </p>
         )}
-        <div className="card mt-5 grid grid-cols-3 divide-x divide-black/10 text-center text-xs">
-          <div className={`p-3 ${inStock ? "bg-emerald-50 text-emerald-900" : ""}`}>
-            <p className="font-bold">{inStock ? "⚡ " : ""}{dMin}–{dMax} j</p>
-            {inStock ? "Déjà à Tana" : "Sur commande"}
+        <div className="card mt-5 grid grid-cols-3 divide-x divide-black/10 overflow-hidden text-center text-xs">
+          <div className={`flex flex-col items-center gap-1 p-3 ${inStock ? "bg-emerald-700 text-white" : ""}`}>
+            {inStock ? <BoltIcon size={18} className="text-accent" /> : <TruckIcon size={18} />}
+            <p className="font-bold">{dMin}–{dMax} j</p>
+            <span className={inStock ? "text-white/80" : "text-black/60"}>{inStock ? "Déjà à Tana" : "Sur commande"}</span>
           </div>
-          <div className="p-3"><p className="font-bold">Contrôle qualité</p>photo avant envoi</div>
-          <div className="p-3"><p className="font-bold">Suivi</p>en ligne</div>
+          <div className="flex flex-col items-center gap-1 p-3">
+            <ShieldIcon size={18} />
+            <p className="font-bold">Contrôle qualité</p>
+            <span className="text-black/60">photo avant envoi</span>
+          </div>
+          <div className="flex flex-col items-center gap-1 p-3">
+            <PinIcon size={18} />
+            <p className="font-bold">Suivi</p>
+            <span className="text-black/60">en ligne</span>
+          </div>
         </div>
         <div className="mt-6">
           {soldOut ? (

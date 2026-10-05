@@ -100,6 +100,10 @@ export function Gallery({ images, alt }: { images: string[]; alt: string }) {
           ))}
         </div>
 
+        {/* Logo bottom right on every photo, as on the brand's posts. */}
+        <span aria-hidden="true" className="font-display pointer-events-none absolute right-3 bottom-3 rounded-md bg-ink/85 px-2 py-1 text-xs leading-none text-white">
+          261<span className="text-accent">°</span> WEAR
+        </span>
         {count > 1 && (
           <>
             <button

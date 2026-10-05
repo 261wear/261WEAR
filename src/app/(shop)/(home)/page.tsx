@@ -1,4 +1,6 @@
 import Link from "next/link";
+import { HERO_PHOTOS, HeroBackdrop } from "@/components/HeroBackdrop";
+import { BoltIcon, CalendarIcon, ShieldIcon, TruckIcon } from "@/components/icons";
 import { ProductCard } from "@/components/ProductCard";
 import { popularCategories, shopProducts, shopSettings } from "@/lib/catalog";
 
@@ -11,6 +13,7 @@ export default async function Home() {
   // Pairs already shown in "Dispo de suite" are not repeated in the drop.
   const shown = new Set(inStock.map((p) => p.id));
   const drop = products.filter((p) => !shown.has(p.id)).slice(0, HOME_DROP);
+  const heroPhotos = products.flatMap((p) => p.images.slice(0, 1)).slice(0, HERO_PHOTOS);
   const steps = [
     ["01", "Choisis ta paire", "Sélectionne ton modèle et ta pointure, puis valide sur WhatsApp."],
     ["02", "Paie l'acompte", `${settings.depositPct} % par Mobile Money. Envoie la capture sur WhatsApp.`],
@@ -19,35 +22,50 @@ export default async function Home() {
   ];
   return (
     <>
-      <section className="bg-ink text-white">
-        <div className="mx-auto grid max-w-6xl gap-10 px-4 py-16 sm:py-24 md:grid-cols-2 md:items-center">
-          <div>
-            <p className="text-sm font-semibold tracking-[0.2em] text-accent uppercase">Drop en cours</p>
-            <h1 className="font-display mt-4 text-6xl leading-[0.95] sm:text-7xl">
-              Représente
-              <br />
-              le 261.
-            </h1>
-            <p className="mt-6 max-w-md text-lg text-white/70">
-              Des sneakers premium qui durent, pas des paires à 50k qui lâchent en un mois. Sur commande, livrées à Tana.
-            </p>
-            <div className="mt-8 flex flex-wrap gap-3">
-              <Link href="#drop" className="btn-accent">Voir le drop</Link>
-              <Link href="/suivi" className="btn border border-white/20 text-white hover:border-white">Suivre ma commande</Link>
-            </div>
+      <section className="relative isolate overflow-hidden bg-ink text-white">
+        <HeroBackdrop photos={heroPhotos} />
+        <div className="relative mx-auto max-w-6xl px-4 pt-16 pb-12 sm:pt-28 sm:pb-16">
+          <p className="flex items-center gap-3 text-sm font-semibold tracking-[0.2em] text-accent uppercase">
+            <span className="relative flex h-2 w-2">
+              <span className="absolute inline-flex h-full w-full rounded-full bg-accent opacity-75 motion-safe:animate-ping" />
+              <span className="relative inline-flex h-2 w-2 rounded-full bg-accent" />
+            </span>
+            Drop en cours
+          </p>
+          <h1 className="font-display mt-5 text-[clamp(3.25rem,16vw,4.5rem)] leading-[0.9] drop-shadow-[0_4px_24px_rgba(0,0,0,0.6)] sm:text-8xl lg:text-9xl">
+            Représente
+            <br />
+            le <span className="relative inline-block">
+              261<span className="text-accent">°</span>
+              {/* Brush signature under the 261, as on the brand visuals: one tapered stroke, then a Z flick. */}
+              <svg aria-hidden="true" viewBox="0 0 320 64" preserveAspectRatio="none" className="absolute -bottom-7 -left-[8%] h-9 w-[112%] text-accent sm:-bottom-10 sm:h-14">
+                <path d="M2 46 C 90 34, 200 20, 306 8 L 310 18 C 206 30, 104 46, 10 62 Z" fill="currentColor" />
+                <path d="M30 50 C 110 40, 190 30, 260 22" fill="none" stroke="var(--color-ink)" strokeWidth="1.5" strokeLinecap="round" opacity="0.35" />
+                <path d="M296 16 L 172 46 L 302 41" fill="none" stroke="currentColor" strokeWidth="9" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+            </span>
+          </h1>
+          <div className="mt-10 flex flex-wrap gap-3">
+            <Link href="#drop" className="btn-accent px-7 py-3.5 text-base shadow-[0_0_32px_rgba(198,255,61,0.35)]">
+              Voir le drop <span aria-hidden="true">→</span>
+            </Link>
+            <Link href="/suivi" className="btn border border-white/30 bg-ink/60 px-7 py-3.5 text-base text-white hover:border-white">
+              Suivre ma commande
+            </Link>
           </div>
-          <div className="grid grid-cols-3 gap-3 text-center">
+          <ul className="mt-12 grid max-w-2xl grid-cols-3 gap-3 text-center sm:mt-16 sm:gap-4">
             {[
-              ["100 %", "neuves, commandées pour toi"],
-              [`${settings.deliveryMinDays}-${settings.deliveryMaxDays} j`, "livraison à Tana"],
-              ["Photo", "de contrôle qualité de ta paire avant l'envoi"],
-            ].map(([big, small]) => (
-              <div key={big} className="rounded-2xl border border-white/10 p-4">
-                <p className="font-display text-2xl text-accent sm:text-3xl">{big}</p>
-                <p className="mt-2 text-xs text-white/60">{small}</p>
-              </div>
+              [<TruckIcon key="i" size={28} />, "100 %", "neuves, commandées pour toi"],
+              [<CalendarIcon key="i" size={28} />, `${settings.deliveryMinDays}-${settings.deliveryMaxDays} J`, "livraison à Tana"],
+              [<ShieldIcon key="i" size={28} />, "Photo", "de contrôle qualité avant l'envoi"],
+            ].map(([icon, big, small]) => (
+              <li key={String(big)} className="flex flex-col items-center rounded-2xl border border-white/10 bg-ink/75 px-2 py-5 sm:px-4 sm:py-6">
+                <span className="text-accent">{icon}</span>
+                <p className="font-display mt-3 text-[clamp(1.375rem,7.5vw,1.875rem)] leading-none whitespace-nowrap sm:text-4xl">{big}</p>
+                <p className="mt-2 text-xs leading-snug text-white/60 sm:text-sm">{small}</p>
+              </li>
             ))}
-          </div>
+          </ul>
         </div>
       </section>
 
@@ -68,8 +86,13 @@ export default async function Home() {
       {inStock.length > 0 && (
         <section className="mx-auto max-w-6xl px-4 pt-10">
           <div className="flex items-end justify-between gap-4">
-            <h2 className="font-display text-4xl sm:text-5xl">
-              <span className="text-emerald-700">⚡</span> Dispo de suite
+            <h2 className="font-display text-[clamp(1.75rem,8.5vw,2.25rem)] whitespace-nowrap sm:text-5xl">
+              <span className="flex items-center gap-2.5 sm:gap-3">
+                <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-ink text-accent sm:h-12 sm:w-12">
+                  <BoltIcon size={22} />
+                </span>
+                Dispo de suite
+              </span>
             </h2>
             <Link href="/recherche?dispo=en_stock" className="shrink-0 py-2 text-sm font-semibold whitespace-nowrap underline">Tout voir</Link>
           </div>
@@ -124,3 +147,4 @@ export default async function Home() {
     </>
   );
 }
+

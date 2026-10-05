@@ -55,3 +55,115 @@ body {
 @utility card {
   @apply rounded-2xl border border-black/10 bg-white;
 }
+
+/* Home hero: photo columns scrolling in a loop (see HeroBackdrop). */
+@keyframes hero-up {
+  to {
+    transform: translateY(-50%);
+  }
+}
+
+@keyframes hero-down {
+  from {
+    transform: translateY(-50%);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .hero-col {
+    animation: hero-up 80s linear infinite;
+    will-change: transform;
+  }
+  .hero-col-down {
+    animation-name: hero-down;
+  }
+}
+
+/* Brand loader (see BrandLoader). Hidden for the first 350 ms: under that, a
+   page feels instant and a spinner would only flash (same threshold as large
+   e-commerce sites); past it, the mark fades in and loops every 2.2 s. */
+.brand-loader {
+  opacity: 0;
+  animation: brand-loader-in 0.25s ease-out 0.35s forwards;
+}
+
+.brand-loader-mask {
+  display: inline-block;
+  overflow: hidden;
+  padding: 0.04em 0;
+}
+
+.brand-loader-digit,
+.brand-loader-degree {
+  display: inline-block;
+}
+
+@keyframes brand-loader-in {
+  to {
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .brand-loader-digit {
+    animation: brand-loader-digit 2.2s cubic-bezier(0.2, 0.8, 0.2, 1) infinite both;
+  }
+  .brand-loader-degree {
+    transform-origin: 30% 40%;
+    animation: brand-loader-degree 2.2s cubic-bezier(0.3, 1.4, 0.5, 1) infinite both;
+  }
+}
+
+/* Reduced motion: a still mark that gently breathes. */
+@media (prefers-reduced-motion: reduce) {
+  .brand-loader > div {
+    animation: brand-loader-breathe 1.6s ease-in-out infinite;
+  }
+}
+
+@keyframes brand-loader-degree {
+  0% {
+    transform: scale(0);
+    opacity: 0;
+  }
+  10% {
+    transform: scale(1.3);
+    opacity: 1;
+  }
+  18%,
+  74% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  88%,
+  100% {
+    transform: scale(0);
+    opacity: 0;
+  }
+}
+
+@keyframes brand-loader-digit {
+  0% {
+    transform: translateY(110%);
+    opacity: 0;
+  }
+  16%,
+  66% {
+    transform: translateY(0);
+    opacity: 1;
+  }
+  82%,
+  100% {
+    transform: translateY(-110%);
+    opacity: 0;
+  }
+}
+
+@keyframes brand-loader-breathe {
+  50% {
+    opacity: 0.6;
+  }
+}

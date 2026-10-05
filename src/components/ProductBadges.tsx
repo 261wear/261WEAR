@@ -12,8 +12,8 @@ export function FreshBadge({ fresh, className = "" }: { fresh: Freshness; classN
 
 export function StatusBadge({ status, className = "" }: { status: ProductStatus; className?: string }) {
   return (
-    <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-semibold whitespace-nowrap ${STATUS_BADGE[status]} ${className}`}>
-      {status === "en_stock" && <span aria-hidden="true">⚡</span>}
+    // "Dispo de suite" is the plain green pill of the moodboard's Néon frame.
+    <span className={`inline-flex items-center rounded-full px-2.5 py-1 text-[11px] leading-none font-semibold whitespace-nowrap ${STATUS_BADGE[status]} ${className}`}>
       {productStatus(status).short}
     </span>
   );

@@ -99,7 +99,7 @@ export default async function OrderPage(props: PageProps<"/commande/[token]">) {
             ? `Livrée le ${new Date(deliveredAt).toLocaleDateString("fr-FR", { day: "numeric", month: "long", timeZone: "Indian/Antananarivo" })}. Merci pour ta confiance !`
             : paid
             ? `Livraison estimée entre le ${addDays(paid, dMin)} et le ${addDays(paid, dMax)}.`
-            : `${order.in_stock ? "⚡ Disponible de suite : l" : "L"}ivraison en ${dMin} à ${dMax} jours après confirmation du paiement.`}
+            : `${order.in_stock ? "Disponible de suite : l" : "L"}ivraison en ${dMin} à ${dMax} jours après confirmation du paiement.`}
         </p>
         {order.tracking_ref && <p className="mt-1 text-sm">Référence colis : <b>{order.tracking_ref}</b></p>}
         <div className="mt-5">

@@ -16,14 +16,14 @@ export function StickyBuyBar({ price, label }: { price: string; label: string })
   return (
     <div
       aria-hidden={!show}
-      className={`fixed inset-x-0 bottom-0 z-40 border-t border-black/10 bg-white/95 px-4 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] shadow-[0_-4px_20px_rgba(0,0,0,0.08)] backdrop-blur transition-transform md:hidden ${show ? "translate-y-0" : "pointer-events-none translate-y-full"}`}
+      className={`fixed inset-x-0 bottom-0 z-40 border-t border-white/10 bg-ink/95 px-4 text-white pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] shadow-[0_-4px_20px_rgba(0,0,0,0.2)] backdrop-blur transition-transform md:hidden ${show ? "translate-y-0" : "pointer-events-none translate-y-full"}`}
     >
       <div className="flex items-center gap-3">
         <div className="min-w-0 flex-1">
-          <p className="truncate text-xs text-muted">{label}</p>
-          <p className="text-lg leading-tight font-bold">{price}</p>
+          <p className="truncate text-xs text-white/60">{label}</p>
+          <p className="text-lg leading-tight font-bold text-accent">{price}</p>
         </div>
-        <a href="#commander" tabIndex={show ? 0 : -1} className="btn-dark shrink-0">Choisir ma pointure</a>
+        <a href="#commander" tabIndex={show ? 0 : -1} className="btn-accent shrink-0">Choisir ma pointure</a>
       </div>
     </div>
   );
