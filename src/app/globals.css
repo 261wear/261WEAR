@@ -82,12 +82,34 @@ body {
   }
 }
 
-/* Brand loader (see BrandLoader). Hidden for the first 350 ms: under that, a
-   page feels instant and a spinner would only flash (same threshold as large
-   e-commerce sites); past it, the mark fades in and loops every 2.2 s. */
+/* Brand loader (see BrandLoader). Hidden for the first 300 ms: under that a
+   page feels instant and a loader would only flash. Then it fades in with a
+   decelerating curve and loops every 2.6 s; BrandLoader keeps it at least
+   800 ms once shown and fades it out (accelerating, faster than it came in). */
 .brand-loader {
   opacity: 0;
-  animation: brand-loader-in 0.25s ease-out 0.35s forwards;
+  animation: brand-loader-in 0.3s cubic-bezier(0, 0, 0, 1) 0.3s forwards;
+}
+
+.brand-loader-mark {
+  animation: brand-loader-mark-in 0.3s cubic-bezier(0, 0, 0, 1) 0.3s both;
+}
+
+.brand-loader-hold,
+.brand-loader-hold .brand-loader-mark {
+  opacity: 1;
+  animation: none;
+  transition:
+    opacity 0.25s cubic-bezier(0.3, 0, 1, 1),
+    transform 0.25s cubic-bezier(0.3, 0, 1, 1);
+}
+
+.brand-loader-out {
+  opacity: 0;
+}
+
+.brand-loader-out .brand-loader-mark {
+  transform: scale(0.94);
 }
 
 .brand-loader-mask {
@@ -107,19 +129,25 @@ body {
   }
 }
 
+@keyframes brand-loader-mark-in {
+  from {
+    transform: scale(0.94);
+  }
+}
+
 @media (prefers-reduced-motion: no-preference) {
   .brand-loader-digit {
-    animation: brand-loader-digit 2.2s cubic-bezier(0.2, 0.8, 0.2, 1) infinite both;
+    animation: brand-loader-digit 2.6s cubic-bezier(0.22, 1, 0.36, 1) infinite both;
   }
   .brand-loader-degree {
     transform-origin: 30% 40%;
-    animation: brand-loader-degree 2.2s cubic-bezier(0.3, 1.4, 0.5, 1) infinite both;
+    animation: brand-loader-degree 2.6s cubic-bezier(0.34, 1.4, 0.64, 1) infinite both;
   }
 }
 
 /* Reduced motion: a still mark that gently breathes. */
 @media (prefers-reduced-motion: reduce) {
-  .brand-loader > div {
+  .brand-loader-mark {
     animation: brand-loader-breathe 1.6s ease-in-out infinite;
   }
 }
@@ -129,16 +157,16 @@ body {
     transform: scale(0);
     opacity: 0;
   }
-  10% {
-    transform: scale(1.3);
+  12% {
+    transform: scale(1.25);
     opacity: 1;
   }
-  18%,
-  74% {
+  22%,
+  76% {
     transform: scale(1);
     opacity: 1;
   }
-  88%,
+  90%,
   100% {
     transform: scale(0);
     opacity: 0;
@@ -147,23 +175,41 @@ body {
 
 @keyframes brand-loader-digit {
   0% {
-    transform: translateY(110%);
+    transform: translateY(105%);
     opacity: 0;
+    filter: blur(3px);
   }
-  16%,
+  20%,
   66% {
     transform: translateY(0);
     opacity: 1;
+    filter: blur(0);
   }
   82%,
   100% {
-    transform: translateY(-110%);
+    transform: translateY(-105%);
     opacity: 0;
+    filter: blur(3px);
   }
 }
 
 @keyframes brand-loader-breathe {
   50% {
     opacity: 0.6;
+  }
+}
+
+/* Page reveal after a navigation (see (shop)/template.tsx): newly inserted
+   content fades in over 300 ms. Opacity only: a transform would make the
+   page's fixed elements (mobile buy bar) position against it. */
+@media (prefers-reduced-motion: no-preference) {
+  .page-reveal > * {
+    animation: page-reveal 0.3s cubic-bezier(0, 0, 0, 1) backwards;
+  }
+}
+
+@keyframes page-reveal {
+  from {
+    opacity: 0;
   }
 }
