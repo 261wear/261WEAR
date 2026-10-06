@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { thumbUrl } from "@/lib/images";
+import { photoSrcSet, thumbUrl } from "@/lib/images";
 import { Img } from "./ui/Img";
 
 // Product photo gallery: swipe (native scroll-snap), arrows, dots, a "2 / 5"
@@ -89,6 +89,9 @@ export function Gallery({ images, alt }: { images: string[]; alt: string }) {
             >
               <Img
                 src={src}
+                srcSet={photoSrcSet(src)}
+                // Full width on phones, half of the 72rem page from md up.
+                sizes="(min-width: 768px) 576px, 100vw"
                 alt={i === 0 ? alt : `${alt}, photo ${i + 1}`}
                 loading={i === 0 ? "eager" : "lazy"}
                 fetchPriority={i === 0 ? "high" : "auto"}

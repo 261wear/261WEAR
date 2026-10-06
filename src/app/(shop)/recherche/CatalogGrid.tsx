@@ -104,6 +104,8 @@ export function CatalogGrid({
 
   return (
     <>
+      {/* Product names are h3: keeps the heading outline h1 > h2 > h3 for screen readers. */}
+      <h2 className="sr-only">Résultats</h2>
       <div className="grid grid-cols-2 gap-x-3 gap-y-6 sm:gap-x-4 sm:gap-y-8 md:grid-cols-3" onClickCapture={remember}>
         {shown.map((p, i) => (
           <ProductCard key={p.id} product={p} query={query} priority={i < 4} />

@@ -23,3 +23,12 @@ export function thumbUrl(url: string | null | undefined): string {
   if (SZWEGO.test(url)) return szwegoUrl(url, 600, 80);
   return OWN.test(url) ? url.replace(OWN, "$1-t.jpg") : url;
 }
+
+// Several widths of a supplier photo for <img srcset>: a phone downloads about
+// 1000 px instead of 1600 px (~3× lighter) and big screens keep full quality.
+// Only for supplier photos, which the image server resizes on demand; our own
+// uploads exist in two fixed sizes only, and an old one may lack its thumbnail.
+export function photoSrcSet(url: string): string | undefined {
+  if (!SZWEGO.test(url)) return undefined;
+  return [600, 1000, 1600].map((w) => `${szwegoUrl(url, w, w < 1600 ? 82 : 88)} ${w}w`).join(", ");
+}
