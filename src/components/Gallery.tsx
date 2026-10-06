@@ -15,6 +15,11 @@ export function Gallery({ images, alt }: { images: string[]; alt: string }) {
   // from the photo being shown, not from one passed on the way).
   const target = useRef<number | null>(null);
   const count = images.length;
+  // Photos downloaded so far: the one shown and the next. The others wait until
+  // the customer gets close, so the first photo loads alone on mobile data
+  // (lazy loading alone fetches every photo of a horizontal carousel).
+  const [reach, setReach] = useState(1);
+  if (active + 1 > reach) setReach(active + 1);
 
   // Follow the scroll position (swipe, arrows, thumbnails all scroll the track).
   useEffect(() => {
@@ -88,8 +93,8 @@ export function Gallery({ images, alt }: { images: string[]; alt: string }) {
               aria-label={`${i + 1} sur ${count}`}
             >
               <Img
-                src={src}
-                srcSet={photoSrcSet(src)}
+                src={i <= reach ? src : undefined}
+                srcSet={i <= reach ? photoSrcSet(src) : undefined}
                 // Full width on phones, half of the 72rem page from md up.
                 sizes="(min-width: 768px) 576px, 100vw"
                 alt={i === 0 ? alt : `${alt}, photo ${i + 1}`}
