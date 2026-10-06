@@ -1,7 +1,8 @@
 import type { Metadata } from "next";
 import { shopSettings } from "@/lib/catalog";
+import { pageUrls } from "@/lib/site";
 
-export const metadata: Metadata = { title: "Conditions générales de vente" };
+export const metadata: Metadata = { title: "Conditions générales de vente", ...pageUrls("/cgv") };
 
 export default async function CgvPage() {
   const s = await shopSettings();

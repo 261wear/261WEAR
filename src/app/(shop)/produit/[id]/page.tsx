@@ -12,7 +12,7 @@ import { BoltIcon, PinIcon, ShieldIcon, TruckIcon } from "@/components/icons";
 import { waLink } from "@/lib/orders-shared";
 import { depositFor, formatAr } from "@/lib/pricing";
 import { freshness } from "@/lib/product-status";
-import { siteUrl } from "@/lib/site";
+import { OPEN_GRAPH, siteUrl } from "@/lib/site";
 
 // Product pages are rendered on first visit, then served from the cache until
 // the catalogue changes (or one day, for the date-based badges). Nothing is
@@ -29,7 +29,8 @@ export async function generateMetadata(props: PageProps<"/produit/[id]">): Promi
   return {
     title: product.name,
     description: `${product.name} — ${formatAr(product.pricing.price)}, livrée à Tana.`,
-    openGraph: { images: product.images.slice(0, 1) },
+    alternates: { canonical: `/produit/${product.id}` },
+    openGraph: { ...OPEN_GRAPH, url: `/produit/${product.id}`, images: product.images.slice(0, 1) },
   };
 }
 
@@ -43,10 +44,30 @@ export default async function ProductPage(props: PageProps<"/produit/[id]">) {
   const similar = (await shopProducts())
     .filter((p) => p.id !== product.id && p.status !== "epuise" && p.category === product.category)
     .slice(0, 4);
+  // Product rich result for search engines (price, availability). "<" is
+  // escaped so a product name can never close the script tag.
+  const jsonLd = JSON.stringify({
+    "@context": "https://schema.org",
+    "@type": "Product",
+    name: product.name,
+    image: product.images.slice(0, 4),
+    ...(product.ref ? { sku: product.ref } : {}),
+    ...(product.category ? { category: product.category } : {}),
+    ...(product.description ? { description: product.description.slice(0, 500) } : {}),
+    offers: {
+      "@type": "Offer",
+      url: `${siteUrl()}/produit/${product.id}`,
+      priceCurrency: "MGA",
+      price,
+      availability: soldOut ? "https://schema.org/OutOfStock" : inStock ? "https://schema.org/InStock" : "https://schema.org/PreOrder",
+      itemCondition: "https://schema.org/NewCondition",
+    },
+  }).replace(/</g, "\\u003c");
   const [dMin, dMax] = inStock ? [settings.stockDeliveryMinDays, settings.stockDeliveryMaxDays] : [settings.deliveryMinDays, settings.deliveryMaxDays];
 
   return (
     <div className="mx-auto max-w-6xl px-4 pt-2 pb-28 md:pt-4 md:pb-16">
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: jsonLd }} />
       <nav aria-label="Fil d'Ariane" className="mb-2 text-sm text-muted [&_a]:inline-block [&_a]:py-2">
         <ol className="flex flex-wrap items-center gap-1.5">
           <li><Link href="/" className="hover:text-ink">Accueil</Link></li>

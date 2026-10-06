@@ -1,7 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Anton, Inter } from "next/font/google";
 import { Audience } from "@/components/Audience";
-import { siteUrl } from "@/lib/site";
+import { OPEN_GRAPH, siteUrl } from "@/lib/site";
 import "./globals.css";
 
 const inter = Inter({ variable: "--font-inter", subsets: ["latin"] });
@@ -17,7 +17,7 @@ export const metadata: Metadata = {
   description,
   applicationName: "261° WEAR",
   appleWebApp: { title: "261° WEAR", statusBarStyle: "black-translucent" },
-  openGraph: { type: "website", locale: "fr_FR", siteName: "261° WEAR", description },
+  openGraph: { ...OPEN_GRAPH, description },
   twitter: { card: "summary_large_image" },
 };
 

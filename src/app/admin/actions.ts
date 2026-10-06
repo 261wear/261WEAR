@@ -382,7 +382,15 @@ export async function setOrderStatus(form: FormData) {
   if (!allowed.includes(status) || status === order.status) return;
   const note = str(form, "note", 200);
   const history = [...order.history, { status, at: new Date().toISOString(), ...(note ? { note } : {}) }];
-  await updateOrder(order.id, { status, history });
+  // Keep the amount the customer sees in line with the status: "Paiement
+  // confirmé" with "Déjà payé : 0 Ar" would worry them. The deposit is counted
+  // when it is confirmed, the rest when the pair is delivered (paid on
+  // delivery). The amount can still be corrected by hand afterwards.
+  const paid =
+    status === "paiement_recu" && order.amount_paid < order.deposit ? order.deposit
+    : status === "livre" && order.amount_paid < order.total ? order.total
+    : undefined;
+  await updateOrder(order.id, { status, history, ...(paid !== undefined ? { amount_paid: paid } : {}) });
   revalidatePath("/admin", "layout");
 }
 
