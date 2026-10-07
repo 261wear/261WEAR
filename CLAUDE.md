@@ -8,7 +8,12 @@ Répondre à l'utilisateur en français. Commits en français, dans le style de 
 ## Mise en production
 
 - `git push origin main` déclenche le déploiement Netlify (site `079ea287-3e94-4f7b-92e2-10a011464509`,
-  https://261wear.netlify.app). Suivre l'état : `npx netlify api listSiteDeploys --data '{"site_id":"…","per_page":1}'`.
+  https://261wear.com ; `261wear.netlify.app` redirige en 301 via `netlify.toml`). Suivre l'état : `npx netlify api listSiteDeploys --data '{"site_id":"…","per_page":1}'`.
+- Domaine `261wear.com` enregistré chez Cloudflare (zone `1449b2da6450745b12a54d9d3d02c796`), DNS seul (nuage gris) :
+  `@` CNAME `apex-loadbalancer.netlify.com`, `www` CNAME `261wear.netlify.app`. Certificat Let's Encrypt géré par Netlify ;
+  ne pas ajouter `www` en alias (Netlify l'ajoute seul avec le domaine principal, le doublon bloquait le certificat).
+  L'adresse publique du code (`siteUrl()`) vient de la variable `URL` de Netlify, figée au build : redéployer après
+  un changement de domaine principal.
 - Avant chaque push : `npx next build` **puis** `npx tsc --noEmit -p .` et `npx eslint .`. Le build régénère les types
   globaux (`PageProps`, `LayoutProps`, `RouteContext`) : ne pas supprimer `.next/types`. Si `tsc` cite une page
   supprimée dans `.next/dev/types/validator.ts`, effacer `.next/dev/types` et relancer le build.
@@ -24,6 +29,18 @@ Répondre à l'utilisateur en français. Commits en français, dans le style de 
 - Mot de passe admin local par défaut : celui de `src/lib/auth.ts` (hors production).
 
 ## Quotas (Netlify, Supabase, stockage d'images)
+
+Offres gratuites, sans recharge : crédits Netlify épuisés = **site coupé jusqu'au cycle suivant**. Cycles du 5 au 4
+(Netlify) et du 5 au 5 (Supabase). Usage : https://app.netlify.com/teams/261wear/billing/usage et
+https://supabase.com/dashboard/org/lqfwalffualpmbiimglm/usage (lisibles dans Chrome, compte connecté).
+
+- **Chaque mise en ligne coûte 15 crédits Netlify (sur 300) et ~90 Mo de trafic Supabase (sur 5 Go)** : le build relit
+  tout le catalogue. C'est le premier poste des deux côtés (7 octobre : 154 crédits et 1,14 Go consommés, presque
+  tout en 12 builds les 5 et 6 octobre ; le trafic visiteurs, lui, faisait 86 Mo et 4 300 requêtes). Regrouper les
+  changements en un seul push, ne pas relancer de build pour rien, consulter l'usage avant un push.
+- Trafic visiteurs : ~70 crédits par mois pour 100 visiteurs par jour (estimation de la page admin « Limites »). Une campagne
+  ou une vidéo qui marche peut vider le reste du mois : passer en Personal (9 $/mois, 1 000 crédits, recharge
+  possible) avant une pub payante.
 
 - Pages boutique servies depuis le cache (revalidate 1 jour) ; recherche et catalogue servis par le CDN
   (`Netlify-Vary`). Ne pas ajouter de lecture de base par visiteur.

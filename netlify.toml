@@ -1,0 +1,6 @@
+# Ancienne adresse Netlify vers le domaine principal (www est déjà redirigé par Netlify).
+[[redirects]]
+  from = "https://261wear.netlify.app/*"
+  to = "https://261wear.com/:splat"
+  status = 301
+  force = true
