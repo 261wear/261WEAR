@@ -9,6 +9,8 @@ Répondre à l'utilisateur en français. Commits en français, dans le style de 
 
 - `git push origin main` déclenche le déploiement Netlify (site `079ea287-3e94-4f7b-92e2-10a011464509`,
   https://261wear.com ; `261wear.netlify.app` redirige en 301 via `netlify.toml`). Suivre l'état : `npx netlify api listSiteDeploys --data '{"site_id":"…","per_page":1}'`.
+- Badge « Powered by Netlify » coupé (Project configuration › General) : il recouvrait la barre d'achat mobile.
+  Le revérifier si le projet est recréé.
 - Domaine `261wear.com` enregistré chez Cloudflare (zone `1449b2da6450745b12a54d9d3d02c796`), DNS seul (nuage gris) :
   `@` CNAME `apex-loadbalancer.netlify.com`, `www` CNAME `261wear.netlify.app`. Certificat Let's Encrypt géré par Netlify ;
   ne pas ajouter `www` en alias (Netlify l'ajoute seul avec le domaine principal, le doublon bloquait le certificat).
@@ -44,7 +46,8 @@ https://supabase.com/dashboard/org/lqfwalffualpmbiimglm/usage (lisibles dans Chr
 
 - Pages boutique servies depuis le cache (revalidate 1 jour) ; recherche et catalogue servis par le CDN
   (`Netlify-Vary`). Ne pas ajouter de lecture de base par visiteur.
-- Photos fournisseur (szwego) redimensionnées par leur serveur : `thumbUrl` (600 px) pour les grilles,
+- Photos fournisseur (szwego) redimensionnées par leur serveur : `miniUrl` (240 px) pour les vignettes de la galerie,
+  `thumbUrl` (600 px) pour les grilles,
   `photoSrcSet` (600/1000/1600) pour la galerie, `szwegoUrl(…, 300, 70)` pour le fond du hero (12 photos distinctes).
 - Pas de crawl complet du site en prod pour tester (7 800 fiches = autant d'appels de fonctions) : échantillonner.
 

@@ -24,6 +24,12 @@ export function thumbUrl(url: string | null | undefined): string {
   return OWN.test(url) ? url.replace(OWN, "$1-t.jpg") : url;
 }
 
+// Tiny previews (gallery thumbnails, 64–80 px on screen): 240 px stays sharp at
+// 3× density and weighs ~6× less than the 600 px grid thumbnail.
+export function miniUrl(url: string): string {
+  return SZWEGO.test(url) ? szwegoUrl(url, 240, 75) : thumbUrl(url);
+}
+
 // Several widths of a supplier photo for <img srcset>: a phone downloads about
 // 1000 px instead of 1600 px (~3× lighter) and big screens keep full quality.
 // Only for supplier photos, which the image server resizes on demand; our own

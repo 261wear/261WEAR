@@ -34,7 +34,8 @@ export default async function ShopLayout({ children }: LayoutProps<"/">) {
           </nav>
         </div>
       </header>
-      <main className="flex-1">{children}</main>
+      {/* min-h-svh keeps the footer below the fold while a page streams in (no layout shift). */}
+      <main className="min-h-svh flex-1">{children}</main>
       <footer className="bg-ink text-white/70">
         <div className="mx-auto grid max-w-6xl gap-8 px-4 py-12 sm:grid-cols-2 lg:grid-cols-4">
           <div>

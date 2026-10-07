@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { photoSrcSet, thumbUrl } from "@/lib/images";
+import { miniUrl, photoSrcSet } from "@/lib/images";
 import { Img } from "./ui/Img";
 
 // Product photo gallery: swipe (native scroll-snap), arrows, dots, a "2 / 5"
@@ -154,7 +154,7 @@ export function Gallery({ images, alt }: { images: string[]; alt: string }) {
               aria-selected={i === active}
               className={`aspect-square w-16 shrink-0 overflow-hidden rounded-lg border-2 bg-white transition sm:w-20 ${i === active ? "border-ink" : "border-transparent opacity-70 hover:opacity-100"}`}
             >
-              <Img src={thumbUrl(src)} fallback={src} alt="" loading="lazy" className="h-full w-full object-contain" />
+              <Img src={miniUrl(src)} fallback={src} alt="" loading="lazy" className="h-full w-full object-contain" />
             </button>
           ))}
         </div>
