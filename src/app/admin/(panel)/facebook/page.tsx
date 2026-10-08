@@ -29,7 +29,7 @@ export default async function FacebookPage(props: PageProps<"/admin/facebook">) 
         <div className="card mb-6 border-amber-200 bg-amber-50 p-5 text-sm">
           <p className="font-semibold text-amber-900">Page Facebook non connectée</p>
           <p className="mt-1 text-amber-900">
-            Ajoute dans Vercel (Settings → Environment Variables) : <code>FACEBOOK_PAGE_ID</code> et <code>FACEBOOK_PAGE_ACCESS_TOKEN</code>{" "}
+            Ajoute dans Netlify (Project configuration → Environment variables) : <code>FACEBOOK_PAGE_ID</code> et <code>FACEBOOK_PAGE_ACCESS_TOKEN</code>{" "}
             (jeton de Page avec les permissions <code>pages_manage_posts</code> et <code>pages_read_engagement</code>), puis redéploie.
             En attendant, tu peux préparer la publication, copier le texte et télécharger les photos pour poster à la main.
           </p>
