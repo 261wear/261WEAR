@@ -2,22 +2,30 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { HERO_PHOTOS, HeroBackdrop } from "@/components/HeroBackdrop";
 import { BoltIcon, CalendarIcon, ShieldIcon, TruckIcon } from "@/components/icons";
-import { ProductCard } from "@/components/ProductCard";
+import { ShuffledGrid } from "@/components/ShuffledGrid";
+import { toCard } from "@/lib/card";
 import { popularCategories, shopProducts, shopSettings } from "@/lib/catalog";
+import { sample } from "@/lib/shuffle";
 import { pageUrls } from "@/lib/site";
 
 export const metadata: Metadata = pageUrls("/");
 
-// The home page shows the latest pairs; the full catalogue is paginated in /recherche.
+// The home page shows pairs drawn at random from the whole catalogue, a new draw
+// at each visit; the full catalogue is paginated in /recherche.
 const HOME_DROP = 12;
+const HOME_STOCK = 4;
+// Pools sent with the page, redrawn by the server once a day (when the cached
+// page is rebuilt); the browser picks the pairs shown from them. ~100 light
+// cards keep the page small and give a different drop at each visit.
+const DROP_POOL = 96;
+const STOCK_POOL = 24;
 
 export default async function Home() {
   const [products, settings, categories] = await Promise.all([shopProducts(), shopSettings(), popularCategories()]);
-  const inStock = products.filter((p) => p.status === "en_stock").slice(0, 4);
-  // Pairs already shown in "Dispo de suite" are not repeated in the drop.
-  const shown = new Set(inStock.map((p) => p.id));
-  const drop = products.filter((p) => !shown.has(p.id)).slice(0, HOME_DROP);
-  const heroPhotos = products.flatMap((p) => p.images.slice(0, 1)).slice(0, HERO_PHOTOS);
+  const inStock = sample(products.filter((p) => p.status === "en_stock"), STOCK_POOL).map(toCard);
+  // "Dispo de suite" pairs are not repeated in the drop; sold-out ones stay in the search.
+  const drop = sample(products.filter((p) => p.status === "sur_commande"), DROP_POOL).map(toCard);
+  const heroPhotos = sample(products.flatMap((p) => (p.status === "epuise" ? [] : p.images.slice(0, 1))), HERO_PHOTOS);
   const steps = [
     ["01", "Choisis ta paire", "Sélectionne ton modèle et ta pointure, puis valide sur WhatsApp."],
     ["02", "Paie l'acompte", `${settings.depositPct} % par Mobile Money. Envoie la capture sur WhatsApp.`],
@@ -101,11 +109,7 @@ export default async function Home() {
             <Link href="/recherche?dispo=en_stock" className="shrink-0 py-2 text-sm font-semibold whitespace-nowrap underline">Tout voir</Link>
           </div>
           <p className="mt-1 text-sm text-muted">Déjà à Tana · livrée en {settings.stockDeliveryMinDays} à {settings.stockDeliveryMaxDays} jours.</p>
-          <div className="mt-6 grid grid-cols-2 gap-x-4 gap-y-8 md:grid-cols-3 lg:grid-cols-4">
-            {inStock.map((p) => (
-              <ProductCard key={p.id} product={p} />
-            ))}
-          </div>
+          <ShuffledGrid pool={inStock} count={HOME_STOCK} className="mt-6 grid grid-cols-2 gap-x-4 gap-y-8 md:grid-cols-3 lg:grid-cols-4" />
         </section>
       )}
 
@@ -115,12 +119,8 @@ export default async function Home() {
           <Link href="/recherche" className="py-2 text-sm font-semibold underline">Tout le catalogue ({products.length})</Link>
         </div>
         {products.length ? (
-          <div className="mt-8 grid grid-cols-2 gap-x-4 gap-y-8 md:grid-cols-3 lg:grid-cols-4">
-            {/* Below the hero: no high-priority photos competing with the first paint. */}
-            {drop.map((p) => (
-              <ProductCard key={p.id} product={p} />
-            ))}
-          </div>
+          // Below the hero: no high-priority photos competing with the first paint.
+          <ShuffledGrid pool={drop} count={HOME_DROP} className="mt-8 grid grid-cols-2 gap-x-4 gap-y-8 md:grid-cols-3 lg:grid-cols-4" />
         ) : null}
         {products.length > HOME_DROP && (
           <div className="mt-10 text-center">
