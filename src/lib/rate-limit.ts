@@ -7,18 +7,18 @@ const hits = new Map<string, { count: number; reset: number }>();
 
 // Visitor address as seen by the hosting platform. The first X-Forwarded-For
 // entry is written by the client itself and can be forged to dodge the limit,
-// so the platform's own headers come first: Netlify, then Vercel. The last
-// X-Forwarded-For entry (added by the closest proxy) is the fallback.
+// so only the current platform's own header is trusted (a Netlify header that
+// reaches Vercel comes from the client). The last X-Forwarded-For entry (added
+// by the closest proxy) is the fallback.
 export async function clientIp() {
   const h = await headers();
   const forwarded = (h.get("x-forwarded-for") ?? "").split(",").map((s) => s.trim()).filter(Boolean);
-  return (
-    h.get("x-nf-client-connection-ip") ||
-    h.get("x-vercel-forwarded-for")?.split(",")[0].trim() ||
-    h.get("x-real-ip") ||
-    forwarded[forwarded.length - 1] ||
-    "local"
-  );
+  const platform = process.env.VERCEL
+    ? h.get("x-vercel-forwarded-for")?.split(",")[0].trim() || h.get("x-real-ip")
+    : process.env.NETLIFY
+      ? h.get("x-nf-client-connection-ip")
+      : null;
+  return platform || forwarded[forwarded.length - 1] || "local";
 }
 
 export async function rateLimit(scope: string, limit: number, windowMs: number) {
