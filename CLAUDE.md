@@ -7,15 +7,19 @@ Répondre à l'utilisateur en français. Commits en français, dans le style de 
 
 ## Mise en production
 
-- `git push origin main` déclenche le déploiement Netlify (site `079ea287-3e94-4f7b-92e2-10a011464509`,
-  https://261wear.com ; `261wear.netlify.app` redirige en 301 via `netlify.toml`). Suivre l'état : `npx netlify api listSiteDeploys --data '{"site_id":"…","per_page":1}'`.
-- Badge « Powered by Netlify » coupé (Project configuration › General) : il recouvrait la barre d'achat mobile.
-  Le revérifier si le projet est recréé.
-- Domaine `261wear.com` enregistré chez Cloudflare (zone `1449b2da6450745b12a54d9d3d02c796`), DNS seul (nuage gris) :
-  `@` CNAME `apex-loadbalancer.netlify.com`, `www` CNAME `261wear.netlify.app`. Certificat Let's Encrypt géré par Netlify ;
-  ne pas ajouter `www` en alias (Netlify l'ajoute seul avec le domaine principal, le doublon bloquait le certificat).
-  L'adresse publique du code (`siteUrl()`) vient de la variable `URL` de Netlify, figée au build : redéployer après
-  un changement de domaine principal.
+- Hébergé sur **Vercel** depuis le 19 octobre 2026 (Netlify coupé faute de crédits) : équipe `moto-7b13` (MOTO, Pro),
+  projet `261wear` (`prj_T7ahlUiYW194QMcnU8kxzIWd2ajA`), fonctions en `cle1` (Ohio, à côté de Supabase `us-east-2`),
+  adresse de secours https://261wear-chi.vercel.app. Le dépôt GitHub n'est pas encore relié (il faut une Login Connection
+  GitHub sur le compte Vercel) : déployer avec `npx vercel@latest deploy --prod --scope moto-7b13` depuis un dossier dont
+  `.vercel/project.json` vise ce projet (celui de la racine vise un ancien projet du 2 octobre).
+- Variables Vercel : `DATABASE_URL` (pooler `aws-0-us-east-2`, port 6543), `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`
+  (à recoller depuis Supabase, valeur fausse au 19/10), `ADMIN_PASSWORD`, `FACEBOOK_*`, `SITE_URL=https://261wear.com`
+  (adresse publique de `siteUrl()`).
+- Les aperçus Vercel (preview) sont protégés par la connexion Vercel : tester sur l'adresse de production.
+- Domaine `261wear.com` enregistré chez Cloudflare (zone `1449b2da6450745b12a54d9d3d02c796`, compte
+  nihasymickael@gmail.com), DNS seul (nuage gris) : `@` et `www` en CNAME `8ea3cf0a5530d632.vercel-dns-016.com`.
+  Certificat géré par Vercel. Base Supabase : organisation « 261 WEAR » (compte 261wear@gmail.com, probablement).
+- Ancien site Netlify `079ea287-3e94-4f7b-92e2-10a011464509` : plus utilisé (`netlify.toml` gardé pour mémoire).
 - Avant chaque push : `npx next build` **puis** `npx tsc --noEmit -p .` et `npx eslint .`. Le build régénère les types
   globaux (`PageProps`, `LayoutProps`, `RouteContext`) : ne pas supprimer `.next/types`. Si `tsc` cite une page
   supprimée dans `.next/dev/types/validator.ts`, effacer `.next/dev/types` et relancer le build.
@@ -31,6 +35,9 @@ Répondre à l'utilisateur en français. Commits en français, dans le style de 
 - Mot de passe admin local par défaut : celui de `src/lib/auth.ts` (hors production).
 
 ## Quotas (Netlify, Supabase, stockage d'images)
+
+Depuis le passage sur Vercel (équipe MOTO, offre Pro partagée avec motoimport.app), les crédits Netlify ci-dessous
+ne s'appliquent plus ; le trafic Supabase reste limité (offre gratuite) et chaque build relit toujours le catalogue.
 
 Offres gratuites, sans recharge : crédits Netlify épuisés = **site coupé jusqu'au cycle suivant**. Cycles du 5 au 4
 (Netlify) et du 5 au 5 (Supabase). Usage : https://app.netlify.com/teams/261wear/billing/usage et
