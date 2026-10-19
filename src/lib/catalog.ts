@@ -7,6 +7,7 @@ import { freshness, isProductStatus, productStatus, type Freshness, type Product
 import { toProduct, type PricedProduct, type Product } from "./products";
 import { createScorer, prepareFields, tokenize, type PreparedField } from "./search";
 import { parseSettings, type Settings } from "./settings";
+import { hosted } from "./site";
 
 export type ShopProduct = PricedProduct & { fresh: Freshness };
 
@@ -72,8 +73,15 @@ const readSettings = unstable_cache(
   snapshot,
 );
 
+// An empty shop online means a bad read, never the real catalogue: throwing keeps
+// it out of the cache. On 19 October 2026 an empty snapshot stayed cached on
+// Vercel and every product page answered "not found" until the tag was cleared.
 const readMaxId = unstable_cache(
-  async () => Number((await queryStatic(`SELECT COALESCE(MAX(id), 0)::int AS n FROM products`))[0].n),
+  async () => {
+    const n = Number((await queryStatic(`SELECT COALESCE(MAX(id), 0)::int AS n FROM products`))[0].n);
+    if (!n && hosted) throw new Error("Catalogue vide : lecture refusée pour ne pas la garder en cache.");
+    return n;
+  },
   ["shop-max-id"],
   snapshot,
 );
@@ -104,6 +112,8 @@ async function readCatalog(): Promise<ShopProduct[]> {
   for (let i = 0; i < starts.length; i += PARALLEL) {
     rows.push(...(await Promise.all(starts.slice(i, i + PARALLEL).map((s) => readSlice(s)))).flat());
   }
+  // Same reason as readMaxId: the last good copy is served instead.
+  if (!rows.length && hosted) throw new Error("Catalogue vide : copie précédente servie.");
   // Prices and badges are computed on the way out, not stored: they follow the
   // settings and the current date.
   return rows
