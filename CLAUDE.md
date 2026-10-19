@@ -9,12 +9,17 @@ Répondre à l'utilisateur en français. Commits en français, dans le style de 
 
 - Hébergé sur **Vercel** depuis le 19 octobre 2026 (Netlify coupé faute de crédits) : équipe `moto-7b13` (MOTO, Pro),
   projet `261wear` (`prj_T7ahlUiYW194QMcnU8kxzIWd2ajA`), fonctions en `cle1` (Ohio, à côté de Supabase `us-east-2`),
-  adresse de secours https://261wear-chi.vercel.app. Le dépôt GitHub n'est pas encore relié (il faut une Login Connection
-  GitHub sur le compte Vercel) : déployer avec `npx vercel@latest deploy --prod --scope moto-7b13` depuis un dossier dont
-  `.vercel/project.json` vise ce projet (celui de la racine vise un ancien projet du 2 octobre).
+  adresse de secours https://261wear-chi.vercel.app.
+- **Déploiement : `git push origin main` → GitHub Actions (`.github/workflows/deploy.yml`) → `vercel deploy --prod`**
+  avec le secret `VERCEL_TOKEN` du dépôt, comme Moto Import. L'intégration Git de Vercel est volontairement déliée :
+  elle bloquait (« BLOCKED », TEAM_ACCESS_REQUIRED) tout commit dont l'auteur (nihasymickael@gmail.com) n'est pas
+  membre de l'équipe MOTO. Pour la même raison, un `vercel deploy` lancé à la main depuis un dossier git peut être
+  bloqué si le projet est relié à GitHub. Le `.vercel/project.json` de la racine vise un ancien projet du 2 octobre.
 - Variables Vercel : `DATABASE_URL` (pooler `aws-0-us-east-2`, port 6543), `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`
-  (à recoller depuis Supabase, valeur fausse au 19/10), `ADMIN_PASSWORD`, `FACEBOOK_*`, `SITE_URL=https://261wear.com`
-  (adresse publique de `siteUrl()`).
+  (nouvelle clé `sb_secret_…`), `ADMIN_PASSWORD`, `FACEBOOK_*`, `SITE_URL=https://261wear.com` (adresse de `siteUrl()`).
+- Cache de données Vercel : si le site affiche des fiches « introuvables » alors que la recherche les trouve, vider le
+  tag du catalogue : `npx vercel@latest cache invalidate --tag shop --scope moto-7b13` (arrivé le 19/10 : catalogue vide
+  gardé en cache ; le code refuse désormais de cacher un catalogue vide).
 - Les aperçus Vercel (preview) sont protégés par la connexion Vercel : tester sur l'adresse de production.
 - Domaine `261wear.com` enregistré chez Cloudflare (zone `1449b2da6450745b12a54d9d3d02c796`, compte
   nihasymickael@gmail.com), DNS seul (nuage gris) : `@` et `www` en CNAME `8ea3cf0a5530d632.vercel-dns-016.com`.

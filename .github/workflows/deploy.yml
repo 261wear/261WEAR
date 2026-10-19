@@ -1,0 +1,47 @@
+# Mise en production a chaque push sur main, sur le projet Vercel 261wear de
+# l'equipe MOTO (compte hei.nihasy@gmail.com). L'integration Git de Vercel
+# bloque les commits dont l'auteur n'est pas membre de l'equipe : on deploie
+# donc par la CLI avec un jeton (secret VERCEL_TOKEN). La construction se fait
+# chez Vercel, qui detient les variables sensibles.
+name: Deploiement production
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: production
+  cancel-in-progress: false
+
+env:
+  VERCEL_ORG_ID: team_kmlVqIxo3fQHbi1ixuN5cWhW
+  VERCEL_PROJECT_ID: prj_T7ahlUiYW194QMcnU8kxzIWd2ajA
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Jeton present ?
+        id: jeton
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+        run: |
+          if [ -z "$VERCEL_TOKEN" ]; then
+            echo "::warning::Secret VERCEL_TOKEN absent : deploiement ignore."
+            echo "ok=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "ok=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - uses: actions/checkout@v4
+        if: steps.jeton.outputs.ok == 'true'
+
+      - uses: actions/setup-node@v4
+        if: steps.jeton.outputs.ok == 'true'
+        with:
+          node-version: 24
+
+      - name: Deployer sur Vercel
+        if: steps.jeton.outputs.ok == 'true'
+        run: npx --yes vercel@latest deploy --prod --yes --token "${{ secrets.VERCEL_TOKEN }}"
