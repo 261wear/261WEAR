@@ -85,9 +85,14 @@ export function ProductTable({ rows, allIds, query, emptyText }: { rows: Row[]; 
               Appliquer
             </Button>
             {withPhotos.length > 0 && (
+              <>
+              <Link href={`/admin/reseaux?produits=${withPhotos.slice(0, 20).join(",")}`} className="btn border border-white/30 py-2 text-white hover:border-white">
+                Visuels réseaux
+              </Link>
               <Link href={`/admin/facebook?produits=${withPhotos.join(",")}`} className="btn border border-white/30 py-2 text-white hover:border-white">
                 Publier sur Facebook
               </Link>
+              </>
             )}
           </span>
         </div>
@@ -164,9 +169,14 @@ export function ProductTable({ rows, allIds, query, emptyText }: { rows: Row[]; 
                 <td className="p-3"><StatusSelect id={p.id} status={p.status} name={p.name} /></td>
                 <td className="p-3">
                   {p.photos > 0 && (
-                    <Link href={`/admin/facebook?produits=${p.id}`} className="text-xs font-semibold whitespace-nowrap text-[#1877F2] hover:underline">
-                      Facebook →
-                    </Link>
+                    <span className="flex flex-col gap-1">
+                      <Link href={`/admin/reseaux?produits=${p.id}`} className="text-xs font-semibold whitespace-nowrap hover:underline">
+                        Visuels →
+                      </Link>
+                      <Link href={`/admin/facebook?produits=${p.id}`} className="text-xs font-semibold whitespace-nowrap text-[#1877F2] hover:underline">
+                        Facebook →
+                      </Link>
+                    </span>
                   )}
                 </td>
               </tr>
@@ -210,7 +220,10 @@ export function ProductTable({ rows, allIds, query, emptyText }: { rows: Row[]; 
                 <div className="mt-2 flex items-center gap-3">
                   <StatusSelect id={p.id} status={p.status} name={p.name} />
                   {p.photos > 0 && (
-                    <Link href={`/admin/facebook?produits=${p.id}`} className="py-2 text-xs font-semibold text-[#1877F2]">Facebook →</Link>
+                    <>
+                      <Link href={`/admin/reseaux?produits=${p.id}`} className="py-2 text-xs font-semibold">Visuels →</Link>
+                      <Link href={`/admin/facebook?produits=${p.id}`} className="py-2 text-xs font-semibold text-[#1877F2]">Facebook →</Link>
+                    </>
                   )}
                 </div>
               </div>

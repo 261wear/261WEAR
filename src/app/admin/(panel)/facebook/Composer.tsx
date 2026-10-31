@@ -8,14 +8,10 @@ import { CopyButton } from "@/components/ui/CopyButton";
 import { FormMessage } from "@/components/ui/FormMessage";
 import { Img } from "@/components/ui/Img";
 import { formatAr } from "@/lib/pricing";
+import { sizeRange } from "@/lib/social";
 
 type P = { id: number; ref: string | null; name: string; category: string; price: number; sizes: string[]; images: string[]; active: boolean; inStock: boolean };
 
-function sizeRange(sizes: string[]) {
-  const nums = sizes.map(Number).filter(Number.isFinite).sort((a, b) => a - b);
-  if (nums.length === sizes.length && nums.length > 2) return `${nums[0]} à ${nums[nums.length - 1]}`;
-  return sizes.join(" · ");
-}
 
 function caption(products: P[], origin: string, delivery: string, stockDelivery: string) {
   const tags = "#261WEAR #Sneakers #Tana #Madagascar #Antananarivo";

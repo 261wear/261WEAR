@@ -71,6 +71,17 @@ https://supabase.com/dashboard/org/lqfwalffualpmbiimglm/usage (lisibles dans Chr
 - Pas d'emoji côté boutique : icônes au trait dans `src/components/icons.tsx` (éclair `BoltIcon` pour « Dispo de suite »).
 - Cadre Néon (contour citron doux) pour les paires en stock ; rendu « soft », pas surchargé.
 
+## Studio réseaux (`/admin/reseaux`)
+
+- Photos des paires dans les 4 cadres du moodboard (Ticket, Néon, Pellicule, Polaroïd), en 4:5 (Instagram, Facebook)
+  ou 9:16 (TikTok, stories). Rendu serveur par `next/og` dans `src/lib/studio-render.tsx` (Satori : flexbox seulement,
+  jamais de valeur de style `undefined`, elle fait planter le rendu en flux), servi par `/api/studio` (admin seulement,
+  photo choisie par son numéro dans la fiche). Polices TTF dans `src/assets/fonts` (incluses via
+  `outputFileTracingIncludes`).
+- Le navigateur convertit en JPEG, puis ZIP (`src/lib/zip.ts`) sur ordinateur, ou feuille de partage du téléphone
+  (fichiers préparés à l'avance : le partage doit partir au toucher). Légendes par réseau dans `src/lib/social.ts`.
+- Lien court `261wear.com/p/123` → `/produit/123` (Instagram et TikTok : liens non cliquables dans les légendes).
+
 ## Chargements et animations
 
 - `LoadingRegion` (squelette à la forme de la page) + `BrandLoader` au centre : visible après 300 ms, au moins 800 ms
