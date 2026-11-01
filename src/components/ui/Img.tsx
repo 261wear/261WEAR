@@ -14,7 +14,7 @@ export function Img({
   const ref = useRef<HTMLImageElement>(null);
   const [loaded, setLoaded] = useState(false);
   // No working source left: hide the browser's broken-image icon and alt text
-  // so the placeholder behind (the "261" mark on cards) shows instead.
+  // so the background behind (the plain card tone on product cards) shows instead.
   const [failed, setFailed] = useState(false);
   const [current, setCurrent] = useState(src);
   const [prevSrc, setPrevSrc] = useState(src);

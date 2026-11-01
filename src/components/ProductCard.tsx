@@ -12,19 +12,23 @@ export function ProductCard({ product, query = "", priority = false }: { product
   const neon = product.status === "en_stock";
   return (
     <Link href={`/produit/${product.id}`} className="group block">
-      <div className={`relative aspect-square overflow-hidden rounded-2xl bg-white ${neon ? "ring-2 ring-accent shadow-[0_0_18px_rgba(198,255,61,0.28)]" : ""}`}>
-        {/* Brand placeholder under the photo while it loads (slow mobile networks). */}
-        <span aria-hidden="true" className="font-display absolute inset-0 flex items-center justify-center text-4xl text-black/5">261</span>
+      <div className={`relative isolate aspect-square overflow-hidden rounded-2xl bg-card ${neon ? "ring-2 ring-accent shadow-[0_0_18px_rgba(198,255,61,0.28)]" : ""}`}>
         {product.images[0] ? (
+          // Supplier photos are 3:2 on a near-white backdrop: zoomed in so the pair
+          // fills the square, multiplied so the white melts into the card tone, and
+          // faded at the top and bottom edges (no visible seam, supplier "Size" caption
+          // softened). The mask stops are relative to the unscaled 3:2 photo box.
           <Img
             src={thumbUrl(product.images[0])}
             fallback={product.images[0]}
             alt={product.name}
             loading={priority ? "eager" : "lazy"}
             fetchPriority={priority ? "high" : "auto"}
-            className={`relative h-full w-full object-contain transition duration-500 group-hover:scale-105 ${soldOut ? "opacity-50 grayscale" : ""}`}
+            className={`h-full w-full scale-[1.25] object-contain mix-blend-multiply transition duration-500 [mask-image:linear-gradient(transparent_16%,black_27%,black_73%,transparent_84%)] group-hover:scale-[1.32] ${soldOut ? "opacity-50 grayscale" : ""}`}
           />
-        ) : null}
+        ) : (
+          <span aria-hidden="true" className="font-display absolute inset-0 flex items-center justify-center text-4xl text-black/5">261</span>
+        )}
         <div className="absolute top-2 left-2 flex flex-col items-start gap-1">
           <FreshBadge fresh={product.fresh} />
         </div>
