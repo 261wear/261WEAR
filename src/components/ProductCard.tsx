@@ -14,17 +14,20 @@ export function ProductCard({ product, query = "", priority = false }: { product
     <Link href={`/produit/${product.id}`} className="group block">
       <div className={`relative isolate aspect-square overflow-hidden rounded-2xl bg-card ${neon ? "ring-2 ring-accent shadow-[0_0_18px_rgba(198,255,61,0.28)]" : ""}`}>
         {product.images[0] ? (
-          // Supplier photos are 3:2 on a near-white backdrop: zoomed in so the pair
+          // Landscape supplier photos (3:2, near-white backdrop): zoomed in so the pair
           // fills the square, multiplied so the white melts into the card tone, and
           // faded at the top and bottom edges (no visible seam, supplier "Size" caption
           // softened). The mask stops are relative to the unscaled 3:2 photo box.
+          // Portrait studio photos (3:4, grey backdrop, AK CHAUSSURE): cropped to the
+          // square around the pair, which sits in the lower half, so the caption at the
+          // very bottom falls outside; lightened and warmed so the grey matches the chalk cards.
           <Img
             src={thumbUrl(product.images[0])}
             fallback={product.images[0]}
             alt={product.name}
             loading={priority ? "eager" : "lazy"}
             fetchPriority={priority ? "high" : "auto"}
-            className={`h-full w-full scale-[1.25] object-contain mix-blend-multiply transition duration-500 [mask-image:linear-gradient(transparent_16%,black_27%,black_73%,transparent_84%)] group-hover:scale-[1.32] ${soldOut ? "opacity-50 grayscale" : ""}`}
+            className={`h-full w-full scale-[1.25] object-contain mix-blend-multiply transition duration-500 [mask-image:linear-gradient(transparent_16%,black_27%,black_73%,transparent_84%)] group-hover:scale-[1.32] data-[shape=portrait]:scale-[1.1] data-[shape=portrait]:object-cover data-[shape=portrait]:object-[50%_52%] data-[shape=portrait]:brightness-[1.2] data-[shape=portrait]:sepia-[.1] data-[shape=portrait]:[mask-image:none] data-[shape=portrait]:group-hover:scale-[1.16] ${soldOut ? "opacity-50 grayscale" : ""}`}
           />
         ) : (
           <span aria-hidden="true" className="font-display absolute inset-0 flex items-center justify-center text-4xl text-black/5">261</span>

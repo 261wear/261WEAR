@@ -61,7 +61,24 @@ https://supabase.com/dashboard/org/lqfwalffualpmbiimglm/usage (lisibles dans Chr
 - Photos fournisseur (szwego) redimensionnées par leur serveur : `miniUrl` (240 px) pour les vignettes de la galerie,
   `thumbUrl` (600 px) pour les grilles,
   `photoSrcSet` (600/1000/1600) pour la galerie, `szwegoUrl(…, 300, 70)` pour le fond du hero (12 photos distinctes).
-- Pas de crawl complet du site en prod pour tester (7 800 fiches = autant d'appels de fonctions) : échantillonner.
+- Pas de crawl complet du site en prod pour tester (9 500 fiches = autant d'appels de fonctions) : échantillonner.
+
+## Fournisseurs et import du catalogue
+
+- Deux fournisseurs (table `suppliers`, créés par l'import en masse au nom de la colonne `fournisseur`) :
+  - **AAA087AA** (album 微商相册 « 每天更新，转图进相册（厂家） ») : ~7 800 paires, réf. `AAA087-<ID>`,
+    photos paysage 3:2 sur fond blanc. Mise à jour du 19/10 : `../MAJ_2026-10-19/`.
+  - **AK CHAUSSURE** (WeChat `XinZaiSang`, album « BOSS潮鞋 ») : 906 paires importées le 1er novembre 2026,
+    réf. `AK-<code modèle>` (ex. `AK-DM6969-905`), à défaut `AK-X<empreinte du texte>`. Son « 编号 » est un code de
+    lot partagé par plusieurs paires : ne jamais s'en servir comme identifiant. Photos studio **portrait 3:4 sur fond
+    gris**. Dossier : `../AK_2026-11-01/` (`convertir.py`, `import/RAPPORT.md`).
+- Récolte d'un album : skill `capture-miniprogramme` (session WeChat gardée hors dépôt). Fichier CSV unique
+  (10 000 lignes max) envoyé par l'admin `/admin/produits/import`, statut `sur_commande`. L'import ne passe pas par
+  un build : pas de push nécessaire pour ajouter des paires.
+- Cartes produit (`ProductCard`) : `Img` pose `data-shape` (portrait / landscape / square) au chargement de la
+  photo. Paysage : zoom 1,25 + fondu haut et bas. Portrait : recadrée en carré sur la paire (légende du bas coupée),
+  éclaircie et réchauffée (`brightness 1.2`, `sepia .1`) pour retomber sur le ton craie `#EBE8E2` des autres cartes.
+  Un nouveau fournisseur au format différent : vérifier ses cartes à côté des autres avant l'import.
 
 ## Identité visuelle (moodboard : `../Moodboard/`)
 
