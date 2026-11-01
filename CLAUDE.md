@@ -11,7 +11,10 @@ Répondre à l'utilisateur en français. Commits en français, dans le style de 
   projet `261wear` (`prj_T7ahlUiYW194QMcnU8kxzIWd2ajA`), fonctions en `cle1` (Ohio, à côté de Supabase `us-east-2`),
   adresse de secours https://261wear-chi.vercel.app.
 - **Déploiement : `git push origin main` → GitHub Actions (`.github/workflows/deploy.yml`) → `vercel deploy --prod`**
-  avec le secret `VERCEL_TOKEN` du dépôt, comme Moto Import. L'intégration Git de Vercel est volontairement déliée :
+  avec le secret `VERCEL_TOKEN` du dépôt, comme Moto Import.
+  **Au 1er novembre 2026, ce secret manque** : le workflow passe au vert en 7 s sans rien déployer. En attendant,
+  déployer à la main : `VERCEL_ORG_ID=team_kmlVqIxo3fQHbi1ixuN5cWhW VERCEL_PROJECT_ID=prj_T7ahlUiYW194QMcnU8kxzIWd2ajA
+  npx vercel@latest deploy --prod --yes` (CLI connectée au compte membre de MOTO), puis vérifier l'alias 261wear.com. L'intégration Git de Vercel est volontairement déliée :
   elle bloquait (« BLOCKED », TEAM_ACCESS_REQUIRED) tout commit dont l'auteur (nihasymickael@gmail.com) n'est pas
   membre de l'équipe MOTO. Pour la même raison, un `vercel deploy` lancé à la main depuis un dossier git peut être
   bloqué si le projet est relié à GitHub. Le `.vercel/project.json` de la racine vise un ancien projet du 2 octobre.
