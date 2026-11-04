@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useRef, useState, useSyncExternalStore, useTransition } from "react";
 import { Button } from "@/components/ui/Button";
 import { CopyButton } from "@/components/ui/CopyButton";
+import { CARD_PHOTO } from "@/components/cardPhoto";
 import { Img } from "@/components/ui/Img";
 import { thumbUrl } from "@/lib/images";
 import { formatAr } from "@/lib/pricing";
@@ -283,10 +284,10 @@ export function Studio({ initial, preselected, origin, delivery }: { initial: St
                   type="button"
                   onClick={() => toggleProduct(p)}
                   aria-pressed={on}
-                  className={`w-32 shrink-0 snap-start overflow-hidden rounded-xl border-2 text-left transition ${on ? "border-ink" : "border-black/10 hover:border-black/30"}`}
+                  className={`group w-32 shrink-0 snap-start overflow-hidden rounded-xl border-2 text-left transition ${on ? "border-ink" : "border-black/10 hover:border-black/30"}`}
                 >
-                  <span className="relative block">
-                    <Img src={thumbUrl(p.images[0])} fallback={p.images[0]} alt="" loading="lazy" className="aspect-square w-full object-cover" />
+                  <span className="relative isolate block aspect-square overflow-hidden bg-card">
+                    <Img src={thumbUrl(p.images[0])} fallback={p.images[0]} alt="" loading="lazy" className={CARD_PHOTO} />
                     {on && <span className="absolute top-1.5 right-1.5 flex h-6 w-6 items-center justify-center rounded-full bg-ink text-xs font-bold text-accent">✓</span>}
                   </span>
                   <span className="block p-2">
