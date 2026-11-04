@@ -1,13 +1,13 @@
 import { isDbId } from "@/lib/orders-shared";
 import { getSettings } from "@/lib/settings";
 import { siteUrl } from "@/lib/site";
-import { getStudioProducts, searchStudioProducts } from "./actions";
+import { getStudioProducts, suggestStudioProducts } from "./actions";
 import { Studio } from "./Studio";
 
 export default async function ReseauxPage(props: PageProps<"/admin/reseaux">) {
   const { produits } = await props.searchParams;
   const ids = typeof produits === "string" ? produits.split(",").map(Number).filter(isDbId) : [];
-  const [initial, preselected, settings] = await Promise.all([searchStudioProducts(""), getStudioProducts(ids), getSettings()]);
+  const [initial, preselected, settings] = await Promise.all([suggestStudioProducts("mix", ids), getStudioProducts(ids), getSettings()]);
 
   return (
     <>

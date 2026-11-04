@@ -25,11 +25,19 @@ import {
   type PhotoFit,
 } from "@/lib/social";
 import { makeZip } from "@/lib/zip";
-import { searchStudioProducts, type StudioProduct } from "./actions";
+import { searchStudioProducts, suggestStudioProducts, type StudioProduct, type SuggestMode } from "./actions";
 
 // Instagram takes up to 20 photos per carousel, Facebook 10, TikTok 35.
 const MAX_SLIDES = 20;
 const DEFAULT_PHOTOS = 3;
+// Search results shown before « Voir plus » (suggestions are 12 already).
+const FIRST_RESULTS = 12;
+
+const MODES: { id: SuggestMode; label: string }[] = [
+  { id: "mix", label: "Mélange" },
+  { id: "stock", label: "À Tana" },
+  { id: "new", label: "Nouveautés" },
+];
 
 type Slide = { key: string; product: StudioProduct; photo: number; url: string; fileName: string };
 
@@ -85,6 +93,8 @@ export function Studio({ initial, preselected, origin, delivery }: { initial: St
   const [results, setResults] = useState(initial);
   const [search, setSearch] = useState("");
   const [searching, startSearch] = useTransition();
+  const [mode, setMode] = useState<SuggestMode>("mix");
+  const [showAll, setShowAll] = useState(false);
   const [selected, setSelected] = useState<StudioProduct[]>(preselected);
   const [photos, setPhotos] = useState<Record<number, number[]>>(() =>
     Object.fromEntries(preselected.map((p) => [p.id, p.images.slice(0, DEFAULT_PHOTOS).map((_, i) => i)])),
@@ -102,15 +112,33 @@ export function Studio({ initial, preselected, origin, delivery }: { initial: St
   const cache = useRef(new Map<string, Promise<Blob>>());
 
 
+  // Selected pairs are left out of new suggestions (they are already in the post).
+  const selectedIds = useRef<number[]>(preselected.map((p) => p.id));
+  useEffect(() => {
+    selectedIds.current = selected.map((p) => p.id);
+  }, [selected]);
+
   // Search as you type (pairs on the shop, with photos).
   const searched = useRef(false);
   useEffect(() => {
     const q = search.trim();
     if (!searched.current && !q) return; // first render: the server already sent the list
     searched.current = true;
-    const t = setTimeout(() => startSearch(async () => setResults(await searchStudioProducts(q))), q ? 300 : 0);
+    // Cleared search: back to a fresh random selection.
+    const t = setTimeout(
+      () => startSearch(async () => setResults(q ? await searchStudioProducts(q) : await suggestStudioProducts(mode, selectedIds.current))),
+      q ? 300 : 0,
+    );
+    setShowAll(false);
     return () => clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- mode changes go through suggest()
   }, [search]);
+
+  function suggest(m: SuggestMode) {
+    setMode(m);
+    setShowAll(false);
+    startSearch(async () => setResults(await suggestStudioProducts(m, selectedIds.current)));
+  }
 
   const slides: Slide[] = useMemo(() => {
     const out: Slide[] = [];
@@ -260,23 +288,51 @@ export function Studio({ initial, preselected, origin, delivery }: { initial: St
       <div className="min-w-0 space-y-6">
         {/* 1. Pairs */}
         <section className="card p-5">
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <h2 className="font-semibold">1. Les paires à mettre en avant</h2>
+          <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2">
+            <h2 className="font-semibold">
+              1. Les paires à mettre en avant
+              {selected.length > 0 && <span className="ml-2 rounded-full bg-ink px-2 py-0.5 text-xs text-accent">{selected.length} choisie{selected.length > 1 ? "s" : ""}</span>}
+            </h2>
             <input
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Rechercher (modèle, réf.)"
-              className="input max-w-64 py-2 text-sm"
+              className="input w-full py-2 text-sm sm:max-w-64"
               aria-label="Rechercher une paire"
               type="search"
             />
           </div>
-          <p className="mt-1 text-xs text-muted">
-            {search.trim() ? "Résultats" : "Dernières paires en ligne, celles déjà à Tana d'abord"}
-            {searching && " · recherche…"}
-          </p>
-          <div className="mt-3 flex snap-x gap-3 overflow-x-auto pb-2 [scrollbar-width:thin]">
-            {results.map((p) => {
+          {search.trim() ? (
+            <p className="mt-2 text-xs text-muted">
+              {searching ? "Recherche…" : `${results.length}${results.length === 30 ? "+" : ""} résultat${results.length > 1 ? "s" : ""}`}
+            </p>
+          ) : (
+            <div className="mt-3 flex flex-wrap items-center gap-2">
+              {MODES.map((m) => (
+                <button
+                  key={m.id}
+                  type="button"
+                  onClick={() => suggest(m.id)}
+                  aria-pressed={mode === m.id}
+                  className={`rounded-full border px-2.5 py-1.5 text-xs font-semibold transition ${mode === m.id ? "border-ink bg-ink text-paper" : "border-black/15 hover:border-black/40"}`}
+                >
+                  {m.label}
+                </button>
+              ))}
+              <button
+                type="button"
+                onClick={() => suggest(mode)}
+                disabled={searching}
+                title="Autres paires"
+                className="ml-auto inline-flex min-h-8 min-w-8 items-center justify-center gap-1.5 rounded-full border border-black/15 px-2 py-1.5 text-base sm:border-transparent text-xs font-semibold text-ink hover:bg-black/5 disabled:opacity-50"
+              >
+                <span aria-hidden className={searching ? "inline-block motion-safe:animate-spin" : "inline-block"}>↻</span>
+                <span className="max-sm:sr-only">Autres paires</span>
+              </button>
+            </div>
+          )}
+          <div className={`mt-3 grid grid-cols-3 gap-2 sm:grid-cols-4 xl:grid-cols-6 ${searching ? "opacity-60" : ""}`}>
+            {(showAll ? results : results.slice(0, FIRST_RESULTS)).map((p) => {
               const on = selected.some((s) => s.id === p.id);
               return (
                 <button
@@ -284,22 +340,31 @@ export function Studio({ initial, preselected, origin, delivery }: { initial: St
                   type="button"
                   onClick={() => toggleProduct(p)}
                   aria-pressed={on}
-                  className={`group w-32 shrink-0 snap-start overflow-hidden rounded-xl border-2 text-left transition ${on ? "border-ink" : "border-black/10 hover:border-black/30"}`}
+                  className={`group min-w-0 overflow-hidden rounded-xl border-2 text-left transition ${on ? "border-ink" : "border-black/10 hover:border-black/30"}`}
                 >
                   <span className="relative isolate block aspect-square overflow-hidden bg-card">
                     <Img src={thumbUrl(p.images[0])} fallback={p.images[0]} alt="" loading="lazy" className={CARD_PHOTO} />
                     {on && <span className="absolute top-1.5 right-1.5 flex h-6 w-6 items-center justify-center rounded-full bg-ink text-xs font-bold text-accent">✓</span>}
+                    {p.status === "en_stock" && <span className={`absolute bottom-1.5 left-1.5 rounded-full px-1.5 py-0.5 text-[10px] font-semibold ${STATUS_BADGE[p.status]}`}>{productStatus(p.status).short}</span>}
                   </span>
-                  <span className="block p-2">
-                    <span className="line-clamp-2 text-xs leading-tight font-semibold">{p.name}</span>
-                    <span className="mt-1 block text-xs text-muted">{formatAr(p.price)}</span>
-                    <span className={`mt-1 inline-block rounded-full px-1.5 py-0.5 text-[10px] font-semibold ${STATUS_BADGE[p.status]}`}>{productStatus(p.status).short}</span>
+                  <span className="block p-1.5 sm:p-2">
+                    <span className="line-clamp-2 text-[11px] leading-tight font-semibold sm:text-xs">{p.name}</span>
+                    <span className="mt-0.5 block text-[11px] text-muted sm:text-xs">{formatAr(p.price)}</span>
                   </span>
                 </button>
               );
             })}
-            {!results.length && !searching && <p className="py-6 text-sm text-muted">Aucune paire en ligne avec photo{search.trim() ? " pour cette recherche" : ""}.</p>}
           </div>
+          {!showAll && results.length > FIRST_RESULTS && (
+            <button type="button" onClick={() => setShowAll(true)} className="mt-3 w-full rounded-xl border border-black/10 py-2 text-sm font-semibold hover:bg-black/5">
+              Voir plus ({results.length - FIRST_RESULTS})
+            </button>
+          )}
+          {!results.length && !searching && (
+            <p className="py-6 text-sm text-muted">
+              {search.trim() ? "Aucune paire en ligne avec photo pour cette recherche." : mode === "stock" ? "Aucune paire à Tana en ce moment." : "Aucune paire en ligne avec photo."}
+            </p>
+          )}
 
           {selected.length > 0 && (
             <div className="mt-4 space-y-3 border-t border-black/10 pt-4">
