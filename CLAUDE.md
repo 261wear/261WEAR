@@ -60,6 +60,10 @@ https://supabase.com/dashboard/org/lqfwalffualpmbiimglm/usage (lisibles dans Chr
   31/10 (~1,1 Go), 4/11 (~750 Mo), avec 100 à 400 Mo certains jours sans import ni déploiement. Plafond de dépense
   actif : rien n'est facturé, mais Supabase peut rendre le projet injoignable. Usage lisible en se connectant à
   Supabase **avec GitHub** (compte 261wear), pas avec motoimport.contact@gmail.com ni nihasymickael@gmail.com.
+  Correctif du 4/11 : les pages admin « Import » et « Facebook » relisaient toutes les fiches avec leurs photos
+  (~20 Mo à chaque ouverture) ; Facebook lit maintenant le catalogue en cache, Import les colonnes sans photos.
+  Reste coûteux : chaque modification dans l'admin (`refreshShop`) relit tout le catalogue (~20 Mo) : grouper
+  les modifications. Ne jamais ajouter de `SELECT *` sur tous les produits dans une page.
 - Trafic visiteurs : ~70 crédits par mois pour 100 visiteurs par jour (estimation de la page admin « Limites »). Une campagne
   ou une vidéo qui marche peut vider le reste du mois : passer en Personal (9 $/mois, 1 000 crédits, recharge
   possible) avant une pub payante.
