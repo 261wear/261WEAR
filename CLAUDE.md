@@ -55,6 +55,11 @@ https://supabase.com/dashboard/org/lqfwalffualpmbiimglm/usage (lisibles dans Chr
   tout le catalogue. C'est le premier poste des deux côtés (7 octobre : 154 crédits et 1,14 Go consommés, presque
   tout en 12 builds les 5 et 6 octobre ; le trafic visiteurs, lui, faisait 86 Mo et 4 300 requêtes). Regrouper les
   changements en un seul push, ne pas relancer de build pour rien, consulter l'usage avant un push.
+- **Cycle Supabase du 5 octobre au 5 novembre 2026 : 6,46 Go sur 5 (129 %)**, presque tout du projet `261wear`
+  (`mon-tracker`, dans la même organisation, ne fait que quelques Mo). Pics : 19/10 (~950 Mo, migration Vercel),
+  31/10 (~1,1 Go), 4/11 (~750 Mo), avec 100 à 400 Mo certains jours sans import ni déploiement. Plafond de dépense
+  actif : rien n'est facturé, mais Supabase peut rendre le projet injoignable. Usage lisible en se connectant à
+  Supabase **avec GitHub** (compte 261wear), pas avec motoimport.contact@gmail.com ni nihasymickael@gmail.com.
 - Trafic visiteurs : ~70 crédits par mois pour 100 visiteurs par jour (estimation de la page admin « Limites »). Une campagne
   ou une vidéo qui marche peut vider le reste du mois : passer en Personal (9 $/mois, 1 000 crédits, recharge
   possible) avant une pub payante.
