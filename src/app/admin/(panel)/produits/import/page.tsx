@@ -1,11 +1,12 @@
 import Link from "next/link";
-import { listProducts } from "@/lib/products";
+import { listProductsLight } from "@/lib/products";
 import { getSettings } from "@/lib/settings";
 import { ImportWizard } from "./ImportWizard";
 
 export default async function ImportPage(props: PageProps<"/admin/produits/import">) {
   const [products, settings, { etape }] = await Promise.all([
-    listProducts({ onlyActive: false }),
+    // Not SELECT *: with ~9 500 products the photo lists alone are ~20 MB of database egress per visit.
+    listProductsLight({ withDescription: true }),
     getSettings(),
     props.searchParams,
   ]);
@@ -23,7 +24,7 @@ export default async function ImportPage(props: PageProps<"/admin/produits/impor
         products={products.map((p) => ({
           id: p.id,
           ref: p.ref,
-          images: p.images.length,
+          images: p.photoCount,
           active: p.active,
           price: p.pricing.price,
           name: p.name,

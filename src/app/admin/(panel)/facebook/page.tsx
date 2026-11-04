@@ -1,13 +1,14 @@
 import { headers } from "next/headers";
 import { FB_MAX_PHOTOS, facebookConfigured, getPageName, listPosts } from "@/lib/facebook";
 import { isDbId } from "@/lib/orders-shared";
-import { listProducts } from "@/lib/products";
+import { shopProducts } from "@/lib/catalog";
 import { getSettings } from "@/lib/settings";
 import { Composer } from "./Composer";
 
 export default async function FacebookPage(props: PageProps<"/admin/facebook">) {
   const [products, settings, posts, { produits }, h] = await Promise.all([
-    listProducts({ onlyActive: false }),
+    // The shop's cached snapshot (published pairs): no full read of the database per visit.
+    shopProducts(),
     getSettings(),
     listPosts(),
     props.searchParams,

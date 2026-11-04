@@ -73,9 +73,11 @@ export async function listProducts({ onlyActive }: { onlyActive: boolean }) {
 // About 10 times less data read from the database than SELECT *.
 export type ProductListItem = PricedProduct & { photoCount: number };
 
-export async function listProductsLight(): Promise<ProductListItem[]> {
+// withDescription: the import preview compares descriptions (a few dozen bytes
+// each); the photo lists, by far the heaviest column, are never read in full.
+export async function listProductsLight({ withDescription = false } = {}): Promise<ProductListItem[]> {
   const rows = await query(
-    `SELECT id, ref, name, category, '' AS description, price_rmb, cost_ar, weight_kg, margin_pct, price_override,
+    `SELECT id, ref, name, category, ${withDescription ? "description" : "'' AS description"}, price_rmb, cost_ar, weight_kg, margin_pct, price_override,
             sizes, status, active, supplier_id, supplier_ref, created_at, updated_at, published_at,
             COALESCE(images::jsonb->>0, '') AS first_image, jsonb_array_length(COALESCE(images, '[]')::jsonb) AS photo_count
      FROM products ORDER BY created_at DESC, id DESC`,
