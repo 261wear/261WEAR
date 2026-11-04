@@ -74,8 +74,12 @@ export async function renderStudioImage(input: StudioInput, headers: Record<stri
 
 // ---------- Building blocks ----------
 
-// Vertical posts keep their content out of the TikTok / stories interface:
-// top bar (~130 px), caption and buttons at the bottom (~420 px).
+// Vertical posts keep their content out of the TikTok / stories interface.
+// TikTok photo mode on tall phones (20:9) shifts the picture ~85 px up and lays
+// the status bar, back arrow, search and "1/5" counter over it: nothing until
+// y 290, and nothing on the right (x > 880) until y ~430. At the bottom the
+// caption covers the last ~400 px and the buttons the right edge (x > 930)
+// from y ~1300: see VERTICAL_RIGHT.
 function Canvas({ c, children, background = INK }: { c: Ctx; children: ReactNode; background?: string }) {
   return (
     <div
@@ -87,7 +91,7 @@ function Canvas({ c, children, background = INK }: { c: Ctx; children: ReactNode
         background,
         fontFamily: "Inter",
         color: CHALK,
-        padding: c.vertical ? "150px 60px 0" : "56px 56px 60px",
+        padding: c.vertical ? "290px 60px 0" : "56px 56px 60px",
         position: "relative",
       }}
     >
@@ -100,6 +104,9 @@ function Canvas({ c, children, background = INK }: { c: Ctx; children: ReactNode
     </div>
   );
 }
+
+// Room kept on the right of the texts under the photo, for the TikTok buttons.
+const VERTICAL_RIGHT = 110;
 
 function Logo({ size, color = CHALK, degree = LEMON }: { size: number; color?: string; degree?: string }) {
   return (
@@ -122,7 +129,13 @@ function nameSize(name: string, width: number, max: number) {
   return Math.round(Math.max(52, Math.min(max, oneLine >= max * 0.8 ? oneLine : width / perLine)));
 }
 
-function Name({ name, width, max, color = CHALK }: { name: string; width: number; max: number; color?: string }) {
+// "Climacool F50 - 07-1007026" → "Climacool F50": the reference stays in the caption.
+export function displayName(name: string) {
+  return name.replace(/\s+[-–—]\s+(?=[A-Z0-9-]*\d)[A-Z0-9][A-Z0-9-]{4,}$/i, "").trim() || name;
+}
+
+function Name({ name: full, width, max, color = CHALK }: { name: string; width: number; max: number; color?: string }) {
+  const name = displayName(full);
   const size = nameSize(name, width, max);
   return (
     <div style={{ display: "block", fontFamily: "Anton", fontSize: size, lineHeight: 1.02, color, textTransform: "uppercase", lineClamp: 2 }}>
@@ -131,12 +144,24 @@ function Name({ name, width, max, color = CHALK }: { name: string; width: number
   );
 }
 
+// Supplier photos carry a caption at the bottom ("Size: 40~45  07-1007026"):
+// in "cover" the picture runs 9 % past the bottom of its box so the caption
+// stays out, as on the shop cards. "Contain" shows the whole photo, as asked.
 function Photo({ c, radius = 0 }: { c: Ctx; radius?: number }) {
   return (
     // eslint-disable-next-line @next/next/no-img-element, jsx-a11y/alt-text
     <img
       src={c.photo}
-      style={{ position: "absolute", top: 0, left: 0, width: "100%", height: "100%", objectFit: c.fit, borderRadius: radius }}
+      style={{
+        position: "absolute",
+        top: 0,
+        left: 0,
+        width: "100%",
+        height: c.fit === "cover" ? "109%" : "100%",
+        objectFit: c.fit,
+        objectPosition: "50% 70%", // portrait photos (AK): the pair sits low, under grey
+        borderRadius: radius,
+      }}
     />
   );
 }
@@ -179,7 +204,16 @@ function Ticket(c: Ctx) {
   const inner = c.width - (c.vertical ? 120 : 112);
   return (
     <Canvas c={c}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexShrink: 0 }}>
+      <div
+        style={{
+          display: "flex",
+          flexDirection: c.vertical ? "column-reverse" : "row",
+          justifyContent: "space-between",
+          alignItems: c.vertical ? "flex-start" : "center",
+          gap: c.vertical ? 14 : 0,
+          flexShrink: 0,
+        }}
+      >
         <Kicker>{c.product.status === "en_stock" ? "DISPO DE SUITE" : "NOUVEAU MODÈLE"}</Kicker>
         <Logo size={60} />
       </div>
@@ -188,15 +222,15 @@ function Ticket(c: Ctx) {
         <Pill background={LEMON} color={INK} style={{ top: 28, left: 28, borderRadius: 10, padding: "10px 22px", fontSize: 38 }}>NEW</Pill>
         {sizes && <Pill background={INK} color={CHALK} style={{ bottom: 28, left: 28 }}>Pointures {sizes.replace(" à ", " → ")}</Pill>}
       </div>
-      <div style={{ display: "flex", flexDirection: c.vertical ? "column" : "row", justifyContent: "space-between", alignItems: c.vertical ? "flex-start" : "flex-end", gap: c.vertical ? 22 : 28, marginTop: 34, flexShrink: 0 }}>
+      <div style={{ display: "flex", flexDirection: c.vertical ? "column" : "row", justifyContent: "space-between", alignItems: c.vertical ? "flex-start" : "flex-end", gap: c.vertical ? 22 : 28, marginTop: 34, flexShrink: 0, paddingRight: c.vertical ? VERTICAL_RIGHT : 0 }}>
         <div style={{ display: "flex", flexDirection: "column", ...(c.vertical ? {} : { flex: 1 }), gap: 10 }}>
-          <Name name={c.product.name} width={c.vertical ? inner : inner - 420} max={c.vertical ? 120 : 104} />
+          <Name name={c.product.name} width={c.vertical ? inner - VERTICAL_RIGHT : inner - 420} max={c.vertical ? 120 : 104} />
           <div style={{ display: "flex", fontSize: 30, fontWeight: 500, color: GREY }}>{deliveryLine(c.product.status, c.delivery)}</div>
         </div>
         {c.showPrice && (
           <div style={{ display: "flex", flexDirection: c.vertical ? "row" : "column", alignItems: c.vertical ? "center" : "flex-end", gap: c.vertical ? 24 : 14, flexShrink: 0 }}>
             <div style={{ display: "flex", background: LEMON, color: INK, fontSize: 58, fontWeight: 800, borderRadius: 16, padding: "14px 30px" }}>{formatAr(c.product.price)}</div>
-            <div style={{ display: "flex", fontSize: 25, fontWeight: 700, color: CHALK }}>Commande en message ou lien en bio</div>
+            <div style={{ display: "flex", fontSize: 25, fontWeight: 700, color: CHALK, ...(c.vertical ? { maxWidth: 300 } : {}) }}>Commande en message ou lien en bio</div>
           </div>
         )}
       </div>
@@ -212,8 +246,8 @@ function Neon(c: Ctx) {
   return (
     <Canvas c={c}>
       <div style={{ display: "flex", alignItems: "center", gap: 26, flexShrink: 0 }}>
-        <Bolt size={c.vertical ? 104 : 92} color={LEMON} />
-        <div style={{ display: "flex", fontFamily: "Anton", fontSize: c.vertical ? 132 : 116, lineHeight: 1, color: CHALK }}>DISPO DE SUITE</div>
+        <Bolt size={92} color={LEMON} />
+        <div style={{ display: "flex", fontFamily: "Anton", fontSize: c.vertical ? 112 : 116, lineHeight: 1, color: CHALK }}>DISPO DE SUITE</div>
       </div>
       <div
         style={{
@@ -233,9 +267,9 @@ function Neon(c: Ctx) {
           <PhotoLogo />
         </div>
       </div>
-      <div style={{ display: "flex", flexDirection: c.vertical ? "column" : "row", justifyContent: "space-between", alignItems: c.vertical ? "flex-start" : "flex-end", gap: c.vertical ? 14 : 28, marginTop: 30, flexShrink: 0 }}>
+      <div style={{ display: "flex", flexDirection: c.vertical ? "column" : "row", justifyContent: "space-between", alignItems: c.vertical ? "flex-start" : "flex-end", gap: c.vertical ? 14 : 28, marginTop: 30, flexShrink: 0, paddingRight: c.vertical ? VERTICAL_RIGHT : 0 }}>
         <div style={{ display: "flex", flexDirection: "column", ...(c.vertical ? {} : { flex: 1 }), gap: 8 }}>
-          <Name name={c.product.name} width={c.vertical ? inner : inner - 380} max={c.vertical ? 116 : 96} />
+          <Name name={c.product.name} width={c.vertical ? inner - VERTICAL_RIGHT : inner - 380} max={c.vertical ? 116 : 96} />
           <div style={{ display: "flex", fontSize: 29, fontWeight: 500, color: GREY }}>
             {sizes ? `Pointures dispo : ${sizes} · ` : ""}livrée en {c.delivery.stock}
           </div>
@@ -264,7 +298,7 @@ function Pellicule(c: Ctx) {
     <Canvas c={c}>
       <div style={{ display: "flex", flexDirection: "column", flexShrink: 0 }}>
         <Kicker>261° WEAR PRÉSENTE</Kicker>
-        <div style={{ display: "flex", fontFamily: "Anton", fontSize: c.vertical ? 150 : 112, lineHeight: 0.98, color: CHALK, marginTop: 14 }}>{title}</div>
+        <div style={{ display: "flex", fontFamily: "Anton", fontSize: c.vertical ? 136 : 112, lineHeight: 0.98, color: CHALK, marginTop: 14 }}>{title}</div>
       </div>
       <div style={{ display: "flex", flexDirection: "column", flex: 1, marginTop: 34, background: "#050505", border: "2px solid #26262A" }}>
         <Sprockets />
@@ -273,7 +307,7 @@ function Pellicule(c: Ctx) {
         </div>
         <Sprockets />
       </div>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 24, marginTop: 30, flexShrink: 0, paddingRight: c.vertical ? 90 : 0 }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 24, marginTop: 30, flexShrink: 0, paddingRight: c.vertical ? VERTICAL_RIGHT : 0 }}>
         <div style={{ display: "flex", flexDirection: "column", flex: 1, gap: 8 }}>
           <Name name={c.product.name} width={c.width - 420} max={c.vertical ? 92 : 80} color={CHALK} />
           <div style={{ display: "flex", alignItems: "center", gap: 18, fontSize: 30, fontWeight: 500, color: GREY }}>
@@ -317,7 +351,7 @@ function Polaroid(c: Ctx) {
           <div style={{ display: "flex", fontFamily: "Anton", fontSize: c.vertical ? 120 : 96, lineHeight: 1, marginTop: 10 }}>{title}</div>
         </div>
       </div>
-      <div style={{ display: "flex", flex: 1, padding: "40px 34px 34px 6px" }}>
+      <div style={{ display: "flex", flex: 1, padding: c.vertical ? `40px ${34 + VERTICAL_RIGHT}px 34px 6px` : "40px 34px 34px 6px" }}>
         <div
           style={{
             display: "flex",
@@ -358,7 +392,7 @@ function Polaroid(c: Ctx) {
           </div>
         </div>
       </div>
-      <div style={{ display: "flex", justifyContent: "flex-end", flexShrink: 0, paddingTop: 8 }}>
+      <div style={{ display: "flex", justifyContent: c.vertical ? "flex-start" : "flex-end", flexShrink: 0, paddingTop: 8 }}>
         <Logo size={56} />
       </div>
     </Canvas>
