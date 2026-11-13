@@ -71,7 +71,7 @@ export function HeroShowcase({ pairs }: { pairs: HeroPair[] }) {
     const ceta = one<HTMLElement>("[data-ceta]");
     const cprice = one<HTMLElement>("[data-cprice]");
     const clink = one<HTMLAnchorElement>("[data-clink]");
-    const clogo = one<HTMLImageElement>("[data-clogo]");
+    const blogo = one<HTMLImageElement>("[data-blogo]");
     const lines = all<SVGPathElement>("[data-line]");
     const dots = all<SVGElement>("[data-dot]");
     const labs = all<HTMLElement>("[data-lab]");
@@ -103,9 +103,8 @@ export function HeroShowcase({ pairs }: { pairs: HeroPair[] }) {
       plink.href = clink.href = `/produit/${p.id}`;
       plink.setAttribute("aria-label", p.name);
       cname.textContent = p.name;
-      clogo.alt = p.brand;
-      if (p.logo) clogo.src = p.logo;
-      clogo.style.display = p.logo ? "block" : "none";
+      if (p.logo) blogo.src = p.logo;
+      blogo.style.display = p.logo ? "block" : "none";
       ceta.textContent = `${productStatus(p.status).short} · chez toi en ${p.eta}`;
       cprice.textContent = p.price;
       const values = [p.sizes, p.eta, p.tag];
@@ -143,6 +142,7 @@ export function HeroShowcase({ pairs }: { pairs: HeroPair[] }) {
         tl.to(plate, { x: -140, opacity: 0, duration: 0.45, ease: "power2.in" }, 0)
           .to(ghost, { y: -60, opacity: 0, duration: 0.4, ease: "power2.in" }, 0)
           .to([cta, ...labs, ...dots], { opacity: 0, duration: 0.25 }, 0)
+          .to(blogo, { x: -140, opacity: 0, duration: 0.4, ease: "power2.in" }, 0)
           .to(lines, { strokeDashoffset: 1, duration: 0.25 }, 0)
           .call(() => { bg1.style.background = p.tone; }, undefined, 0.1)
           .fromTo(bg1, { clipPath: "circle(0% at 50% 100%)" }, { clipPath: "circle(150% at 50% 100%)", duration: 0.95, ease: "power3.inOut", immediateRender: false }, 0.1)
@@ -150,6 +150,7 @@ export function HeroShowcase({ pairs }: { pairs: HeroPair[] }) {
           .call(() => fill(p), undefined, t0)
           .fromTo(ghost, { y: 80, opacity: 0 }, { y: 0, opacity: 1, duration: 0.9, ease: "power3.out", immediateRender: false }, t0 + 0.05)
           .fromTo(plate, { x: 190, rotate: -7, opacity: 0, scale: 0.94 }, { x: 0, rotate: 0, opacity: 1, scale: 1, duration: 1.05, ease: "power3.out", immediateRender: false }, t0 + 0.05)
+          .fromTo(blogo, { x: -260, opacity: 0 }, { x: 0, opacity: 0.11, duration: 1.1, ease: "power3.out", immediateRender: false }, t0 + 0.1)
           .fromTo(cta, { y: 14, opacity: 0 }, { y: 0, opacity: 1, duration: 0.5, ease: "power2.out", immediateRender: false }, t0 + 0.4);
       }
       // Les trois annotations se dessinent l'une après l'autre.
@@ -191,6 +192,17 @@ export function HeroShowcase({ pairs }: { pairs: HeroPair[] }) {
       <p className="font-display relative z-10 pt-4 text-center text-lg sm:pt-6 sm:text-xl">Sélectionnées pour vous</p>
 
       <div className="my-auto">
+      {/* Logo de la marque : très grand, de travers, coupé par le bord droit, en ton sur ton derrière tout le reste. */}
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img
+        data-blogo
+        src={first.logo ?? undefined}
+        alt=""
+        aria-hidden="true"
+        className="pointer-events-none absolute -bottom-[4%] -left-[14%] z-0 max-h-[46%] w-[min(56vw,28rem)] object-contain brightness-0 select-none md:-bottom-[8%] md:-left-[7%] md:w-[min(34vw,28rem)]"
+        style={{ transform: "rotate(-14deg)", opacity: 0.11, display: first.logo ? "block" : "none" }}
+      />
+
       {/* Le nom du modèle, en grand, au-dessus de la photo : la plaque en recouvre le bas, rien ne passe par-dessus la paire. */}
       <div
         data-ghost
@@ -257,11 +269,7 @@ export function HeroShowcase({ pairs }: { pairs: HeroPair[] }) {
 
       <div data-cta className="relative z-[4] mx-auto grid max-w-5xl grid-cols-[auto_auto] items-center justify-center gap-x-4 gap-y-2 px-4 pt-3 pb-11 sm:flex sm:flex-wrap sm:gap-x-8 sm:gap-y-3 sm:pt-4 sm:pb-14">
         <div className="col-span-2 min-w-0 text-center sm:col-auto sm:text-left">
-          <div className="flex items-center justify-center gap-3 sm:justify-start">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img data-clogo src={first.logo ?? undefined} alt={first.brand} className="h-6 w-auto max-w-24 shrink-0 brightness-0 sm:h-7" style={{ display: first.logo ? "block" : "none" }} />
-            <p data-cname className="font-display text-2xl leading-tight sm:text-3xl">{first.name}</p>
-          </div>
+          <p data-cname className="font-display text-2xl leading-tight sm:text-3xl">{first.name}</p>
           <p data-ceta className="mt-0.5 hidden text-sm font-semibold text-ink/75 sm:block">{productStatus(first.status).short} · chez toi en {first.eta}</p>
         </div>
         <p data-cprice className="font-display text-3xl leading-none sm:text-4xl">{first.price}</p>
