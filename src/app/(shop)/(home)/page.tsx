@@ -93,7 +93,7 @@ export default async function Home() {
       {inStock.length > 0 && (
         <section className="bg-ink text-white">
           <div className="mx-auto max-w-6xl px-4 py-14 sm:py-16">
-            <div className="flex items-end justify-between gap-4">
+            <div className="flex flex-wrap items-end justify-between gap-x-4 gap-y-1">
               <h2 className="font-display text-[clamp(2rem,9vw,3.5rem)] leading-none whitespace-nowrap">
                 <span className="flex items-center gap-2.5 sm:gap-3">
                   <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-pistachio text-ink sm:h-14 sm:w-14">
