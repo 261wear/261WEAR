@@ -1,10 +1,13 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { HERO_PHOTOS, HeroBackdrop } from "@/components/HeroBackdrop";
-import { BoltIcon, CalendarIcon, ShieldIcon, TruckIcon } from "@/components/icons";
+import { HeroShowcase } from "@/components/HeroShowcase";
+import { BoltIcon } from "@/components/icons";
 import { ShuffledGrid } from "@/components/ShuffledGrid";
 import { toCard } from "@/lib/card";
 import { popularCategories, shopProducts, shopSettings } from "@/lib/catalog";
+import { salesByProduct } from "@/lib/orders";
+import { brandLogo } from "@/lib/brand-logos";
+import { toHeroPair } from "@/lib/hero";
 import { sample } from "@/lib/shuffle";
 import { pageUrls } from "@/lib/site";
 
@@ -19,13 +22,28 @@ const HOME_STOCK = 4;
 // cards keep the page small and give a different drop at each visit.
 const DROP_POOL = 96;
 const STOCK_POOL = 24;
+// Paires du hero (rendues par le serveur, la première est fixe pour la journée).
+const HERO_PAIRS = 8;
+// Marques du défilement : jusqu'à 24, la liste est répétée pour dépasser la largeur d'un grand écran.
+const BRANDS_MAX = 24;
+const BRANDS_MIN_ITEMS = 16;
 
 export default async function Home() {
-  const [products, settings, categories] = await Promise.all([shopProducts(), shopSettings(), popularCategories()]);
+  const [products, settings, popular, sales] = await Promise.all([shopProducts(), shopSettings(), popularCategories(), salesByProduct()]);
+  // Marques classées par ventes, puis par taille du catalogue.
+  const brandSales = new Map<string, number>();
+  for (const p of products) brandSales.set(p.category, (brandSales.get(p.category) ?? 0) + (sales.get(p.id) ?? 0));
+  const categories = [...popular].sort((a, b) => (brandSales.get(b.value) ?? 0) - (brandSales.get(a.value) ?? 0) || b.count - a.count);
   const inStock = sample(products.filter((p) => p.status === "en_stock"), STOCK_POOL).map(toCard);
   // "Dispo de suite" pairs are not repeated in the drop; sold-out ones stay in the search.
   const drop = sample(products.filter((p) => p.status === "sur_commande"), DROP_POOL).map(toCard);
-  const heroPhotos = sample(products.flatMap((p) => (p.status === "epuise" ? [] : p.images.slice(0, 1))), HERO_PHOTOS);
+  // Hero : les meilleures ventes d'abord (jusqu'à la moitié), complétées au hasard. Sans commande : tout au hasard.
+  const heroPool = products.filter((p) => p.status !== "epuise" && p.images[0]);
+  const sellers = heroPool.filter((p) => sales.has(p.id)).sort((a, b) => (sales.get(b.id) ?? 0) - (sales.get(a.id) ?? 0)).slice(0, HERO_PAIRS / 2);
+  const sellerIds = new Set(sellers.map((p) => p.id));
+  const heroPairs = [...sellers, ...sample(heroPool.filter((p) => !sellerIds.has(p.id)), HERO_PAIRS - sellers.length)].map((p) => toHeroPair(p, settings));
+  const brands = categories.slice(0, BRANDS_MAX);
+  const brandRow = brands.length ? Array.from({ length: Math.ceil(BRANDS_MIN_ITEMS / brands.length) }, () => brands).flat() : [];
   const steps = [
     ["01", "Choisis ta paire", "Sélectionne ton modèle et ta pointure, puis valide sur WhatsApp."],
     ["02", "Paie l'acompte", `${settings.depositPct} % par Mobile Money. Envoie la capture sur WhatsApp.`],
@@ -34,93 +52,72 @@ export default async function Home() {
   ];
   return (
     <>
-      <section className="relative isolate overflow-hidden bg-ink text-white">
-        <HeroBackdrop photos={heroPhotos} />
-        <div className="relative mx-auto max-w-6xl px-4 pt-16 pb-12 sm:pt-28 sm:pb-16">
-          <p className="flex items-center gap-3 text-sm font-semibold tracking-[0.2em] text-accent uppercase">
-            <span className="relative flex h-2 w-2">
-              <span className="absolute inline-flex h-full w-full rounded-full bg-accent opacity-75 motion-safe:animate-ping" />
-              <span className="relative inline-flex h-2 w-2 rounded-full bg-accent" />
-            </span>
-            Drop en cours
-          </p>
-          <h1 className="font-display mt-5 text-[clamp(3.25rem,16vw,4.5rem)] leading-[0.9] drop-shadow-[0_4px_24px_rgba(0,0,0,0.6)] sm:text-8xl lg:text-9xl">
-            Représente
-            <br />
-            le <span className="relative inline-block">
-              261<span className="text-accent">°</span>
-              {/* Brush signature under the 261, as on the brand visuals: one tapered stroke, then a Z flick. */}
-              <svg aria-hidden="true" viewBox="0 0 320 64" preserveAspectRatio="none" className="absolute -bottom-7 -left-[8%] h-9 w-[112%] text-accent sm:-bottom-10 sm:h-14">
-                <path d="M2 46 C 90 34, 200 20, 306 8 L 310 18 C 206 30, 104 46, 10 62 Z" fill="currentColor" />
-                <path d="M30 50 C 110 40, 190 30, 260 22" fill="none" stroke="var(--color-ink)" strokeWidth="1.5" strokeLinecap="round" opacity="0.35" />
-                <path d="M296 16 L 172 46 L 302 41" fill="none" stroke="currentColor" strokeWidth="9" strokeLinecap="round" strokeLinejoin="round" />
-              </svg>
-            </span>
-          </h1>
-          <div className="mt-10 flex flex-wrap gap-3">
-            <Link href="#drop" className="btn-accent px-7 py-3.5 text-base shadow-[0_0_32px_rgba(198,255,61,0.35)]">
-              Voir le drop <span aria-hidden="true">→</span>
-            </Link>
-            <Link href="/suivi" className="btn border border-white/30 bg-ink/60 px-7 py-3.5 text-base text-white hover:border-white">
-              Suivre ma commande
-            </Link>
+      {heroPairs.length ? (
+        <HeroShowcase pairs={heroPairs} />
+      ) : (
+        <section className="bg-peach text-ink">
+          <div className="mx-auto max-w-6xl px-4 py-24 text-center">
+            <h1 className="font-display text-6xl sm:text-8xl">
+              Représente le 261<span className="text-white">°</span>
+            </h1>
+            <Link href="/suivi" className="btn-dark mt-8 px-7 py-3.5 text-base">Suivre ma commande</Link>
           </div>
-          <ul className="mt-12 grid max-w-2xl grid-cols-3 gap-3 text-center sm:mt-16 sm:gap-4">
-            {[
-              [<TruckIcon key="i" size={28} />, "100 %", "neuves, commandées pour toi"],
-              [<CalendarIcon key="i" size={28} />, `${settings.deliveryMinDays}-${settings.deliveryMaxDays} J`, "livraison à Tana"],
-              [<ShieldIcon key="i" size={28} />, "Photo", "de contrôle qualité avant l'envoi"],
-            ].map(([icon, big, small]) => (
-              <li key={String(big)} className="flex flex-col items-center rounded-2xl border border-white/10 bg-ink/75 px-2 py-5 sm:px-4 sm:py-6">
-                <span className="text-accent">{icon}</span>
-                <p className="font-display mt-3 text-[clamp(1.375rem,7.5vw,1.875rem)] leading-none whitespace-nowrap sm:text-4xl">{big}</p>
-                <p className="mt-2 text-xs leading-snug text-white/60 sm:text-sm">{small}</p>
-              </li>
-            ))}
-          </ul>
-        </div>
-      </section>
+        </section>
+      )}
 
-      {categories.length > 0 && (
-        <nav aria-label="Catégories" className="mx-auto max-w-6xl px-4 pt-8">
-          <ul className="-mx-4 flex gap-2 overflow-x-auto px-4 pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-            {categories.map((c) => (
-              <li key={c.value} className="shrink-0">
-                <Link href={`/recherche?cat=${encodeURIComponent(c.value)}`} className="flex items-center gap-2 rounded-full border border-black/10 bg-white px-4 py-2.5 text-sm font-semibold transition hover:border-ink">
-                  {c.value} <span className="text-xs font-normal text-muted">{c.count}</span>
-                </Link>
-              </li>
-            ))}
+      {/* Défilement des logos de marques du catalogue : chacun mène à sa catégorie (le survol met le défilement en pause). */}
+      {brandRow.length > 0 && (
+        <nav aria-label="Marques" className="group/brands overflow-hidden border-b border-white/10 bg-ink py-10 text-white sm:py-14">
+          <ul className="ticker-track flex w-max items-center group-hover/brands:[animation-play-state:paused]">
+            {[0, 1].flatMap((k) =>
+              brandRow.map((c, i) => {
+                const logo = brandLogo(c.value);
+                return (
+                  <li key={`${k}-${i}`} aria-hidden={k === 1 ? true : undefined}>
+                    <Link href={`/recherche?cat=${encodeURIComponent(c.value)}`} tabIndex={k === 1 ? -1 : undefined} className="flex h-16 items-center px-8 opacity-75 transition hover:opacity-100 sm:h-20 sm:px-14">
+                      {logo ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img src={logo} alt={c.value} className="h-9 w-auto max-w-40 brightness-0 invert sm:h-12 sm:max-w-52" />
+                      ) : (
+                        <span className="font-display text-3xl whitespace-nowrap sm:text-4xl">{c.value}</span>
+                      )}
+                    </Link>
+                  </li>
+                );
+              }),
+            )}
           </ul>
         </nav>
       )}
 
       {inStock.length > 0 && (
-        <section className="mx-auto max-w-6xl px-4 pt-10">
-          <div className="flex items-end justify-between gap-4">
-            <h2 className="font-display text-[clamp(1.75rem,8.5vw,2.25rem)] whitespace-nowrap sm:text-5xl">
-              <span className="flex items-center gap-2.5 sm:gap-3">
-                <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-ink text-accent sm:h-12 sm:w-12">
-                  <BoltIcon size={22} />
+        <section className="bg-ink text-white">
+          <div className="mx-auto max-w-6xl px-4 py-14 sm:py-16">
+            <div className="flex items-end justify-between gap-4">
+              <h2 className="font-display text-[clamp(2rem,9vw,3.5rem)] leading-none whitespace-nowrap">
+                <span className="flex items-center gap-2.5 sm:gap-3">
+                  <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-pistachio text-ink sm:h-14 sm:w-14">
+                    <BoltIcon size={24} />
+                  </span>
+                  Dispo de suite
                 </span>
-                Dispo de suite
-              </span>
-            </h2>
-            <Link href="/recherche?dispo=en_stock" className="shrink-0 py-2 text-sm font-semibold whitespace-nowrap underline">Tout voir</Link>
+              </h2>
+              <Link href="/recherche?dispo=en_stock" className="shrink-0 py-2 text-sm font-semibold whitespace-nowrap underline">Tout voir</Link>
+            </div>
+            <p className="mt-2 text-sm text-white/70">Déjà à Tana · livrée en {settings.stockDeliveryMinDays} à {settings.stockDeliveryMaxDays} jours.</p>
+            <ShuffledGrid pool={inStock} count={HOME_STOCK} className="mt-8 grid grid-cols-2 gap-x-3 gap-y-6 md:grid-cols-3 lg:grid-cols-4" />
           </div>
-          <p className="mt-1 text-sm text-muted">Déjà à Tana · livrée en {settings.stockDeliveryMinDays} à {settings.stockDeliveryMaxDays} jours.</p>
-          <ShuffledGrid pool={inStock} count={HOME_STOCK} className="mt-6 grid grid-cols-2 gap-x-4 gap-y-8 md:grid-cols-3 lg:grid-cols-4" />
         </section>
       )}
 
       <section id="drop" className="mx-auto max-w-6xl scroll-mt-20 px-4 py-16">
         <div className="flex items-end justify-between gap-4">
-          <h2 className="font-display text-4xl sm:text-5xl">Le drop</h2>
+          <h2 className="font-display text-[clamp(2rem,9vw,3.5rem)] leading-none">Le drop</h2>
           <Link href="/recherche" className="py-2 text-sm font-semibold underline">Tout le catalogue ({products.length})</Link>
         </div>
         {products.length ? (
           // Below the hero: no high-priority photos competing with the first paint.
-          <ShuffledGrid pool={drop} count={HOME_DROP} className="mt-8 grid grid-cols-2 gap-x-4 gap-y-8 md:grid-cols-3 lg:grid-cols-4" />
+          <ShuffledGrid pool={drop} count={HOME_DROP} className="mt-8 grid grid-cols-2 gap-x-3 gap-y-6 md:grid-cols-3 lg:grid-cols-4" />
         ) : null}
         {products.length > HOME_DROP && (
           <div className="mt-10 text-center">
@@ -132,17 +129,17 @@ export default async function Home() {
         )}
       </section>
 
-      {/* Same look as the "Comment commander" carousel on the social networks. */}
-      <section className="bg-accent text-ink">
-        <div className="mx-auto max-w-6xl px-4 py-16">
-          <h2 className="font-display text-5xl leading-[0.9] sm:text-7xl">Comment<br />commander</h2>
-          <ol className="mt-10 grid border-t-[3px] border-ink sm:grid-cols-2 sm:border-t-0 lg:grid-cols-4">
+      {/* Quatre étapes sur fond bleu ciel : la page alterne les couleurs de section en section. */}
+      <section className="bg-sky text-ink">
+        <div className="mx-auto max-w-6xl px-4 py-16 sm:py-20">
+          <h2 className="font-display text-[clamp(2.5rem,11vw,5rem)] leading-[0.92]">Comment<br />commander</h2>
+          <ol className="mt-10 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
             {steps.map(([n, title, body]) => (
-              <li key={n} className="flex gap-5 border-b-[3px] border-ink py-5 sm:flex-col sm:gap-2 sm:border-t-[3px] sm:border-b-0 sm:pr-6 lg:border-b-[3px]">
-                <span className="font-display w-14 shrink-0 text-5xl leading-none">{n}</span>
+              <li key={n} className="flex gap-5 rounded-3xl bg-white p-6 sm:flex-col sm:gap-3">
+                <span className="font-display w-14 shrink-0 text-5xl leading-none text-ink/30">{n}</span>
                 <span>
-                  <span className="block text-lg font-bold">{title}</span>
-                  <span className="mt-1 block text-sm text-ink/75">{body}</span>
+                  <span className="font-display block text-xl leading-tight">{title}</span>
+                  <span className="mt-1.5 block text-sm text-ink/75">{body}</span>
                 </span>
               </li>
             ))}
@@ -152,4 +149,3 @@ export default async function Home() {
     </>
   );
 }
-

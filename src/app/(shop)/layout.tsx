@@ -3,6 +3,7 @@ import { Suspense } from "react";
 import { FloatingWhatsApp } from "@/components/FloatingWhatsApp";
 import { Logo } from "@/components/Logo";
 import { SearchBox } from "@/components/SearchBox";
+import { SmoothScroll } from "@/components/SmoothScroll";
 import { SocialLinks } from "@/components/SocialLinks";
 import { popularCategories, shopSettings } from "@/lib/catalog";
 import { waLink } from "@/lib/orders-shared";
@@ -16,7 +17,8 @@ export default async function ShopLayout({ children }: LayoutProps<"/">) {
   const wa = waLink(settings.whatsapp, "Bonjour 261 WEAR ! J'ai une question :");
   return (
     <>
-      <div className="bg-accent px-4 py-2 text-center text-xs font-semibold tracking-wide text-ink uppercase">
+      <SmoothScroll />
+      <div className="bg-pistachio px-4 py-2 text-center text-xs font-semibold tracking-wide text-ink uppercase">
         Sur commande en {settings.deliveryMinDays}–{settings.deliveryMaxDays} j · Disponible de suite en {settings.stockDeliveryMinDays}–{settings.stockDeliveryMaxDays} j à Tana
       </div>
       <header className="sticky top-0 z-30 border-b border-white/10 bg-ink text-white">
