@@ -47,23 +47,25 @@ export default async function OrderPage(props: PageProps<"/commande/[token]">) {
   ].join("\n");
 
   return (
-    <div className="mx-auto max-w-3xl px-4 py-10">
-      {isNew && (
-        <div className="mb-6 rounded-2xl bg-accent p-5">
-          <p className="font-display text-2xl">Commande enregistrée ✓</p>
-          <p className="mt-1 text-sm">Dernière étape : paie l&apos;acompte puis envoie ta commande et la capture sur WhatsApp.</p>
+    <>
+      <section className="bg-lilac">
+        <div className="mx-auto max-w-3xl px-4 py-10 sm:py-14">
+          {isNew && (
+            <div className="mb-6 rounded-[28px] bg-pistachio p-5">
+              <p className="font-display text-2xl">Commande enregistrée ✓</p>
+              <p className="mt-1 text-sm">Dernière étape : paie l&apos;acompte puis envoie ta commande et la capture sur WhatsApp.</p>
+            </div>
+          )}
+          <p className="text-sm font-semibold text-ink/75">{delivered ? "Partage ta photo avec #261Family !" : "Garde ce lien pour suivre ton colis."}</p>
+          <h1 className="font-display mt-1 flex flex-wrap items-center gap-x-4 gap-y-2 text-[clamp(2.5rem,10vw,4.5rem)] leading-none">
+            Commande {number}
+            {/* Tampon « Livrée » : le Polaroïd du moodboard. */}
+            {delivered && <span className="inline-block rotate-3 rounded-lg bg-ink px-3 py-1 text-2xl text-white">Livrée</span>}
+          </h1>
         </div>
-      )}
-      <div className="flex flex-wrap items-end justify-between gap-2">
-        <h1 className="font-display flex items-center gap-3 text-4xl">
-          Commande {number}
-          {/* "Polaroïd" stamp from the brand moodboard. */}
-          {delivered && <span className="inline-block rotate-3 bg-ink px-3 py-1 text-2xl text-white">Livrée</span>}
-        </h1>
-        <p className="text-sm text-muted">{delivered ? "Partage ta photo avec #261Family !" : "Garde ce lien pour suivre ton colis."}</p>
-      </div>
-
-      <div className="card mt-6 flex gap-4 p-4">
+      </section>
+      <div className="mx-auto max-w-3xl px-4 pb-10">
+      <div className="card -mt-6 flex gap-4 p-4 sm:p-5">
         {order.product_image && (
           <Img src={thumbUrl(order.product_image)} fallback={order.product_image} alt="" className="h-24 w-24 shrink-0 rounded-xl object-cover" />
         )}
@@ -130,6 +132,7 @@ export default async function OrderPage(props: PageProps<"/commande/[token]">) {
           <WhatsAppIcon /> Une question ? Écris-nous
         </a>
       )}
-    </div>
+      </div>
+    </>
   );
 }

@@ -9,11 +9,11 @@ export function SortSelect({ value, options, hrefFor }: { value: string; options
   const [pending, startTransition] = useTransition();
   return (
     <label className="flex items-center gap-2 text-sm">
-      <span className="text-muted">Trier par</span>
+      <span className="font-semibold text-ink/75">Trier par</span>
       <select
         value={value}
         onChange={(e) => startTransition(() => router.push(hrefFor[e.target.value]))}
-        className="rounded-full border border-black/15 bg-white px-3 py-2 font-medium"
+        className="rounded-full border-0 bg-ink px-4 py-2.5 font-semibold text-white"
       >
         {options.map((o) => <option key={o.id} value={o.id}>{o.label}</option>)}
       </select>

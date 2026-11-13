@@ -28,9 +28,9 @@ function FacetLink({ active, to, label, count }: { active: boolean; to: string; 
     <Link
       href={to}
       aria-current={active ? "true" : undefined}
-      className={`flex items-center justify-between rounded-lg px-3 py-2 text-sm ${active ? "bg-ink font-semibold text-white" : "hover:bg-black/5"}`}
+      className={`flex items-center justify-between rounded-full px-4 py-2.5 text-sm ${active ? "bg-ink font-semibold text-white" : "hover:bg-black/5"}`}
     >
-      <span>{active ? "✓ " : ""}{label}</span>
+      <span>{label}</span>
       <span className={active ? "text-white/70" : "text-muted"}>{count}</span>
     </Link>
   );
@@ -57,14 +57,14 @@ export default async function SearchPage(props: PageProps<"/recherche">) {
   const filters = (
     <div className="space-y-6">
       <section>
-        <h2 className="mb-2 text-xs font-semibold tracking-wide text-muted uppercase">Disponibilité</h2>
+        <h2 className="font-display mb-2 text-lg">Disponibilité</h2>
         {facets.availability.map((f) => (
           <FacetLink key={f.value} active={query.dispo === f.value} to={href(current, { dispo: query.dispo === f.value ? "" : f.value })} label={productStatus(f.value).label} count={f.count} />
         ))}
       </section>
       {facets.categories.length > 0 && (
         <section>
-          <h2 className="mb-2 text-xs font-semibold tracking-wide text-muted uppercase">Catégorie</h2>
+          <h2 className="font-display mb-2 text-lg">Catégorie</h2>
           {facets.categories.map((f) => (
             <FacetLink key={f.value} active={current.cat === f.value} to={href(current, { cat: current.cat === f.value ? "" : f.value })} label={f.value} count={f.count} />
           ))}
@@ -72,7 +72,7 @@ export default async function SearchPage(props: PageProps<"/recherche">) {
       )}
       {facets.sizes.length > 0 && (
         <section>
-          <h2 className="mb-2 text-xs font-semibold tracking-wide text-muted uppercase">Pointure</h2>
+          <h2 className="font-display mb-2 text-lg">Pointure</h2>
           <div className="grid grid-cols-4 gap-1.5">
             {facets.sizes.map((f) => {
               const on = current.taille === f.value;
@@ -82,7 +82,7 @@ export default async function SearchPage(props: PageProps<"/recherche">) {
                   href={href(current, { taille: on ? "" : f.value })}
                   aria-current={on ? "true" : undefined}
                   title={`${f.count} modèle${f.count > 1 ? "s" : ""}`}
-                  className={`flex h-10 items-center justify-center rounded-lg border text-sm font-semibold ${on ? "border-ink bg-ink text-white" : "border-black/15 bg-white hover:border-black"}`}
+                  className={`flex h-11 items-center justify-center rounded-full border text-sm font-semibold ${on ? "border-ink bg-ink text-white" : "border-black/10 bg-white hover:border-ink"}`}
                 >
                   {f.value}
                 </Link>
@@ -93,7 +93,7 @@ export default async function SearchPage(props: PageProps<"/recherche">) {
       )}
       {facets.priceRange && (
         <section>
-          <h2 className="mb-2 text-xs font-semibold tracking-wide text-muted uppercase">Prix (Ar)</h2>
+          <h2 className="font-display mb-2 text-lg">Prix (Ar)</h2>
           <form action="/recherche" className="flex items-center gap-2">
             {Object.entries(current).filter(([k]) => !["min", "max"].includes(k)).map(([k, v]) => <input key={k} type="hidden" name={k} value={v} />)}
             <input name="min" inputMode="numeric" defaultValue={current.min} placeholder={String(facets.priceRange.min)} aria-label="Prix minimum" className="input px-2 py-2 text-sm" />
@@ -109,20 +109,23 @@ export default async function SearchPage(props: PageProps<"/recherche">) {
   const sortHrefs = Object.fromEntries(SORTS.map((s) => [s.id, href(current, { tri: s.id })]));
 
   return (
-    <div className="mx-auto max-w-6xl px-4 py-8">
-      <div className="flex flex-wrap items-end justify-between gap-4">
-        <div>
-          <h1 className="font-display text-3xl sm:text-4xl">{q ? `« ${q} »` : "Catalogue"}</h1>
-          <p className="mt-1 text-sm text-muted" aria-live="polite">
-            {results.length} résultat{results.length > 1 ? "s" : ""}
-            {!q && !filterCount ? "" : ` sur ${total} modèles`}
-          </p>
+    <>
+      <section className="bg-sky">
+        <div className="mx-auto flex max-w-6xl flex-wrap items-end justify-between gap-4 px-4 py-10 sm:py-14">
+          <div className="min-w-0">
+            <h1 className="font-display text-[clamp(2.5rem,10vw,5rem)] leading-none break-words">{q ? `« ${q} »` : "Catalogue"}</h1>
+            <p className="mt-3 text-sm font-semibold text-ink/75" aria-live="polite">
+              {results.length} résultat{results.length > 1 ? "s" : ""}
+              {!q && !filterCount ? "" : ` sur ${total} modèles`}
+            </p>
+          </div>
+          <SortSelect value={tri} options={[...SORTS]} hrefFor={sortHrefs} />
         </div>
-        <SortSelect value={tri} options={[...SORTS]} hrefFor={sortHrefs} />
-      </div>
+      </section>
 
+      <div className="mx-auto max-w-6xl px-4 py-8">
       {approximate && results.length > 0 && (
-        <p className="mt-4 rounded-lg bg-amber-50 px-4 py-3 text-sm text-amber-900">
+        <p className="mt-4 rounded-2xl bg-peach/40 px-4 py-3 text-sm text-ink">
           Aucun modèle ne correspond exactement à « {q} ». Voici les résultats les plus proches.
         </p>
       )}
@@ -183,6 +186,7 @@ export default async function SearchPage(props: PageProps<"/recherche">) {
           )}
         </section>
       </div>
-    </div>
+      </div>
+    </>
   );
 }
