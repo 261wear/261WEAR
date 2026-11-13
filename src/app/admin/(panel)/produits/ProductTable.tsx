@@ -112,7 +112,7 @@ export function ProductTable({ rows, allIds, query, emptyText }: { rows: Row[]; 
         </div>
       )}
 
-      <div className="card mt-4 hidden overflow-x-auto md:block">
+      <div className="card relative mt-4 hidden overflow-x-auto md:block">
         <table className="w-full min-w-[860px] text-left text-sm">
           <thead className="border-b border-black/10 text-xs text-muted uppercase">
             <tr>
@@ -217,7 +217,7 @@ export function ProductTable({ rows, allIds, query, emptyText }: { rows: Row[]; 
                   </span>
                 </Link>
                 {p.issues.length > 0 && <p className="mt-1 text-xs font-semibold text-red-700">⚠ à compléter : {p.issues.join(" · ")}</p>}
-                <div className="mt-2 flex items-center gap-3">
+                <div className="mt-2 flex flex-wrap items-center gap-x-3">
                   <StatusSelect id={p.id} status={p.status} name={p.name} />
                   {p.photos > 0 && (
                     <>

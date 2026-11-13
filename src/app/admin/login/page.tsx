@@ -9,10 +9,12 @@ export const metadata: Metadata = { title: "Back-office", robots: { index: false
 export default async function LoginPage() {
   if (await isAdmin()) redirect("/admin");
   return (
-    <div className="mx-auto w-full max-w-sm px-4 py-24">
-      <Logo />
-      <p className="mt-2 mb-6 text-sm text-muted">Back-office</p>
-      <LoginForm />
+    <div className="flex min-h-svh items-center justify-center bg-sky px-4 py-12">
+      <div className="w-full max-w-sm">
+        <Logo className="text-3xl [&>span]:text-white" />
+        <p className="mt-2 mb-6 text-sm font-semibold text-ink/75">Back-office</p>
+        <LoginForm />
+      </div>
     </div>
   );
 }

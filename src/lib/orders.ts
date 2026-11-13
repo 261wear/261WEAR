@@ -109,6 +109,18 @@ export async function recentOrders(status: string | undefined, limit = 5000) {
   return rows.map(toOrder);
 }
 
+// Quantités commandées par fiche (commandes non annulées), les plus vendues d'abord.
+// Un seul agrégat, lu au rendu de l'accueil (page gardée un jour), jamais par visiteur.
+// En cas d'erreur ou sans commande : liste vide, l'accueil retombe sur un tirage au hasard.
+export async function salesByProduct(): Promise<Map<number, number>> {
+  try {
+    const rows = await query(`SELECT product_id, SUM(qty)::int AS n FROM orders WHERE product_id IS NOT NULL AND status <> 'annule' GROUP BY product_id ORDER BY n DESC LIMIT 300`);
+    return new Map(rows.map((r) => [Number(r.product_id), Number(r.n)]));
+  } catch {
+    return new Map();
+  }
+}
+
 export async function countByStatus() {
   const rows = await query(`SELECT status, COUNT(*)::int AS n FROM orders GROUP BY status`);
   return Object.fromEntries(rows.map((r) => [r.status, Number(r.n)])) as Record<string, number>;

@@ -8,7 +8,7 @@ import { FormMessage } from "@/components/ui/FormMessage";
 export function TrackForm({ defaultNumber }: { defaultNumber?: string }) {
   const [state, onSubmit, pending, formAction] = useFormAction(trackOrder, undefined);
   return (
-    <form action={formAction} onSubmit={onSubmit} className="card space-y-4 p-6">
+    <form action={formAction} onSubmit={onSubmit} className="card space-y-4 p-6 sm:p-8">
       <div>
         <label className="label" htmlFor="number">Numéro de commande</label>
         <input id="number" name="number" className="input" placeholder="261-0001" defaultValue={defaultNumber} required />
