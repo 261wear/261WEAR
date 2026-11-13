@@ -6,8 +6,15 @@
   --color-accent: #c6ff3d;
   --color-card: #ebe8e2; /* product card: one step darker than paper, warm */
   --color-muted: #66666b; /* 5.1:1 on paper (WCAG AA) */
-  --font-sans: var(--font-inter);
-  --font-display: var(--font-anton);
+  --font-sans: var(--font-hanken);
+  --font-display: var(--font-bricolage);
+  /* Palette « Chroma » : un pastel par paire, le citron reste réservé à « Dispo de suite ». */
+  --color-peach: #ff9f6b;
+  --color-pink: #ffc1d6;
+  --color-sky: #8fd3ff;
+  --color-lilac: #c9b8ff;
+  /* Pistache : le vert des grands aplats (bandeau, cartes « Dispo de suite »). Le citron vif reste pour les petites touches. */
+  --color-pistachio: #d9ee8d;
 }
 
 body {
@@ -24,17 +31,19 @@ body {
   }
 }
 
-.font-display {
-  letter-spacing: 0.01em;
-  text-transform: uppercase;
+@layer components {
+  .font-display {
+    font-weight: 800;
+    letter-spacing: -0.035em;
+  }
 }
 
 @utility input {
-  @apply w-full rounded-lg border border-black/15 bg-white px-3 py-2.5 text-[15px] outline-none focus:border-black;
+  @apply w-full rounded-2xl border border-black/10 bg-white px-4 py-3 text-[15px] outline-none transition focus:border-ink focus:ring-4 focus:ring-ink/10;
 }
 
 @utility label {
-  @apply mb-1 block text-xs font-semibold tracking-wide text-black/60 uppercase;
+  @apply mb-1.5 block text-[13px] font-semibold text-ink/75;
 }
 
 @utility btn {
@@ -54,32 +63,19 @@ body {
 }
 
 @utility card {
-  @apply rounded-2xl border border-black/10 bg-white;
+  @apply rounded-[28px] bg-white ring-1 ring-black/5;
 }
 
-/* Home hero: photo columns scrolling in a loop (see HeroBackdrop). */
-@keyframes hero-up {
+/* Bandeau défilant sous le hero : deux copies du texte, translation de -50 %. */
+@keyframes ticker {
   to {
-    transform: translateY(-50%);
-  }
-}
-
-@keyframes hero-down {
-  from {
-    transform: translateY(-50%);
-  }
-  to {
-    transform: translateY(0);
+    transform: translateX(-50%);
   }
 }
 
 @media (prefers-reduced-motion: no-preference) {
-  .hero-col {
-    animation: hero-up 80s linear infinite;
-    will-change: transform;
-  }
-  .hero-col-down {
-    animation-name: hero-down;
+  .ticker-track {
+    animation: ticker 38s linear infinite;
   }
 }
 

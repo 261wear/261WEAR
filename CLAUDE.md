@@ -94,8 +94,11 @@ https://supabase.com/dashboard/org/lqfwalffualpmbiimglm/usage (lisibles dans Chr
 
 ## Identité visuelle (moodboard : `../Moodboard/`)
 
-- Noir encre `#0B0B0C`, craie `#F4F2EE`, citron `#C6FF3D` (prix, « ° », badges, en touche rare), vert dispo
-  `#047857` (seulement « Dispo de suite »). Titres Anton en majuscules, textes Inter.
+- Refonte « Chroma » (branche `refonte-chroma`) : noir encre `#0B0B0C`, craie `#F4F2EE`, pastels par paire (pêche `#ff9f6b`,
+  rose `#ffc1d6`, bleu ciel `#8fd3ff`, lilas `#c9b8ff`), pistache `#d9ee8d` pour les grands aplats « Dispo de suite »
+  (le citron vif `#C6FF3D` ne sert plus qu'aux petites touches : badge New, « ° »). Titres et prix en Bricolage Grotesque
+  (classe `font-display`, 800, sans majuscules), textes en Hanken Grotesk. Hero : paires tirées au hasard (GSAP),
+  défilement fluide Lenis, cartes Chroma (`ProductCard`, `src/lib/chroma.ts`). Les polices du Studio (Satori) restent des TTF.
 - Le logo et le titre s'écrivent « 261° » avec le degré en citron. Prix en citron sur fond noir.
 - Pas d'emoji côté boutique : icônes au trait dans `src/components/icons.tsx` (éclair `BoltIcon` pour « Dispo de suite »).
 - Cadre Néon (contour citron doux) pour les paires en stock ; rendu « soft », pas surchargé.
