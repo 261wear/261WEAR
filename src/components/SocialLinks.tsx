@@ -36,7 +36,7 @@ export function SocialLinks({ facebookUrl, instagramUrl, tiktokUrl, whatsappHref
           </a>
         </li>
       ))}
-      <li>
+      {whatsappHref && <li>
         <a
           href={whatsappHref}
           target="_blank"
@@ -47,7 +47,7 @@ export function SocialLinks({ facebookUrl, instagramUrl, tiktokUrl, whatsappHref
         >
           <WhatsAppIcon className="h-5 w-5" />
         </a>
-      </li>
+      </li>}
     </ul>
   );
 }

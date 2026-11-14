@@ -1,6 +1,9 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  async redirects() {
+    return [{ source: "/:path*", has: [{ type: "host", value: "www.261wear.com" }], destination: "https://261wear.com/:path*", permanent: true }];
+  },
   // Embedded Postgres used for local development only.
   serverExternalPackages: ["@electric-sql/pglite"],
   // Fonts of the framed social photos, read from disk at request time.

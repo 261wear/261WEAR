@@ -7,16 +7,21 @@ import { SmoothScroll } from "@/components/SmoothScroll";
 import { SocialLinks } from "@/components/SocialLinks";
 import { popularCategories, shopSettings } from "@/lib/catalog";
 import { waLink } from "@/lib/orders-shared";
+import { catalogCategories, shopIdentity } from "@/lib/shop-seo";
+import { shopProducts } from "@/lib/catalog";
+import { jsonLd } from "@/lib/site";
 
 // Shop pages without visitor-specific data are served from the cache: rebuilt
 // after a back-office change, and once a day (date-based badges count in days).
 export const revalidate = 86400;
 
 export default async function ShopLayout({ children }: LayoutProps<"/">) {
-  const [settings, popular] = await Promise.all([shopSettings(), popularCategories()]);
+  const [settings, popular, products] = await Promise.all([shopSettings(), popularCategories(), shopProducts()]);
+  const categories = catalogCategories(products);
   const wa = waLink(settings.whatsapp, "Bonjour 261 WEAR ! J'ai une question :");
   return (
     <>
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: jsonLd(shopIdentity(settings)) }} />
       <SmoothScroll />
       <div className="bg-pistachio px-4 py-2 text-center text-xs font-semibold tracking-wide text-ink uppercase">
         Sur commande en {settings.deliveryMinDays}–{settings.deliveryMaxDays} j · Disponible de suite en {settings.stockDeliveryMinDays}–{settings.stockDeliveryMaxDays} j à Tana
@@ -30,7 +35,8 @@ export default async function ShopLayout({ children }: LayoutProps<"/">) {
             </Suspense>
           </div>
           <nav aria-label="Principal" className="ml-auto flex items-center gap-1 text-sm font-medium md:ml-0">
-            <Link href="/recherche" className="rounded-full px-3 py-2 hover:text-accent">Catalogue</Link>
+            <Link href="/chaussures" className="rounded-full px-3 py-2 hover:text-accent">Catalogue</Link>
+            <Link href="/contact" className="rounded-full px-3 py-2 hover:text-accent">Contact</Link>
             <Link href="/suivi" className="rounded-full px-3 py-2 hover:text-accent">Suivi</Link>
             <Link href="/guide-des-tailles" className="hidden rounded-full px-3 py-2 hover:text-accent lg:block">Tailles</Link>
           </nav>
@@ -42,18 +48,22 @@ export default async function ShopLayout({ children }: LayoutProps<"/">) {
         <div className="mx-auto grid max-w-6xl gap-8 px-4 py-12 sm:grid-cols-2 lg:grid-cols-4">
           <div>
             <Logo className="text-white" />
-            <p className="mt-3 text-sm">Représente le 261. Chaussures premium sur commande ou disponibles de suite, livrées à Tana.</p>
+            <p className="mt-3 text-sm">261° WEAR, boutique de chaussures en ligne à Antananarivo, Madagascar. Sur commande ou disponibles de suite, livrées à Tana.</p>
+            <Link href="/a-propos" className="mt-3 inline-block py-2 text-sm underline">Découvrir la boutique</Link>
           </div>
           <nav aria-label="Boutique" className="flex flex-col text-sm [&_a]:py-1.5">
             <p className="mb-1 text-xs font-semibold tracking-wide text-white uppercase">Boutique</p>
             <Link href="/recherche?tri=nouveautes" className="hover:text-white">Nouveautés</Link>
             <Link href="/recherche?dispo=en_stock" className="hover:text-white">Disponible de suite</Link>
-            <Link href="/recherche" className="hover:text-white">Tout le catalogue</Link>
+            <Link href="/chaussures" className="hover:text-white">Tout le catalogue</Link>
+            {categories.map((category) => <Link key={category.slug} href={category.path} className="hover:text-white">{category.name}</Link>)}
           </nav>
           <nav aria-label="Aide" className="flex flex-col text-sm [&_a]:py-1.5">
             <p className="mb-1 text-xs font-semibold tracking-wide text-white uppercase">Aide</p>
             <Link href="/suivi" className="hover:text-white">Suivre ma commande</Link>
             <Link href="/guide-des-tailles" className="hover:text-white">Guide des tailles</Link>
+            <Link href="/faq" className="hover:text-white">Questions fréquentes</Link>
+            <Link href="/contact" className="hover:text-white">Contacter la boutique</Link>
             <Link href="/cgv" className="hover:text-white">Conditions générales de vente</Link>
           </nav>
           <div>

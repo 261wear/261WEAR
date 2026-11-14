@@ -6,7 +6,8 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "test:seo": "node tests/seo.test.cjs"
   },
   "dependencies": {
     "@electric-sql/pglite": "^0.5.8",

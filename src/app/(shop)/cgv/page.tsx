@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { shopSettings } from "@/lib/catalog";
 import { pageUrls } from "@/lib/site";
 
-export const metadata: Metadata = { title: "Conditions générales de vente", ...pageUrls("/cgv") };
+export const metadata: Metadata = { title: "Conditions générales de vente", description: "Conditions d’achat chez 261° WEAR : commande, acompte Mobile Money, livraison à Antananarivo, pointures, annulation, échanges et garantie.", ...pageUrls("/cgv") };
 
 export default async function CgvPage() {
   const s = await shopSettings();

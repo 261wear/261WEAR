@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { notFound } from "next/navigation";
+import { notFound, permanentRedirect } from "next/navigation";
 import Link from "next/link";
 import { Gallery } from "@/components/Gallery";
 import { ProductCard } from "@/components/ProductCard";
@@ -12,7 +12,8 @@ import { BoltIcon, PinIcon, ShieldIcon, TruckIcon } from "@/components/icons";
 import { waLink } from "@/lib/orders-shared";
 import { depositFor, formatAr } from "@/lib/pricing";
 import { freshness } from "@/lib/product-status";
-import { OPEN_GRAPH, siteUrl } from "@/lib/site";
+import { OPEN_GRAPH, jsonLd as serializeJsonLd, siteUrl } from "@/lib/site";
+import { categoryPath, productBrand, productId, productSummary } from "@/lib/shop-seo";
 
 // Product pages are rendered on first visit, then served from the cache until
 // the catalogue changes (or one day, for the date-based badges). Nothing is
@@ -24,19 +25,27 @@ export function generateStaticParams() {
 }
 
 export async function generateMetadata(props: PageProps<"/produit/[id]">): Promise<Metadata> {
-  const product = await shopProduct(Number((await props.params).id));
-  if (!product || !product.active) return {};
+  const id = productId((await props.params).id);
+  if (!id) notFound();
+  const [product, settings] = await Promise.all([shopProduct(id), shopSettings()]);
+  if (!product || !product.active) notFound();
+  const description = productSummary(product, settings);
   return {
     title: product.name,
-    description: `${product.name} — ${formatAr(product.pricing.price)}, livrée à Tana.`,
+    description,
     alternates: { canonical: `/produit/${product.id}` },
-    openGraph: { ...OPEN_GRAPH, url: `/produit/${product.id}`, images: product.images.slice(0, 1) },
+    openGraph: { ...OPEN_GRAPH, title: `${product.name} · 261° WEAR`, description, url: `/produit/${product.id}`, images: product.images.length ? product.images.slice(0, 1) : ["/opengraph-image.png"] },
+    twitter: { card: "summary_large_image", title: product.name, description, images: product.images.length ? product.images.slice(0, 1) : ["/opengraph-image.png"] },
   };
 }
 
 export default async function ProductPage(props: PageProps<"/produit/[id]">) {
-  const [product, settings] = await Promise.all([shopProduct(Number((await props.params).id)), shopSettings()]);
+  const rawId = (await props.params).id;
+  const id = productId(rawId);
+  if (!id) notFound();
+  const [product, settings] = await Promise.all([shopProduct(id), shopSettings()]);
   if (!product || !product.active) notFound();
+  if (rawId !== String(id)) permanentRedirect(`/produit/${id}`);
   const price = product.pricing.price;
   const deposit = depositFor(price, settings.depositPct);
   const inStock = product.status === "en_stock";
@@ -46,14 +55,22 @@ export default async function ProductPage(props: PageProps<"/produit/[id]">) {
     .slice(0, 4);
   // Product rich result for search engines (price, availability). "<" is
   // escaped so a product name can never close the script tag.
-  const jsonLd = JSON.stringify({
+  const base = siteUrl();
+  const brand = productBrand(product.name);
+  const breadcrumbs = [{ name: "Accueil", path: "/" }, { name: "Chaussures", path: "/chaussures" },
+    ...(product.category ? [{ name: product.category, path: categoryPath(product.category) }] : []),
+    { name: product.name, path: `/produit/${product.id}` }];
+  const jsonLd = serializeJsonLd([{
     "@context": "https://schema.org",
     "@type": "Product",
+    "@id": `${base}/produit/${product.id}#produit`,
     name: product.name,
     image: product.images.slice(0, 4),
+    ...(brand ? { brand: { "@type": "Brand", name: brand } } : {}),
+    ...(product.sizes.length ? { size: product.sizes } : {}),
     ...(product.ref ? { sku: product.ref } : {}),
     ...(product.category ? { category: product.category } : {}),
-    ...(product.description ? { description: product.description.slice(0, 500) } : {}),
+    description: product.description || productSummary(product, settings),
     offers: {
       "@type": "Offer",
       url: `${siteUrl()}/produit/${product.id}`,
@@ -61,8 +78,9 @@ export default async function ProductPage(props: PageProps<"/produit/[id]">) {
       price,
       availability: soldOut ? "https://schema.org/OutOfStock" : inStock ? "https://schema.org/InStock" : "https://schema.org/PreOrder",
       itemCondition: "https://schema.org/NewCondition",
+      seller: { "@id": `${base}/#boutique` },
     },
-  }).replace(/</g, "\\u003c");
+  }, { "@context": "https://schema.org", "@type": "BreadcrumbList", itemListElement: breadcrumbs.map((item, i) => ({ "@type": "ListItem", position: i + 1, name: item.name, item: `${base}${item.path}` })) }]);
   const [dMin, dMax] = inStock ? [settings.stockDeliveryMinDays, settings.stockDeliveryMaxDays] : [settings.deliveryMinDays, settings.deliveryMaxDays];
 
   return (
@@ -72,11 +90,11 @@ export default async function ProductPage(props: PageProps<"/produit/[id]">) {
         <ol className="flex flex-wrap items-center gap-1.5">
           <li><Link href="/" className="hover:text-ink">Accueil</Link></li>
           <li aria-hidden="true">/</li>
-          <li><Link href="/recherche" className="hover:text-ink">Catalogue</Link></li>
+          <li><Link href="/chaussures" className="hover:text-ink">Catalogue</Link></li>
           {product.category && (
             <>
               <li aria-hidden="true">/</li>
-              <li><Link href={`/recherche?cat=${encodeURIComponent(product.category)}`} className="hover:text-ink">{product.category}</Link></li>
+              <li><Link href={categoryPath(product.category)} className="hover:text-ink">{product.category}</Link></li>
             </>
           )}
         </ol>
@@ -147,6 +165,16 @@ export default async function ProductPage(props: PageProps<"/produit/[id]">) {
           )}
         </div>
         {product.description && <p className="mt-8 whitespace-pre-line text-black/80">{product.description}</p>}
+        <section className="mt-8 border-t border-black/10 pt-5">
+          <h2 className="font-display text-xl">Les détails de ta paire</h2>
+          <dl className="mt-3 space-y-2 text-sm text-ink/75">
+            {brand && <div><dt className="inline font-semibold">Marque : </dt><dd className="inline">{brand}</dd></div>}
+            {product.ref && <div><dt className="inline font-semibold">Référence : </dt><dd className="inline">{product.ref}</dd></div>}
+            {product.sizes.length > 0 && <div><dt className="inline font-semibold">Pointures EU : </dt><dd className="inline">{product.sizes.join(", ")}</dd></div>}
+            <div><dt className="inline font-semibold">Disponibilité : </dt><dd className="inline">{soldOut ? "Épuisé" : inStock ? "Déjà en stock à Antananarivo" : "Sur commande"}</dd></div>
+          </dl>
+          <p className="mt-4 text-sm text-ink/75">Besoin de confirmer ta pointure ou la livraison ? <Link href="/contact" className="underline">Contacte la boutique</Link>. <Link href="/cgv" className="underline">Conditions de vente et d’échange</Link>.</p>
+        </section>
       </div>
       </div>
 
@@ -154,7 +182,7 @@ export default async function ProductPage(props: PageProps<"/produit/[id]">) {
         <section className="mt-16" aria-labelledby="similar-title">
           <div className="flex items-end justify-between gap-4">
             <h2 id="similar-title" className="font-display text-3xl sm:text-4xl">Dans la même catégorie</h2>
-            <Link href={`/recherche?cat=${encodeURIComponent(product.category)}`} className="shrink-0 py-2 text-sm font-semibold whitespace-nowrap underline">Tout voir</Link>
+            <Link href={categoryPath(product.category)} className="shrink-0 py-2 text-sm font-semibold whitespace-nowrap underline">Tout voir</Link>
           </div>
           <div className="mt-6 grid grid-cols-2 gap-x-4 gap-y-8 md:grid-cols-4">
             {similar.map((p) => <ProductCard key={p.id} product={p} />)}

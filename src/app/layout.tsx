@@ -8,18 +8,22 @@ import "./globals.css";
 const hanken = Hanken_Grotesk({ variable: "--font-hanken", subsets: ["latin"] });
 const bricolage = Bricolage_Grotesque({ variable: "--font-bricolage", subsets: ["latin"] });
 
-const description = "Sneakers premium sur commande ou disponibles de suite, livrées à Tana. Représente le 261.";
+const description = "261° WEAR, boutique de chaussures en ligne à Antananarivo, Madagascar. Modèles sur commande ou disponibles de suite à Tana, prix en ariary et commande sur WhatsApp.";
 
 // Icons (favicon.ico, icon.png, apple-icon.png) and the share image
 // (opengraph-image.png) are files next to this layout: Next.js links them.
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl()),
-  title: { default: "261° WEAR — Sneakers premium à Madagascar", template: "%s · 261° WEAR" },
+  title: { default: "261° WEAR — Boutique de chaussures en ligne à Antananarivo", template: "%s · 261° WEAR" },
   description,
   applicationName: "261° WEAR",
   appleWebApp: { title: "261° WEAR", statusBarStyle: "black-translucent" },
   openGraph: { ...OPEN_GRAPH, description },
   twitter: { card: "summary_large_image" },
+  verification: {
+    google: process.env.GOOGLE_SITE_VERIFICATION || undefined,
+    other: process.env.BING_SITE_VERIFICATION ? { "msvalidate.01": process.env.BING_SITE_VERIFICATION } : undefined,
+  },
 };
 
 export const viewport: Viewport = { themeColor: "#0b0b0c" };

@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { pageUrls } from "@/lib/site";
 
-export const metadata: Metadata = { title: "Guide des tailles", ...pageUrls("/guide-des-tailles") };
+export const metadata: Metadata = { title: "Guide des tailles", description: "Mesure ton pied en centimètres et consulte les pointures EU avant de commander ta paire chez 261° WEAR. Demande conseil en cas de doute sur le modèle.", ...pageUrls("/guide-des-tailles") };
 
 const SIZES: [string, string][] = [
   ["36", "22,5"], ["37", "23,0"], ["38", "23,5"], ["39", "24,5"], ["40", "25,0"],

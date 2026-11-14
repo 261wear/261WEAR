@@ -238,9 +238,18 @@ Chaque commit poussé sur GitHub est redéployé automatiquement.
 | `SUPABASE_SERVICE_ROLE_KEY` | Clé `service_role` de Supabase (secrète). Sans Supabase en local → `.data/uploads/`. |
 | `ADMIN_PASSWORD` | Mot de passe du back-office (obligatoire en production). |
 | `ADMIN_SECRET` | Optionnel : clé de signature des sessions (sinon dérivée du mot de passe). |
-| `SITE_URL` | Optionnel : adresse publique du site (nom de domaine), sinon celle fournie par Netlify. |
+| `SITE_URL` | Optionnel : adresse publique canonique ; défaut `https://261wear.com` en production et `http://localhost:3000` en développement. |
 
 Les photos importées depuis les catalogues fournisseurs restent hébergées chez le fournisseur (szwego).
+
+## Référencement
+
+- Catalogue indexable : `/chaussures`, catégories `/chaussures/[category]` et pagination avec liens HTML. La recherche libre `/recherche` et ses filtres restent exclus des robots.
+- `/contact`, `/a-propos` et `/faq` présentent la boutique à Antananarivo. Les coordonnées, délais et réseaux viennent des paramètres existants ; aucune adresse physique n’est présumée.
+- Métadonnées propres aux pages, identité `OnlineStore`/`WebSite`, offres produit et fils d’Ariane structurés. Le sitemap inclut les catégories et leur pagination, avec le cache quotidien du catalogue.
+- En production, le domaine par défaut est `https://261wear.com`. `SITE_URL` permet de le remplacer ; il est normalisé et les valeurs locales invalides ne deviennent pas des canonical publiques. `www.261wear.com` redirige vers le domaine sans www.
+- Facultatif : `GOOGLE_SITE_VERIFICATION` et `BING_SITE_VERIFICATION` ajoutent les balises publiques de validation. Les propriétés doivent être créées dans Search Console/Bing, puis le site redéployé. La validation DNS reste possible sans ces variables.
+- Vérification des règles SEO : `npm run test:seo`. Après déploiement, contrôler `/robots.txt`, `/sitemap.xml`, quelques fiches et les URL inexistantes.
 
 ## Stack
 

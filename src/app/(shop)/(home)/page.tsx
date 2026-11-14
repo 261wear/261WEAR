@@ -10,6 +10,7 @@ import { brandLogo } from "@/lib/brand-logos";
 import { toHeroPair } from "@/lib/hero";
 import { sample } from "@/lib/shuffle";
 import { pageUrls } from "@/lib/site";
+import { categoryPath } from "@/lib/shop-seo";
 
 export const metadata: Metadata = pageUrls("/");
 
@@ -57,24 +58,34 @@ export default async function Home() {
       ) : (
         <section className="bg-peach text-ink">
           <div className="mx-auto max-w-6xl px-4 py-24 text-center">
-            <h1 className="font-display text-6xl sm:text-8xl">
+            <p className="font-display text-6xl sm:text-8xl">
               Représente le 261<span className="text-white">°</span>
-            </h1>
+            </p>
             <Link href="/suivi" className="btn-dark mt-8 px-7 py-3.5 text-base">Suivre ma commande</Link>
           </div>
         </section>
       )}
 
+      <section className="mx-auto max-w-6xl px-4 py-10 sm:py-14">
+        <h1 className="font-display max-w-4xl text-3xl leading-tight sm:text-5xl">261° WEAR, boutique de chaussures en ligne à Antananarivo</h1>
+        <p className="mt-4 max-w-3xl text-ink/75">À Tana, Madagascar, choisis ta paire, ta pointure et commande sur WhatsApp. Les prix sont en ariary : livraison en {settings.deliveryMinDays} à {settings.deliveryMaxDays} jours sur commande, ou en {settings.stockDeliveryMinDays} à {settings.stockDeliveryMaxDays} jours pour les paires disponibles de suite.</p>
+        <div className="mt-5 flex flex-wrap gap-5 text-sm font-semibold underline">
+          <Link href="/chaussures" className="py-2">Toutes les chaussures</Link>
+          <Link href="/a-propos" className="py-2">La boutique</Link>
+          <Link href="/contact" className="py-2">Nous contacter</Link>
+        </div>
+      </section>
+
       {/* Défilement des logos de marques du catalogue : chacun mène à sa catégorie (le survol met le défilement en pause). */}
       {brandRow.length > 0 && (
-        <nav aria-label="Marques" className="group/brands overflow-hidden border-b border-white/10 bg-ink py-10 text-white sm:py-14">
+        <nav aria-label="Catégories de chaussures" className="group/brands overflow-hidden border-b border-white/10 bg-ink py-10 text-white sm:py-14">
           <ul className="ticker-track flex w-max items-center group-hover/brands:[animation-play-state:paused]">
             {[0, 1].flatMap((k) =>
               brandRow.map((c, i) => {
                 const logo = brandLogo(c.value);
                 return (
                   <li key={`${k}-${i}`} aria-hidden={k === 1 ? true : undefined}>
-                    <Link href={`/recherche?cat=${encodeURIComponent(c.value)}`} tabIndex={k === 1 ? -1 : undefined} className="flex h-16 items-center px-8 opacity-75 transition hover:opacity-100 sm:h-20 sm:px-14">
+                    <Link href={categoryPath(c.value)} tabIndex={k === 1 ? -1 : undefined} className="flex h-16 items-center px-8 opacity-75 transition hover:opacity-100 sm:h-20 sm:px-14">
                       {logo ? (
                         // eslint-disable-next-line @next/next/no-img-element
                         <img src={logo} alt={c.value} className="h-9 w-auto max-w-40 brightness-0 invert sm:h-12 sm:max-w-52" />
@@ -113,7 +124,7 @@ export default async function Home() {
       <section id="drop" className="mx-auto max-w-6xl scroll-mt-20 px-4 py-16">
         <div className="flex items-end justify-between gap-4">
           <h2 className="font-display text-[clamp(2rem,9vw,3.5rem)] leading-none">Le drop</h2>
-          <Link href="/recherche" className="py-2 text-sm font-semibold underline">Tout le catalogue ({products.length})</Link>
+          <Link href="/chaussures" className="py-2 text-sm font-semibold underline">Tout le catalogue ({products.length})</Link>
         </div>
         {products.length ? (
           // Below the hero: no high-priority photos competing with the first paint.
@@ -121,7 +132,7 @@ export default async function Home() {
         ) : null}
         {products.length > HOME_DROP && (
           <div className="mt-10 text-center">
-            <Link href="/recherche?tri=nouveautes" className="btn-dark">Voir les {products.length} modèles</Link>
+            <Link href="/chaussures" className="btn-dark">Voir les {products.length} modèles</Link>
           </div>
         )}
         {!products.length && (

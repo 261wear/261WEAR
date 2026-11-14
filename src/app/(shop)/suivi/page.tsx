@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { TrackForm } from "./TrackForm";
 import { pageUrls } from "@/lib/site";
 
-export const metadata: Metadata = { title: "Suivre ma commande", ...pageUrls("/suivi") };
+export const metadata: Metadata = { title: "Suivre ma commande", description: "Retrouve les étapes de ta commande 261° WEAR avec ton numéro de commande et ton téléphone, de la confirmation à la livraison à Tana.", ...pageUrls("/suivi") };
 
 export default async function TrackPage(props: PageProps<"/suivi">) {
   const { n } = await props.searchParams;
