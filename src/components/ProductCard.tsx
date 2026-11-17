@@ -51,8 +51,9 @@ export function ProductCard({ product, query = "", priority = false }: { product
           )}
         </div>
         <div className="@container px-2 pt-3 pb-2">
-          {/* Nom du modèle en Anton, comme le cadre Ticket du moodboard. */}
-          <h3 className="font-display line-clamp-2 text-[19px] leading-tight">
+          {/* Nom du modèle en Anton, comme le cadre Ticket du moodboard. Les noms du fournisseur collent parfois
+              les mots (« AdidasOriginals ») : un mot trop long passe à la ligne au lieu d'être coupé. */}
+          <h3 className="font-display line-clamp-2 text-[19px] leading-tight wrap-break-word">
             <Highlight text={product.name} query={query} />
           </h3>
           <p className="mt-1 flex items-center gap-x-2 text-[13px] opacity-80">
