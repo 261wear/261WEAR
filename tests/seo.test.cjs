@@ -77,6 +77,9 @@ test("production canonical URLs never fall back to localhost", () => {
     process.env.SITE_URL = "http://www.261wear.com/";
     assert.equal(siteUrl(), "https://261wear.com");
   } finally {
-    for (const [key, value] of Object.entries(previous)) value === undefined ? delete process.env[key] : process.env[key] = value;
+    for (const [key, value] of Object.entries(previous)) {
+      if (value === undefined) delete process.env[key];
+      else process.env[key] = value;
+    }
   }
 });
