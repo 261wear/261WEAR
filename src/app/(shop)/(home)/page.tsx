@@ -4,13 +4,12 @@ import { HeroShowcase } from "@/components/HeroShowcase";
 import { BoltIcon } from "@/components/icons";
 import { ShuffledGrid } from "@/components/ShuffledGrid";
 import { toCard } from "@/lib/card";
-import { popularCategories, shopProducts, shopSettings } from "@/lib/catalog";
+import { shopProducts, shopSettings } from "@/lib/catalog";
 import { salesByProduct } from "@/lib/orders";
-import { brandLogo } from "@/lib/brand-logos";
+import { catalogBrands } from "@/lib/brand-logos";
 import { toHeroPair } from "@/lib/hero";
 import { sample } from "@/lib/shuffle";
 import { pageUrls } from "@/lib/site";
-import { categoryPath } from "@/lib/shop-seo";
 
 export const metadata: Metadata = pageUrls("/");
 
@@ -30,11 +29,7 @@ const BRANDS_MAX = 24;
 const BRANDS_MIN_ITEMS = 16;
 
 export default async function Home() {
-  const [products, settings, popular, sales] = await Promise.all([shopProducts(), shopSettings(), popularCategories(), salesByProduct()]);
-  // Marques classées par ventes, puis par taille du catalogue.
-  const brandSales = new Map<string, number>();
-  for (const p of products) brandSales.set(p.category, (brandSales.get(p.category) ?? 0) + (sales.get(p.id) ?? 0));
-  const categories = [...popular].sort((a, b) => (brandSales.get(b.value) ?? 0) - (brandSales.get(a.value) ?? 0) || b.count - a.count);
+  const [products, settings, sales] = await Promise.all([shopProducts(), shopSettings(), salesByProduct()]);
   const inStock = sample(products.filter((p) => p.status === "en_stock"), STOCK_POOL).map(toCard);
   // "Dispo de suite" pairs are not repeated in the drop; sold-out ones stay in the search.
   const drop = sample(products.filter((p) => p.status === "sur_commande"), DROP_POOL).map(toCard);
@@ -43,7 +38,7 @@ export default async function Home() {
   const sellers = heroPool.filter((p) => sales.has(p.id)).sort((a, b) => (sales.get(b.id) ?? 0) - (sales.get(a.id) ?? 0)).slice(0, HERO_PAIRS / 2);
   const sellerIds = new Set(sellers.map((p) => p.id));
   const heroPairs = [...sellers, ...sample(heroPool.filter((p) => !sellerIds.has(p.id)), HERO_PAIRS - sellers.length)].map((p) => toHeroPair(p, settings));
-  const brands = categories.slice(0, BRANDS_MAX);
+  const brands = catalogBrands(products, sales).slice(0, BRANDS_MAX);
   const brandRow = brands.length ? Array.from({ length: Math.ceil(BRANDS_MIN_ITEMS / brands.length) }, () => brands).flat() : [];
   const steps = [
     ["01", "Choisis ta paire", "Sélectionne ton modèle et ta pointure, puis valide sur WhatsApp."],
@@ -76,26 +71,19 @@ export default async function Home() {
         </div>
       </section>
 
-      {/* Défilement des logos de marques du catalogue : chacun mène à sa catégorie (le survol met le défilement en pause). */}
+      {/* Marques reconnues dans les produits, avec leurs SVG ; les catégories restent dans le catalogue. */}
       {brandRow.length > 0 && (
-        <nav aria-label="Catégories de chaussures" className="group/brands overflow-hidden border-b border-white/10 bg-ink py-10 text-white sm:py-14">
+        <nav aria-label="Marques" className="group/brands overflow-hidden border-b border-white/10 bg-ink py-10 text-white sm:py-14">
           <ul className="ticker-track flex w-max items-center group-hover/brands:[animation-play-state:paused]">
             {[0, 1].flatMap((k) =>
-              brandRow.map((c, i) => {
-                const logo = brandLogo(c.value);
-                return (
+              brandRow.map((brand, i) => (
                   <li key={`${k}-${i}`} aria-hidden={k === 1 ? true : undefined}>
-                    <Link href={categoryPath(c.value)} tabIndex={k === 1 ? -1 : undefined} className="flex h-16 items-center px-8 opacity-75 transition hover:opacity-100 sm:h-20 sm:px-14">
-                      {logo ? (
-                        // eslint-disable-next-line @next/next/no-img-element
-                        <img src={logo} alt={c.value} className="h-9 w-auto max-w-40 brightness-0 invert sm:h-12 sm:max-w-52" />
-                      ) : (
-                        <span className="font-display text-3xl whitespace-nowrap sm:text-4xl">{c.value}</span>
-                      )}
+                    <Link href={brand.href} tabIndex={k === 1 ? -1 : undefined} className="flex h-16 items-center px-8 opacity-75 transition hover:opacity-100 sm:h-20 sm:px-14">
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img src={brand.logo} alt={brand.name} className="h-9 w-auto max-w-40 brightness-0 invert sm:h-12 sm:max-w-52" />
                     </Link>
                   </li>
-                );
-              }),
+              )),
             )}
           </ul>
         </nav>

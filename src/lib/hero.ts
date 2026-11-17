@@ -1,7 +1,7 @@
 // Données du hero de l'accueil (« Sélectionnées pour vous ») : tout ce qu'il affiche
 // est déjà dans la fiche produit et les réglages, rien n'est lu en plus par visiteur.
 
-import { brandLogo } from "./brand-logos";
+import { brandFromProduct } from "./brand-logos";
 import { chromaHex } from "./chroma";
 import { szwegoUrl } from "./images";
 import { formatAr } from "./pricing";
@@ -23,7 +23,7 @@ export type HeroPair = {
   eta: string;
   /** Référence, à défaut la catégorie. */
   tag: string;
-  /** Marque (= catégorie) et son logo SVG quand on l'a. */
+  /** Marque du modèle et son logo SVG quand on l'a. */
   brand: string;
   logo: string | null;
   tone: string;
@@ -56,6 +56,7 @@ type HeroSource = {
 
 export function toHeroPair(p: HeroSource, s: Settings): HeroPair {
   const stock = p.status === "en_stock";
+  const brand = brandFromProduct(p);
   return {
     id: p.id,
     name: p.name,
@@ -66,8 +67,8 @@ export function toHeroPair(p: HeroSource, s: Settings): HeroPair {
     sizes: sizeRange(p.sizes),
     eta: stock ? `${s.stockDeliveryMinDays}–${s.stockDeliveryMaxDays} jours` : `${s.deliveryMinDays}–${s.deliveryMaxDays} jours`,
     tag: p.ref ?? p.category,
-    brand: p.category,
-    logo: brandLogo(p.category),
+    brand: brand?.name ?? "",
+    logo: brand?.logo ?? null,
     tone: chromaHex(p.id),
   };
 }

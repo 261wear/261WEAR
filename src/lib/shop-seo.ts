@@ -54,11 +54,7 @@ export function productSummary(product: PublicProduct, settings: Settings) {
   return `${product.name} : ${formatAr(product.pricing.price)}. ${availability}.`;
 }
 
-// Only recognize brands explicitly named in the public title.
-export function productBrand(name: string) {
-  const brands = ["New Balance", "The North Face", "Under Armour", "Golden Goose", "Nike", "Adidas", "Puma", "Asics", "Vans", "Converse", "Reebok", "Ecco", "UGG", "Prada", "Moncler", "Premiata", "Lululemon"];
-  return brands.find((brand) => new RegExp(`\\b${brand.replace(/ /g, "\\s+")}\\b`, "i").test(name));
-}
+export { productBrand } from "./brand-logos";
 
 export function shopIdentity(settings: Settings) {
   const base = siteUrl();
