@@ -5,7 +5,7 @@ import { LoadingRegion, Skeleton } from "@/components/ui/Skeleton";
 export default function Loading() {
   return (
     <LoadingRegion label="Chargement du drop…">
-      <section className="bg-peach/60">
+      <section className="bg-card">
         <div className="mx-auto flex max-w-5xl flex-col items-center px-4 pt-10 pb-12">
           <Skeleton className="h-6 w-56" />
           <Skeleton className="mt-6 aspect-[4/3] w-full max-w-3xl rounded-[28px] md:aspect-[2.24/1]" />

@@ -26,7 +26,7 @@ export function Timeline({ status, history, inStock = false }: { status: string;
           <li key={s.id} className="relative">
             <span
               className={`absolute top-0.5 -left-[43px] flex h-5 w-5 items-center justify-center rounded-full border-[3px] ${
-                i === current ? "border-ink bg-pistachio ring-4 ring-pistachio" : done ? "border-ink bg-ink" : "border-black/15 bg-white"
+                i === current ? "border-ink bg-accent ring-4 ring-accent" : done ? "border-ink bg-ink" : "border-black/15 bg-white"
               }`}
             />
             <p className={`font-display text-lg leading-tight ${done ? "" : "text-ink/35"}`}>{s.step}</p>

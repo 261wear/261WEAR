@@ -6,15 +6,10 @@
   --color-accent: #c6ff3d;
   --color-card: #ebe8e2; /* product card: one step darker than paper, warm */
   --color-muted: #66666b; /* 5.1:1 on paper (WCAG AA) */
-  --font-sans: var(--font-hanken);
-  --font-display: var(--font-bricolage);
-  /* Palette « Chroma » : un pastel par paire, le citron reste réservé à « Dispo de suite ». */
-  --color-peach: #ff9f6b;
-  --color-pink: #ffc1d6;
-  --color-sky: #8fd3ff;
-  --color-lilac: #c9b8ff;
-  /* Pistache : le vert des grands aplats (bandeau, cartes « Dispo de suite »). Le citron vif reste pour les petites touches. */
-  --color-pistachio: #d9ee8d;
+  --font-sans: var(--font-inter);
+  --font-display: var(--font-anton);
+  /* Vert dispo du moodboard : seulement « Dispo de suite » (cartes, pastille), texte craie dessus. */
+  --color-dispo: #047857;
 }
 
 body {
@@ -32,9 +27,10 @@ body {
 }
 
 @layer components {
+  /* Titres du moodboard : Anton, toujours en majuscules. */
   .font-display {
-    font-weight: 800;
-    letter-spacing: -0.035em;
+    letter-spacing: 0.01em;
+    text-transform: uppercase;
   }
 }
 

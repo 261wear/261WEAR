@@ -16,9 +16,9 @@ export type Socials = { facebookUrl: string; instagramUrl: string; tiktokUrl: st
 
 export function SocialLinks({ facebookUrl, instagramUrl, tiktokUrl, whatsappHref }: Socials) {
   const links = [
-    { href: facebookUrl, label: "Facebook", icon: ICONS.facebook, hover: "hover:bg-[#1877F2]" },
-    { href: instagramUrl, label: "Instagram", icon: ICONS.instagram, hover: "hover:bg-gradient-to-tr hover:from-[#F58529] hover:via-[#DD2A7B] hover:to-[#8134AF]" },
-    { href: tiktokUrl, label: "TikTok", icon: ICONS.tiktok, hover: "hover:bg-black hover:ring-1 hover:ring-white/30" },
+    { href: facebookUrl, label: "Facebook", icon: ICONS.facebook, hover: "hover:bg-accent hover:text-ink" },
+    { href: instagramUrl, label: "Instagram", icon: ICONS.instagram, hover: "hover:bg-accent hover:text-ink" },
+    { href: tiktokUrl, label: "TikTok", icon: ICONS.tiktok, hover: "hover:bg-accent hover:text-ink" },
   ].filter((l) => l.href);
   return (
     <ul className="flex flex-wrap gap-3" aria-label="Nos réseaux sociaux">

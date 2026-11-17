@@ -272,7 +272,7 @@ export function HeroShowcase({ pairs }: { pairs: HeroPair[] }) {
           <p data-cname className="font-display text-2xl leading-tight sm:text-3xl">{first.name}</p>
           <p data-ceta className="mt-0.5 hidden text-sm font-semibold text-ink/75 sm:block">{productStatus(first.status).short} · chez toi en {first.eta}</p>
         </div>
-        <p data-cprice className="font-display text-3xl leading-none sm:text-4xl">{first.price}</p>
+        <p data-cprice className="rounded-xl bg-accent px-3 py-1.5 text-3xl leading-none font-extrabold tracking-tight text-ink sm:text-4xl">{first.price}</p>
         <Link data-clink href={`/produit/${first.id}`} className="btn-dark px-5 py-3 text-sm sm:px-7 sm:py-3.5 sm:text-base">
           Commander <span aria-hidden="true">→</span>
         </Link>

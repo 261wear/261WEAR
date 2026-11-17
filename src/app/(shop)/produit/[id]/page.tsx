@@ -120,7 +120,7 @@ export default async function ProductPage(props: PageProps<"/produit/[id]">) {
           </p>
         )}
         <div className="card mt-5 grid grid-cols-3 divide-x divide-black/10 overflow-hidden text-center text-xs">
-          <div className={`flex flex-col items-center gap-1 p-3 ${inStock ? "bg-emerald-700 text-white" : ""}`}>
+          <div className={`flex flex-col items-center gap-1 p-3 ${inStock ? "bg-dispo text-paper" : ""}`}>
             {inStock ? <BoltIcon size={18} className="text-accent" /> : <TruckIcon size={18} />}
             <p className="font-bold">{dMin}–{dMax} j</p>
             <span className={inStock ? "text-white/80" : "text-black/60"}>{inStock ? "Déjà à Tana" : "Sur commande"}</span>

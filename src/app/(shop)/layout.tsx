@@ -23,7 +23,7 @@ export default async function ShopLayout({ children }: LayoutProps<"/">) {
     <>
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: jsonLd(shopIdentity(settings)) }} />
       <SmoothScroll />
-      <div className="bg-pistachio px-4 py-2 text-center text-xs font-semibold tracking-wide text-ink uppercase">
+      <div className="bg-accent px-4 py-2 text-center text-xs font-semibold tracking-wide text-ink uppercase">
         Sur commande en {settings.deliveryMinDays}–{settings.deliveryMaxDays} j · Disponible de suite en {settings.stockDeliveryMinDays}–{settings.stockDeliveryMaxDays} j à Tana
       </div>
       <header className="sticky top-0 z-30 border-b border-white/10 bg-ink text-white">

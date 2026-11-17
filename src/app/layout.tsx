@@ -1,12 +1,12 @@
 import type { Metadata, Viewport } from "next";
-import { Bricolage_Grotesque, Hanken_Grotesk } from "next/font/google";
+import { Anton, Inter } from "next/font/google";
 import { Audience } from "@/components/Audience";
 import { OPEN_GRAPH, siteUrl } from "@/lib/site";
 import "./globals.css";
 
-// Bricolage Grotesque (titres, prix) + Hanken Grotesk (texte) : deux polices variables.
-const hanken = Hanken_Grotesk({ variable: "--font-hanken", subsets: ["latin"] });
-const bricolage = Bricolage_Grotesque({ variable: "--font-bricolage", subsets: ["latin"] });
+// Polices du moodboard : Anton (titres, en majuscules) + Inter (textes et prix).
+const inter = Inter({ variable: "--font-inter", subsets: ["latin"] });
+const anton = Anton({ variable: "--font-anton", weight: "400", subsets: ["latin"] });
 
 const description = "261° WEAR, boutique de chaussures en ligne à Antananarivo, Madagascar. Modèles sur commande ou disponibles de suite à Tana, prix en ariary et commande sur WhatsApp.";
 
@@ -30,7 +30,7 @@ export const viewport: Viewport = { themeColor: "#0b0b0c" };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
-    <html lang="fr" className={`${hanken.variable} ${bricolage.variable} h-full antialiased`}>
+    <html lang="fr" className={`${inter.variable} ${anton.variable} h-full antialiased`}>
       <body className="flex min-h-full flex-col font-sans">
         {children}
         {/* The analytics script only exists on Vercel: elsewhere it is a 404. */}

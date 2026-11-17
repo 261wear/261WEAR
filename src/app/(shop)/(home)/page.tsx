@@ -56,12 +56,12 @@ export default async function Home() {
       {heroPairs.length ? (
         <HeroShowcase pairs={heroPairs} />
       ) : (
-        <section className="bg-peach text-ink">
+        <section className="bg-ink text-paper">
           <div className="mx-auto max-w-6xl px-4 py-24 text-center">
             <p className="font-display text-6xl sm:text-8xl">
-              Représente le 261<span className="text-white">°</span>
+              Représente le 261<span className="text-accent">°</span>
             </p>
-            <Link href="/suivi" className="btn-dark mt-8 px-7 py-3.5 text-base">Suivre ma commande</Link>
+            <Link href="/suivi" className="btn-accent mt-8 px-7 py-3.5 text-base">Suivre ma commande</Link>
           </div>
         </section>
       )}
@@ -107,7 +107,7 @@ export default async function Home() {
             <div className="flex flex-wrap items-end justify-between gap-x-4 gap-y-1">
               <h2 className="font-display text-[clamp(2rem,9vw,3.5rem)] leading-none whitespace-nowrap">
                 <span className="flex items-center gap-2.5 sm:gap-3">
-                  <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-pistachio text-ink sm:h-14 sm:w-14">
+                  <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-dispo text-paper sm:h-14 sm:w-14">
                     <BoltIcon size={24} />
                   </span>
                   Dispo de suite
@@ -140,8 +140,8 @@ export default async function Home() {
         )}
       </section>
 
-      {/* Quatre étapes sur fond bleu ciel : la page alterne les couleurs de section en section. */}
-      <section className="bg-sky text-ink">
+      {/* Quatre étapes sur fond craie : la page alterne craie et noir de section en section. */}
+      <section className="bg-card text-ink">
         <div className="mx-auto max-w-6xl px-4 py-16 sm:py-20">
           <h2 className="font-display text-[clamp(2.5rem,11vw,5rem)] leading-[0.92]">Comment<br />commander</h2>
           <ol className="mt-10 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">

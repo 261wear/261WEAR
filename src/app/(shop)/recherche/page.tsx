@@ -110,7 +110,7 @@ export default async function SearchPage(props: PageProps<"/recherche">) {
 
   return (
     <>
-      <section className="bg-sky">
+      <section className="bg-card">
         <div className="mx-auto flex max-w-6xl flex-wrap items-end justify-between gap-4 px-4 py-10 sm:py-14">
           <div className="min-w-0">
             <h1 className="font-display text-[clamp(2.5rem,10vw,5rem)] leading-none break-words">{q ? `« ${q} »` : "Catalogue"}</h1>
@@ -125,7 +125,7 @@ export default async function SearchPage(props: PageProps<"/recherche">) {
 
       <div className="mx-auto max-w-6xl px-4 py-8">
       {approximate && results.length > 0 && (
-        <p className="mt-4 rounded-2xl bg-peach/40 px-4 py-3 text-sm text-ink">
+        <p className="mt-4 rounded-2xl bg-white px-4 py-3 ring-1 ring-ink/10 text-sm text-ink">
           Aucun modèle ne correspond exactement à « {q} ». Voici les résultats les plus proches.
         </p>
       )}

@@ -68,6 +68,6 @@ export function toHeroPair(p: HeroSource, s: Settings): HeroPair {
     tag: p.ref ?? p.category,
     brand: p.category,
     logo: brandLogo(p.category),
-    tone: chromaHex(p.id, p.status),
+    tone: chromaHex(p.id),
   };
 }

@@ -1,13 +1,13 @@
 import { statusLabel } from "@/lib/orders-shared";
 
-// Une teinte de la palette Chroma par étape ; le texte reste en encre pour garder le contraste.
+// Noir, craie et citron seulement : de plus en plus foncé à mesure que la commande avance.
 const COLORS: Record<string, string> = {
-  en_attente_paiement: "bg-peach text-ink",
-  paiement_recu: "bg-sky text-ink",
-  commande_fournisseur: "bg-lilac text-ink",
-  expedie: "bg-pink text-ink",
-  arrive_tana: "bg-pistachio text-ink",
-  en_livraison: "bg-pistachio text-ink ring-2 ring-ink/15",
+  en_attente_paiement: "bg-white text-ink ring-1 ring-ink/15",
+  paiement_recu: "bg-ink/10 text-ink",
+  commande_fournisseur: "bg-ink/20 text-ink",
+  expedie: "bg-ink/70 text-white",
+  arrive_tana: "bg-accent text-ink",
+  en_livraison: "bg-accent text-ink ring-2 ring-ink/15",
   livre: "bg-ink text-white",
   annule: "bg-red-100 text-red-800",
 };

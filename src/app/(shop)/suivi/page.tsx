@@ -7,7 +7,7 @@ export const metadata: Metadata = { title: "Suivre ma commande", description: "R
 export default async function TrackPage(props: PageProps<"/suivi">) {
   const { n } = await props.searchParams;
   return (
-    <div className="bg-lilac">
+    <div className="bg-card">
       <div className="mx-auto flex min-h-[calc(100svh-9.5rem)] max-w-5xl flex-col justify-center gap-8 px-4 py-12 md:flex-row md:items-center md:gap-16">
         <div className="md:flex-1">
           <h1 className="font-display text-[clamp(2.75rem,11vw,5.5rem)] leading-[0.95]">

@@ -48,10 +48,10 @@ export default async function OrderPage(props: PageProps<"/commande/[token]">) {
 
   return (
     <>
-      <section className="bg-lilac">
+      <section className="bg-card">
         <div className="mx-auto max-w-3xl px-4 py-10 sm:py-14">
           {isNew && (
-            <div className="mb-6 rounded-[28px] bg-pistachio p-5">
+            <div className="mb-6 rounded-[28px] bg-accent p-5">
               <p className="font-display text-2xl">Commande enregistrée ✓</p>
               <p className="mt-1 text-sm">Dernière étape : paie l&apos;acompte puis envoie ta commande et la capture sur WhatsApp.</p>
             </div>

@@ -26,7 +26,7 @@ export function AdminNav() {
             key={it.href}
             href={it.href}
             aria-current={active ? "page" : undefined}
-            className={`shrink-0 rounded-full px-3 py-2 whitespace-nowrap transition ${active ? "bg-pistachio font-semibold text-ink" : "text-white/80 hover:bg-white/10 hover:text-white"}`}
+            className={`shrink-0 rounded-full px-3 py-2 whitespace-nowrap transition ${active ? "bg-accent font-semibold text-ink" : "text-white/80 hover:bg-white/10 hover:text-white"}`}
           >
             {it.label}
           </Link>
