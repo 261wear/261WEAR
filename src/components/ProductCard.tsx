@@ -22,6 +22,10 @@ export function ProductCard({ product, query = "", priority = false }: { product
     ) : product.fresh === "mis_a_jour" ? (
       <span className="font-bold">Mis à jour</span>
     ) : null;
+  // Le prix tient toujours sur une ligne : sa taille suit la largeur de la carte (container query),
+  // à raison d'environ 0,55 em par caractère en Inter extra-gras, et baisse encore pour les prix longs.
+  const price = formatAr(product.pricing.price);
+  const priceSize = `clamp(0.875rem, ${(170 / Math.max(price.length, 10)).toFixed(1)}cqi, 1.5rem)`;
   return (
     <Link href={`/produit/${product.id}`} className="group block">
       <article className={`rounded-[28px] p-2.5 transition duration-300 ease-out motion-safe:group-hover:-translate-y-1.5 ${chromaClass(product.id, product.status)}`}>
@@ -46,7 +50,7 @@ export function ProductCard({ product, query = "", priority = false }: { product
             </span>
           )}
         </div>
-        <div className="px-2 pt-3 pb-2">
+        <div className="@container px-2 pt-3 pb-2">
           {/* Nom du modèle en Anton, comme le cadre Ticket du moodboard. */}
           <h3 className="font-display line-clamp-2 text-[19px] leading-tight">
             <Highlight text={product.name} query={query} />
@@ -56,7 +60,7 @@ export function ProductCard({ product, query = "", priority = false }: { product
             {product.category && mark && <span aria-hidden="true">·</span>}
             {mark && <span className="shrink-0">{mark}</span>}
           </p>
-          <p className={`mt-2 text-2xl leading-none font-extrabold tracking-tight ${soldOut ? "opacity-50 line-through" : chromaPrice(product.status)}`}>{formatAr(product.pricing.price)}</p>
+          <p style={{ fontSize: priceSize }} className={`mt-2 leading-none font-extrabold tracking-tight whitespace-nowrap ${soldOut ? "opacity-50 line-through" : chromaPrice(product.status)}`}>{price}</p>
         </div>
       </article>
     </Link>

@@ -181,7 +181,7 @@ export default async function ProductPage(props: PageProps<"/produit/[id]">) {
       {similar.length > 0 && (
         <section className="mt-16" aria-labelledby="similar-title">
           <div className="flex items-end justify-between gap-4">
-            <h2 id="similar-title" className="font-display text-3xl sm:text-4xl">Dans la même catégorie</h2>
+            <h2 id="similar-title" className="font-display text-[clamp(1.25rem,calc((100vw_-_108px)/10),1.875rem)] sm:text-4xl">Dans la même catégorie</h2>
             <Link href={categoryPath(product.category)} className="shrink-0 py-2 text-sm font-semibold whitespace-nowrap underline">Tout voir</Link>
           </div>
           <div className="mt-6 grid grid-cols-2 gap-x-4 gap-y-8 md:grid-cols-4">

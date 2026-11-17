@@ -206,3 +206,17 @@ body {
     opacity: 0;
   }
 }
+
+/* Bulle WhatsApp flottante. Sur téléphone, elle s'efface tant que le bouton « Commander » du hero
+   est à l'écran (HeroShowcase pose data-hero-cta sur <html>) : elle le recouvrait. */
+[data-wa-float] {
+  transition: opacity 0.2s, visibility 0.2s, translate 0.2s, scale 0.15s;
+}
+
+@media (max-width: 639px) {
+  html[data-hero-cta] [data-wa-float] {
+    opacity: 0;
+    visibility: hidden;
+    translate: 0 1rem;
+  }
+}

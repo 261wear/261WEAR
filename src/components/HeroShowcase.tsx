@@ -55,6 +55,21 @@ export function HeroShowcase({ pairs }: { pairs: HeroPair[] }) {
     return () => ro.disconnect();
   }, []);
 
+  // Téléphone : la bulle WhatsApp flottante (en bas à droite) tombe sur le bouton « Commander », qui
+  // finit toujours en bas du premier écran. Tant que ce bouton est visible, <html data-hero-cta>
+  // efface la bulle (voir globals.css) ; elle revient dès qu'on fait défiler la page.
+  useEffect(() => {
+    const cta = root.current?.querySelector("[data-cta]");
+    if (!cta) return;
+    const html = document.documentElement;
+    const io = new IntersectionObserver(([entry]) => html.toggleAttribute("data-hero-cta", entry.isIntersecting));
+    io.observe(cta);
+    return () => {
+      io.disconnect();
+      html.removeAttribute("data-hero-cta");
+    };
+  }, []);
+
   useEffect(() => {
     const el = root.current;
     if (!el || pairs.length === 0) return;
@@ -267,13 +282,14 @@ export function HeroShowcase({ pairs }: { pairs: HeroPair[] }) {
 
       </div>
 
-      <div data-cta className="relative z-[4] mx-auto grid max-w-5xl grid-cols-[auto_auto] items-center justify-center gap-x-4 gap-y-2 px-4 pt-3 pb-11 sm:flex sm:flex-wrap sm:gap-x-8 sm:gap-y-3 sm:pt-4 sm:pb-14">
-        <div className="col-span-2 min-w-0 text-center sm:col-auto sm:text-left">
+      {/* Le prix ne se coupe jamais : il rétrécit sur petit écran et, s'il manque encore de place, le bouton passe dessous. */}
+      <div data-cta className="relative z-[4] mx-auto flex max-w-5xl flex-wrap items-center justify-center gap-x-3 gap-y-2 px-4 pt-3 pb-11 sm:gap-x-8 sm:gap-y-3 sm:pt-4 sm:pb-14">
+        <div className="min-w-0 basis-full text-center sm:basis-auto sm:text-left">
           <p data-cname className="font-display text-2xl leading-tight sm:text-3xl">{first.name}</p>
           <p data-ceta className="mt-0.5 hidden text-sm font-semibold text-ink/75 sm:block">{productStatus(first.status).short} · chez toi en {first.eta}</p>
         </div>
-        <p data-cprice className="rounded-xl bg-accent px-3 py-1.5 text-3xl leading-none font-extrabold tracking-tight text-ink sm:text-4xl">{first.price}</p>
-        <Link data-clink href={`/produit/${first.id}`} className="btn-dark px-5 py-3 text-sm sm:px-7 sm:py-3.5 sm:text-base">
+        <p data-cprice className="rounded-xl bg-accent px-3 py-1.5 text-[clamp(1.25rem,calc((100vw_-_210px)/5.5),1.875rem)] leading-none font-extrabold tracking-tight whitespace-nowrap text-ink sm:text-4xl">{first.price}</p>
+        <Link data-clink href={`/produit/${first.id}`} className="btn-dark px-4 py-3 text-sm sm:px-7 sm:py-3.5 sm:text-base">
           Commander <span aria-hidden="true">→</span>
         </Link>
       </div>
